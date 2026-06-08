@@ -3624,36 +3624,28 @@ function switchAjalTab(tab){
 async function getUnits(){
   if(_unitsCache) return _unitsCache;
   try {
-    const fid = getFarmId ? getFarmId() : null;
-    let q = sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','units');
-    if(fid) q = q.eq('farm_id',fid);
-    const {data} = await q.limit(1);
+    const {data} = await sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','units').limit(1);
     _unitsCache = data?.length ? data[0].categories : [...DS_DEFAULT_UNITS];
   } catch(e){ _unitsCache = [...DS_DEFAULT_UNITS]; }
   return _unitsCache;
 }
 async function saveUnits(u){
   _unitsCache = u;
-  const fid = getFarmId ? getFarmId() : null;
-  await sb.from('user_categories').upsert({user_id:currentUser.id,farm_id:fid,type:'units',categories:u},{onConflict:'user_id,type'});
+  await sb.from('user_categories').upsert({user_id:currentUser.id,type:'units',categories:u},{onConflict:'user_id,type'});
 }
 
 // جيب التجار
 async function getTraders(){
   if(_tradersCache) return _tradersCache;
   try {
-    const fid = getFarmId ? getFarmId() : null;
-    let q = sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','traders');
-    if(fid) q = q.eq('farm_id',fid);
-    const {data} = await q.limit(1);
+    const {data} = await sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','traders').limit(1);
     _tradersCache = data?.length ? data[0].categories : [];
   } catch(e){ _tradersCache = []; }
   return _tradersCache;
 }
 async function saveTraders(t){
   _tradersCache = t;
-  const fid = getFarmId ? getFarmId() : null;
-  await sb.from('user_categories').upsert({user_id:currentUser.id,farm_id:fid,type:'traders',categories:t},{onConflict:'user_id,type'});
+  await sb.from('user_categories').upsert({user_id:currentUser.id,type:'traders',categories:t},{onConflict:'user_id,type'});
 }
 
 // تهيئة صفحة المبيعات
