@@ -3631,7 +3631,8 @@ async function getUnits(){
 }
 async function saveUnits(u){
   _unitsCache = u;
-  await sb.from('user_categories').upsert({user_id:currentUser.id,type:'units',categories:u},{onConflict:'user_id,type'});
+  const {error} = await sb.from('user_categories').upsert({user_id:currentUser.id,type:'units',categories:u},{onConflict:'user_id,type'});
+  if(error) throw error;
 }
 
 // جيب التجار
@@ -3645,7 +3646,8 @@ async function getTraders(){
 }
 async function saveTraders(t){
   _tradersCache = t;
-  await sb.from('user_categories').upsert({user_id:currentUser.id,type:'traders',categories:t},{onConflict:'user_id,type'});
+  const {error} = await sb.from('user_categories').upsert({user_id:currentUser.id,type:'traders',categories:t},{onConflict:'user_id,type'});
+  if(error) throw error;
 }
 
 // تهيئة صفحة المبيعات
@@ -3890,7 +3892,12 @@ async function addUnit(){
   const units = await getUnits();
   if(units.includes(val)) return showToast('❌ الوحدة موجودة');
   units.push(val);
-  await saveUnits(units);
+  try {
+    await saveUnits(units);
+  } catch(e) {
+    units.pop();
+    return showToast('❌ خطأ في الحفظ: ' + (e.message||e));
+  }
   document.getElementById('units-list').innerHTML=renderUnitsList(units);
   document.getElementById('new-unit-input').value='';
   const unitSel=document.getElementById('ds-unit');
@@ -3937,7 +3944,12 @@ async function addTrader(){
   const traders = await getTraders();
   if(traders.includes(val)) return showToast('❌ التاجر موجود');
   traders.push(val);
-  await saveTraders(traders);
+  try {
+    await saveTraders(traders);
+  } catch(e) {
+    traders.pop();
+    return showToast('❌ خطأ في الحفظ: ' + (e.message||e));
+  }
   document.getElementById('traders-list').innerHTML=renderTradersList(traders);
   document.getElementById('new-trader-input').value='';
   const traderSel=document.getElementById('ds-trader');
