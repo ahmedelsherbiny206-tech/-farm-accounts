@@ -838,12 +838,6 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       <div class="ajal-tab" id="tab-sales-ajal" onclick="switchAjalTab('sales')">🛒 مبيعات آجل</div>
     </div>
     <div id="ajal-cash-section">
-    <!-- تبويبات الآجل -->
-    <div class="ajal-tabs">
-      <div class="ajal-tab active" id="tab-ajal-normal" onclick="switchAjalTab('normal')">🕐 نقدي آجل</div>
-      <div class="ajal-tab" id="tab-ajal-sales" onclick="switchAjalTab('sales')">🛒 مبيعات آجل</div>
-    </div>
-
     <!-- قسم نقدي آجل -->
     <div id="ajal-section-normal">
     <div class="card">
@@ -865,6 +859,87 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
     <div style="font-size:0.82rem;font-weight:800;color:var(--muted);margin:12px 0 8px;padding-right:4px;">ديون عليَّ 💸</div>
     <div id="ajal-pay-list"><div class="loading">⏳</div></div>
   </div>
+
+
+  </div><!-- end ajal-cash-section -->
+
+    <!-- مبيعات آجل -->
+    <div id="ajal-sales-section" style="display:none;">
+
+      <div class="card">
+        <div class="card-title">🛒 بيعة آجل جديدة</div>
+
+        <div class="form-row"><label>الوصف</label>
+          <input type="text" id="ds-desc" placeholder="مثال: بيع قمح للتاجر أحمد"></div>
+
+        <div class="form-row">
+          <label style="display:flex;justify-content:space-between;">المحصول
+            <button onclick="openCropManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">🌾 إدارة</button>
+          </label>
+          <select id="ds-crop"><option value="">-- اختار المحصول --</option></select>
+        </div>
+
+        <div class="form-row">
+          <label style="display:flex;justify-content:space-between;">الكمية
+            <button onclick="openUnitManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">⚙️ وحدات</button>
+          </label>
+          <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">
+            <input type="number" id="ds-qty" placeholder="0" step="0.1" min="0" oninput="calcDsTotal()">
+            <select id="ds-unit"></select>
+          </div>
+        </div>
+
+        <div class="form-row"><label>السعر (للوحدة)</label>
+          <input type="number" id="ds-price" placeholder="0" step="0.01" min="0" oninput="calcDsTotal()"></div>
+
+        <div class="form-row"><label>الإجمالي</label>
+          <div style="background:var(--g5);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-weight:900;color:var(--g2);font-size:1rem;" id="ds-total-display">0 ج</div>
+        </div>
+
+        <div class="form-row">
+          <label style="display:flex;justify-content:space-between;">التاجر
+            <button onclick="openTraderManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">👤 إدارة</button>
+          </label>
+          <select id="ds-trader"><option value="">-- اختار التاجر --</option></select>
+        </div>
+
+        <div class="form-row"><label>التاريخ</label>
+          <input type="date" id="ds-date"></div>
+
+        <div class="form-row"><label>ملاحظات</label>
+          <textarea id="ds-notes" placeholder="أي تفاصيل..."></textarea></div>
+
+        <button class="btn btn-g" onclick="addDeferredSale()">➕ تسجيل البيعة</button>
+      </div>
+
+      <!-- فلاتر -->
+      <div class="date-filter">
+        <label>من:</label><input type="date" id="ds-from" onchange="renderDeferredSales()">
+        <label>إلى:</label><input type="date" id="ds-to" onchange="renderDeferredSales()">
+        <button class="clear-btn" onclick="clearDsFilter()">الكل</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <select id="ds-filter-crop" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
+          <option value="">كل المحاصيل</option>
+        </select>
+        <select id="ds-filter-trader" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
+          <option value="">كل التجار</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;">
+        <button class="filter-btn active" id="dsf-all" onclick="setDsFilter('all',this)">الكل</button>
+        <button class="filter-btn" id="dsf-unpaid" onclick="setDsFilter('unpaid',this)">غير مسددة</button>
+        <button class="filter-btn" id="dsf-paid" onclick="setDsFilter('paid',this)">مسددة</button>
+      </div>
+      <div style="background:var(--g5);border-radius:12px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:0.8rem;font-weight:700;color:var(--muted);">إجمالي المعروض</span>
+        <span style="font-size:0.9rem;font-weight:900;color:var(--g2);" id="ds-total-shown">0 ج</span>
+      </div>
+      <div id="ds-list"><div class="loading">⏳</div></div>
+
+    </div><!-- end ajal-sales-section -->
+
+  </div><!-- close page-ajal -->
 
   <!-- CAPITAL -->
   <div class="page" id="page-capital">
@@ -990,83 +1065,6 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 
     </div><!-- end ajal-cash-section -->
 
-    <!-- مبيعات آجل -->
-    <div id="ajal-sales-section" style="display:none;">
-
-      <div class="card">
-        <div class="card-title">🛒 بيعة آجل جديدة</div>
-
-        <div class="form-row"><label>الوصف</label>
-          <input type="text" id="ds-desc" placeholder="مثال: بيع قمح للتاجر أحمد"></div>
-
-        <div class="form-row">
-          <label style="display:flex;justify-content:space-between;">المحصول
-            <button onclick="openCropManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">🌾 إدارة</button>
-          </label>
-          <select id="ds-crop"><option value="">-- اختار المحصول --</option></select>
-        </div>
-
-        <div class="form-row">
-          <label style="display:flex;justify-content:space-between;">الكمية
-            <button onclick="openUnitManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">⚙️ وحدات</button>
-          </label>
-          <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">
-            <input type="number" id="ds-qty" placeholder="0" step="0.1" min="0" oninput="calcDsTotal()">
-            <select id="ds-unit"></select>
-          </div>
-        </div>
-
-        <div class="form-row"><label>السعر (للوحدة)</label>
-          <input type="number" id="ds-price" placeholder="0" step="0.01" min="0" oninput="calcDsTotal()"></div>
-
-        <div class="form-row"><label>الإجمالي</label>
-          <div style="background:var(--g5);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-weight:900;color:var(--g2);font-size:1rem;" id="ds-total-display">0 ج</div>
-        </div>
-
-        <div class="form-row">
-          <label style="display:flex;justify-content:space-between;">التاجر
-            <button onclick="openTraderManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">👤 إدارة</button>
-          </label>
-          <select id="ds-trader"><option value="">-- اختار التاجر --</option></select>
-        </div>
-
-        <div class="form-row"><label>التاريخ</label>
-          <input type="date" id="ds-date"></div>
-
-        <div class="form-row"><label>ملاحظات</label>
-          <textarea id="ds-notes" placeholder="أي تفاصيل..."></textarea></div>
-
-        <button class="btn btn-g" onclick="addDeferredSale()">➕ تسجيل البيعة</button>
-      </div>
-
-      <!-- فلاتر -->
-      <div class="date-filter">
-        <label>من:</label><input type="date" id="ds-from" onchange="renderDeferredSales()">
-        <label>إلى:</label><input type="date" id="ds-to" onchange="renderDeferredSales()">
-        <button class="clear-btn" onclick="clearDsFilter()">الكل</button>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-        <select id="ds-filter-crop" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
-          <option value="">كل المحاصيل</option>
-        </select>
-        <select id="ds-filter-trader" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
-          <option value="">كل التجار</option>
-        </select>
-      </div>
-      <div style="display:flex;gap:6px;margin-bottom:10px;">
-        <button class="filter-btn active" id="dsf-all" onclick="setDsFilter('all',this)">الكل</button>
-        <button class="filter-btn" id="dsf-unpaid" onclick="setDsFilter('unpaid',this)">غير مسددة</button>
-        <button class="filter-btn" id="dsf-paid" onclick="setDsFilter('paid',this)">مسددة</button>
-      </div>
-      <div style="background:var(--g5);border-radius:12px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:0.8rem;font-weight:700;color:var(--muted);">إجمالي المعروض</span>
-        <span style="font-size:0.9rem;font-weight:900;color:var(--g2);" id="ds-total-shown">0 ج</span>
-      </div>
-      <div id="ds-list"><div class="loading">⏳</div></div>
-
-    </div><!-- end ajal-sales-section -->
-
-  </div><!-- close page-ajal -->
 
   <!-- LOG PAGE -->
   <div class="page" id="page-log">
@@ -1146,99 +1144,6 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
     </div>
     <div id="search-results"><div class="empty">ابحث عن أي حاجة...</div></div>
   </div>
-
-
-    </div> <!-- end ajal-section-normal -->
-
-    <!-- قسم مبيعات آجل -->
-    <div id="ajal-section-sales" style="display:none;">
-
-      <!-- فورم الإضافة -->
-      <div class="card">
-        <div class="card-title">🛒 بيعة آجل جديدة</div>
-
-        <div class="form-row"><label>الوصف</label>
-          <input type="text" id="ds-desc" placeholder="مثال: بيع قمح للتاجر أحمد"></div>
-
-        <div class="form-row">
-          <label style="display:flex;justify-content:space-between;align-items:center;">
-            المحصول
-            <button onclick="openCropManager()" style="background:none;border:none;font-size:0.78rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">🌾 إدارة</button>
-          </label>
-          <select id="ds-crop"><option value="">-- اختار المحصول --</option></select>
-        </div>
-
-        <div class="form-row">
-          <label>الكمية</label>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <input type="number" id="ds-qty" placeholder="0" step="0.1" min="0">
-            <div style="position:relative;">
-              <select id="ds-unit">
-                <option>كرتون</option>
-                <option>كيلو</option>
-                <option>أردب</option>
-                <option>قيراط</option>
-              </select>
-              <button onclick="openUnitManager()" style="position:absolute;left:4px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:0.75rem;color:var(--g3);cursor:pointer;">⚙️</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-row"><label>السعر (للوحدة)</label>
-          <input type="number" id="ds-price" placeholder="0" step="0.01" min="0" oninput="calcDsTotal()"></div>
-
-        <div class="form-row">
-          <label>الإجمالي</label>
-          <div style="background:var(--g5);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-weight:900;color:var(--g2);font-size:1rem;" id="ds-total-display">0 ج</div>
-        </div>
-
-        <div class="form-row">
-          <label style="display:flex;justify-content:space-between;align-items:center;">
-            التاجر
-            <button onclick="openTraderManager()" style="background:none;border:none;font-size:0.78rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">👤 إدارة</button>
-          </label>
-          <select id="ds-trader"><option value="">-- اختار التاجر --</option></select>
-        </div>
-
-        <div class="form-row"><label>التاريخ</label>
-          <input type="date" id="ds-date"></div>
-
-        <div class="form-row"><label>ملاحظات</label>
-          <textarea id="ds-notes" placeholder="أي تفاصيل..."></textarea></div>
-
-        <button class="btn btn-g" onclick="addDeferredSale()">➕ تسجيل البيعة</button>
-      </div>
-
-      <!-- فلاتر -->
-      <div class="date-filter">
-        <label>من:</label>
-        <input type="date" id="ds-from" onchange="renderDeferredSales()">
-        <label>إلى:</label>
-        <input type="date" id="ds-to" onchange="renderDeferredSales()">
-        <button class="clear-btn" onclick="clearDsFilter()">الكل</button>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-        <select id="ds-filter-crop" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;">
-          <option value="">كل المحاصيل</option>
-        </select>
-        <select id="ds-filter-trader" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;">
-          <option value="">كل التجار</option>
-        </select>
-      </div>
-      <div style="display:flex;gap:8px;margin-bottom:10px;">
-        <button class="filter-btn active" id="ds-filter-all" onclick="setDsStatus('all',this)">الكل</button>
-        <button class="filter-btn" id="ds-filter-unpaid" onclick="setDsStatus('unpaid',this)">غير مسددة</button>
-        <button class="filter-btn" id="ds-filter-paid" onclick="setDsStatus('paid',this)">مسددة</button>
-      </div>
-
-      <!-- الإجمالي المعروض -->
-      <div style="background:var(--g5);border-radius:12px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between;">
-        <span style="font-size:0.8rem;font-weight:700;color:var(--muted);">إجمالي المعروض</span>
-        <span style="font-size:0.9rem;font-weight:900;color:var(--g2);" id="ds-total-shown">0 ج</span>
-      </div>
-
-      <div id="ds-list"><div class="loading">⏳</div></div>
-    </div> <!-- end ajal-section-sales -->
 
   </div> <!-- end page-ajal -->
 
@@ -3697,373 +3602,6 @@ async function exportSeasonToExcel(seasonId){
   wb.SheetNames=['ملخص الموسم','الإيرادات','المصاريف','المصاريف حسب التصنيف'];
   XLSX.writeFile(wb, 'موسم-'+season.name+'-'+season.start_date+'.xlsx');
   showToast('✅ تم التصدير!');
-}
-</script>
-<script>
-// ===== DEFERRED SALES =====
-
-// متغيرات الكاش (مُدارة في script مبيعات الآجل)
-
-// ===== تبويبات الآجل =====
-function switchAjalTab(tab){
-  document.getElementById('ajal-section-normal').style.display = tab==='normal' ? 'block' : 'none';
-  document.getElementById('ajal-section-sales').style.display = tab==='sales' ? 'block' : 'none';
-  document.getElementById('tab-ajal-normal').classList.toggle('active', tab==='normal');
-  document.getElementById('tab-ajal-sales').classList.toggle('active', tab==='sales');
-  if(tab==='sales') initDeferredSales();
-}
-
-// ===== Supabase helpers =====
-async function getUnits(){
-  if(_unitsCache) return _unitsCache;
-  try {
-    const {data} = await sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','units').limit(1);
-    _unitsCache = data?.length ? data[0].categories : [...defaultUnits];
-  } catch(e){ _unitsCache = [...defaultUnits]; }
-  return _unitsCache;
-}
-async function saveUnits(u){ _unitsCache=u; await sb.from('user_categories').upsert({user_id:currentUser.id,type:'units',categories:u},{onConflict:'user_id,type'}); }
-
-async function getTraders(){
-  if(_tradersCache) return _tradersCache;
-  try {
-    const {data} = await sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','traders').limit(1);
-    _tradersCache = data?.length ? data[0].categories : [...defaultTraders];
-  } catch(e){ _tradersCache = [...defaultTraders]; }
-  return _tradersCache;
-}
-async function saveTraders(t){ _tradersCache=t; await sb.from('user_categories').upsert({user_id:currentUser.id,type:'traders',categories:t},{onConflict:'user_id,type'}); }
-
-// ===== تحميل البيانات الأولية =====
-async function initDeferredSales(){
-  const [crops, units, traders] = await Promise.all([getCrops(), getUnits(), getTraders()]);
-
-  // crop select
-  const cropSel = document.getElementById('ds-crop');
-  if(cropSel) cropSel.innerHTML = '<option value="">-- اختار المحصول --</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${c}</option>`).join('');
-
-  // unit select
-  const unitSel = document.getElementById('ds-unit');
-  if(unitSel) unitSel.innerHTML = units.map(u=>`<option>${u}</option>`).join('');
-
-  // trader select
-  const traderSel = document.getElementById('ds-trader');
-  if(traderSel) traderSel.innerHTML = '<option value="">-- اختار التاجر --</option>'+traders.map(t=>`<option>${t}</option>`).join('');
-
-  // filter selects
-  const fCrop = document.getElementById('ds-filter-crop');
-  if(fCrop) fCrop.innerHTML = '<option value="">كل المحاصيل</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${c}</option>`).join('');
-
-  const fTrader = document.getElementById('ds-filter-trader');
-  if(fTrader) fTrader.innerHTML = '<option value="">كل التجار</option>'+traders.map(t=>`<option>${t}</option>`).join('');
-
-  // تاريخ افتراضي
-  const dsDate = document.getElementById('ds-date');
-  if(dsDate && !dsDate.value) dsDate.value = today();
-
-  renderDeferredSales();
-}
-
-// ===== حساب الإجمالي =====
-function calcDsTotal(){
-  const qty = parseFloat(document.getElementById('ds-qty')?.value)||0;
-  const price = parseFloat(document.getElementById('ds-price')?.value)||0;
-  const total = qty * price;
-  const el = document.getElementById('ds-total-display');
-  if(el) el.textContent = Number(total).toLocaleString('en-US') + ' ج';
-}
-
-// ===== إضافة بيعة =====
-async function addDeferredSale(){
-  const desc = document.getElementById('ds-desc').value.trim();
-  const crop = document.getElementById('ds-crop').value;
-  const qty = parseFloat(document.getElementById('ds-qty').value);
-  const unit = document.getElementById('ds-unit').value;
-  const price = parseFloat(document.getElementById('ds-price').value);
-  const trader = document.getElementById('ds-trader').value;
-  const date = document.getElementById('ds-date').value;
-  const notes = document.getElementById('ds-notes').value;
-
-  if(!desc) return showToast('❌ اكتب الوصف');
-  if(!qty||qty<=0) return showToast('❌ اكتب الكمية');
-  if(!price||price<=0) return showToast('❌ اكتب السعر');
-  if(!date) return showToast('❌ اختار التاريخ');
-
-  const total = qty * price;
-
-  const {error} = await sb.from('deferred_sales').insert({
-    user_id:currentUser.id, description:desc, crop:crop||null,
-    quantity:qty, unit, price, total, trader:trader||null,
-    date, notes, paid:false
-  });
-  if(error) return showToast('❌ خطأ: '+error.message);
-
-  // تسجيل في income أوتوماتيك بدون خزنة
-  await sb.from('income').insert({
-    user_id:currentUser.id,
-    description:'بيع آجل: '+desc+(trader?' - '+trader:''),
-    category:'مبيعات آجل',
-    crop:crop||null,
-    amount:total,
-    date,
-    notes:'بيعة آجل - غير مسددة - '+qty+' '+unit+' × '+price+' ج'
-  });
-
-  logActivity('إضافة','deferred_sales','بيعة آجل: '+desc, total);
-  showToast('✅ تم تسجيل البيعة');
-
-  // تفريغ الفورم
-  document.getElementById('ds-desc').value='';
-  document.getElementById('ds-qty').value='';
-  document.getElementById('ds-price').value='';
-  document.getElementById('ds-notes').value='';
-  document.getElementById('ds-total-display').textContent='0 ج';
-  document.getElementById('ds-date').value=today();
-
-  renderDeferredSales();
-}
-
-// ===== عرض المبيعات =====
-let dsStatusCurrent = 'all';
-function setDsStatus(status, btn){
-  dsStatusCurrent = status;
-  document.querySelectorAll('#ajal-section-sales .filter-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  renderDeferredSales();
-}
-function clearDsFilter(){
-  document.getElementById('ds-from').value='';
-  document.getElementById('ds-to').value='';
-  document.getElementById('ds-filter-crop').value='';
-  document.getElementById('ds-filter-trader').value='';
-  renderDeferredSales();
-}
-
-async function renderDeferredSales(){
-  const el = document.getElementById('ds-list');
-  if(!el) return;
-  el.innerHTML = '<div class="loading">⏳</div>';
-
-  let q = sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).order('date',{ascending:false});
-
-  const from = document.getElementById('ds-from')?.value;
-  const to = document.getElementById('ds-to')?.value;
-  const crop = document.getElementById('ds-filter-crop')?.value;
-  const trader = document.getElementById('ds-filter-trader')?.value;
-
-  if(from) q=q.gte('date',from);
-  if(to) q=q.lte('date',to);
-  if(crop) q=q.eq('crop',crop);
-  if(trader) q=q.eq('trader',trader);
-  if(dsStatusCurrent==='paid') q=q.eq('paid',true);
-  if(dsStatusCurrent==='unpaid') q=q.eq('paid',false);
-
-  const {data} = await q;
-  if(!data?.length){ el.innerHTML='<div class="empty">لا يوجد مبيعات</div>'; document.getElementById('ds-total-shown').textContent='0 ج'; return; }
-
-  const total = data.reduce((s,x)=>s+Number(x.total||0),0);
-  document.getElementById('ds-total-shown').textContent = Number(total).toLocaleString('en-US')+' ج';
-
-  el.innerHTML = data.map(x=>`
-    <div class="ds-card ${x.paid?'paid':''}">
-      <div class="ds-header">
-        <div style="flex:1;min-width:0;">
-          <div class="ds-title">${s(x.description||'')} ${x.paid?'<span style="font-size:0.6rem;background:#d4edda;color:#155724;padding:2px 6px;border-radius:8px;">✅ مسددة</span>':''}</div>
-          <div class="ds-sub">${fmtDate(x.date)}${x.crop?' · 🌾 '+s(x.crop):''}${x.trader?' · 👤 '+s(x.trader):''}</div>
-          <div class="ds-sub">${x.quantity} ${s(x.unit||'')} × ${Number(x.price).toLocaleString('en-US')} ج</div>
-        </div>
-        <div class="ds-total">${Number(x.total).toLocaleString('en-US')} ج</div>
-      </div>
-      ${x.notes?`<div style="font-size:0.7rem;color:var(--muted);margin-top:4px;">${s(x.notes)}</div>`:''}
-      <div class="ds-actions">
-        ${!x.paid?`<button class="btn-sm btn-g" onclick="payDeferredSale('${x.id}',${x.total},'${x.date||today()}','${(x.description||'').replace(/'/g,"\\'")}')">✅ تسديد</button>`:''}
-        <button class="btn-sm" style="background:var(--blue-p);color:var(--blue);border:none;" onclick="editDeferredSale('${x.id}')">✏️ تعديل</button>
-        <button class="btn-sm btn-r" onclick="deleteDeferredSale('${x.id}',${x.paid})">🗑️</button>
-      </div>
-    </div>`).join('');
-}
-
-// ===== تسديد بيعة =====
-async function payDeferredSale(id){
-  if(!await showConfirm('تأكيد تسديد البيعة وإضافتها للخزنة؟', '✅')) return;
-  // جيب بيانات البيعة
-  const {data} = await sb.from('deferred_sales').select('*').eq('id',id).eq('user_id',currentUser.id);
-  if(!data?.length) return showToast('❌ مش لاقي البيعة');
-  const sale = data[0];
-  // تسجيل في الخزنة
-  await sb.from('vault').insert({user_id:currentUser.id, type:'in', description:'تسديد بيعة آجل: '+(sale.description||''), amount:sale.total, date:today(), notes:''});
-  // تحديث حالة البيعة
-  await sb.from('deferred_sales').update({paid:true, paid_at:new Date().toISOString()}).eq('id',id).eq('user_id',currentUser.id);
-  logActivity('تسديد','deferred_sales','تسديد بيعة آجل: '+(sale.description||''), sale.total);
-  showToast('✅ تم التسديد وإضافته للخزنة');
-  renderDeferredSales();
-  renderHome();
-}
-
-// ===== حذف بيعة =====
-async function deleteDeferredSale(id, isPaid){
-  const msg = isPaid
-    ? '⚠️ هذه البيعة مسددة - حذفها قد يؤثر على رصيد الخزنة. متأكد؟'
-    : 'هتحذف البيعة دي؟';
-  if(!await showConfirm(msg, isPaid?'⚠️':'🗑️')) return;
-  await sb.from('deferred_sales').delete().eq('id',id).eq('user_id',currentUser.id);
-  logActivity('حذف','deferred_sales','حذف بيعة آجل');
-  showToast('🗑️ تم الحذف');
-  renderDeferredSales();
-}
-
-// ===== تعديل بيعة =====
-async function editDeferredSale(id){
-  const {data} = await sb.from('deferred_sales').select('*').eq('id',id).eq('user_id',currentUser.id);
-  if(!data?.length) return;
-  const x = data[0];
-  const [crops, units, traders] = await Promise.all([getCrops(), getUnits(), getTraders()]);
-
-  document.getElementById('modal-title').textContent = '✏️ تعديل البيعة';
-  document.getElementById('modal-body').innerHTML = `
-    <div class="edit-modal-row"><label>الوصف</label><input id="dse-desc" value="${s(x.description||'')}"></div>
-    <div class="edit-modal-row"><label>المحصول</label>
-      <select id="dse-crop">
-        <option value="">-- اختار المحصول --</option>
-        ${crops.filter(c=>c!=='عام 🌍').map(c=>`<option ${x.crop===c?'selected':''}>${c}</option>`).join('')}
-      </select>
-    </div>
-    <div class="edit-modal-row"><label>الكمية</label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <input type="number" id="dse-qty" value="${x.quantity||''}" step="0.1" min="0">
-        <select id="dse-unit">${units.map(u=>`<option ${x.unit===u?'selected':''}>${u}</option>`).join('')}</select>
-      </div>
-    </div>
-    <div class="edit-modal-row"><label>السعر</label><input type="number" id="dse-price" value="${x.price||''}" step="0.01" min="0"></div>
-    <div class="edit-modal-row"><label>التاجر</label>
-      <select id="dse-trader">
-        <option value="">-- اختار التاجر --</option>
-        ${traders.map(t=>`<option ${x.trader===t?'selected':''}>${t}</option>`).join('')}
-      </select>
-    </div>
-    <div class="edit-modal-row"><label>التاريخ</label><input type="date" id="dse-date" value="${x.date||''}"></div>
-    <div class="edit-modal-row"><label>ملاحظات</label><textarea id="dse-notes">${s(x.notes||'')}</textarea></div>
-    <button class="btn btn-g" style="margin-top:12px;" onclick="saveDeferredSaleEdit('${id}')">💾 حفظ</button>
-  `;
-  document.getElementById('detail-overlay').classList.add('open');
-}
-
-async function saveDeferredSaleEdit(id){
-  const desc = document.getElementById('dse-desc')?.value.trim();
-  const crop = document.getElementById('dse-crop')?.value||null;
-  const qty = parseFloat(document.getElementById('dse-qty')?.value);
-  const unit = document.getElementById('dse-unit')?.value;
-  const price = parseFloat(document.getElementById('dse-price')?.value);
-  const trader = document.getElementById('dse-trader')?.value||null;
-  const date = document.getElementById('dse-date')?.value;
-  const notes = document.getElementById('dse-notes')?.value||'';
-  if(!desc||!qty||!price) return showToast('❌ اكمل البيانات');
-  const total = qty * price;
-  const {error} = await sb.from('deferred_sales').update({description:desc,crop,quantity:qty,unit,price,total,trader,date,notes}).eq('id',id).eq('user_id',currentUser.id);
-  if(error) return showToast('❌ خطأ: '+error.message);
-  logActivity('تعديل','deferred_sales','تعديل بيعة آجل: '+desc, total);
-  showToast('✅ تم التعديل');
-  closeModal();
-  renderDeferredSales();
-}
-
-// ===== إدارة الوحدات =====
-async function openUnitManager(){
-  const units = await getUnits();
-  document.getElementById('modal-title').textContent = '⚙️ إدارة وحدات الكمية';
-  document.getElementById('modal-body').innerHTML = `
-    <div id="units-list">${renderUnitsList(units)}</div>
-    <div style="display:flex;gap:8px;margin-top:12px;">
-      <input id="new-unit-input" placeholder="وحدة جديدة (مثال: طن)" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;">
-      <button class="btn-sm btn-g" onclick="addUnit()" style="padding:10px 16px;">➕</button>
-    </div>`;
-  document.getElementById('detail-overlay').classList.add('open');
-}
-function renderUnitsList(units){
-  return units.map((u,i)=>`
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
-      <span style="font-size:0.85rem;font-weight:700;">${s(u)}</span>
-      ${defaultUnits.includes(u)?'<span style="font-size:0.65rem;color:var(--muted);">افتراضي</span>':`<button class="btn-sm btn-r" onclick="deleteUnit(${i})">🗑️</button>`}
-    </div>`).join('');
-}
-async function addUnit(){
-  const val = document.getElementById('new-unit-input').value.trim();
-  if(!val) return showToast('❌ اكتب اسم الوحدة');
-  const units = await getUnits();
-  if(units.includes(val)) return showToast('❌ الوحدة موجودة');
-  units.push(val);
-  await saveUnits(units);
-  document.getElementById('units-list').innerHTML = renderUnitsList(units);
-  document.getElementById('new-unit-input').value='';
-  // تحديث السيليكت
-  const unitSel = document.getElementById('ds-unit');
-  if(unitSel) unitSel.innerHTML = units.map(u=>`<option>${u}</option>`).join('');
-  showToast('✅ تم الإضافة');
-}
-async function deleteUnit(i){
-  const units = await getUnits();
-  if(defaultUnits.includes(units[i])) return showToast('❌ مش تقدر تحذف وحدة افتراضية');
-  // فحص البيانات
-  const {data} = await sb.from('deferred_sales').select('id').eq('user_id',currentUser.id).eq('unit',units[i]).limit(1);
-  const msg = data?.length
-    ? '⚠️ حذف هذه الوحدة قد يؤثر على البيانات المُسجلة مسبقاً - متأكد؟'
-    : 'هتحذف "'+units[i]+'"؟';
-  if(!await showConfirm(msg, data?.length?'⚠️':'🗑️')) return;
-  units.splice(i,1);
-  await saveUnits(units);
-  document.getElementById('units-list').innerHTML = renderUnitsList(units);
-  showToast('🗑️ تم الحذف');
-}
-
-// ===== إدارة التجار =====
-async function openTraderManager(){
-  const traders = await getTraders();
-  document.getElementById('modal-title').textContent = '👤 إدارة التجار';
-  document.getElementById('modal-body').innerHTML = `
-    <div id="traders-list">${renderTradersList(traders)}</div>
-    <div style="display:flex;gap:8px;margin-top:12px;">
-      <input id="new-trader-input" placeholder="اسم التاجر" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;">
-      <button class="btn-sm btn-g" onclick="addTrader()" style="padding:10px 16px;">➕</button>
-    </div>`;
-  document.getElementById('detail-overlay').classList.add('open');
-}
-function renderTradersList(traders){
-  if(!traders.length) return '<div class="empty">لا يوجد تجار</div>';
-  return traders.map((t,i)=>`
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
-      <span style="font-size:0.85rem;font-weight:700;">👤 ${s(t)}</span>
-      <div style="display:flex;gap:6px;">
-        <button class="btn-sm btn-r" onclick="deleteTrader(${i})">🗑️</button>
-      </div>
-    </div>`).join('');
-}
-async function addTrader(){
-  const val = document.getElementById('new-trader-input').value.trim();
-  if(!val) return showToast('❌ اكتب اسم التاجر');
-  const traders = await getTraders();
-  if(traders.includes(val)) return showToast('❌ التاجر موجود');
-  traders.push(val);
-  await saveTraders(traders);
-  document.getElementById('traders-list').innerHTML = renderTradersList(traders);
-  document.getElementById('new-trader-input').value='';
-  // تحديث السيليكت
-  const traderSel = document.getElementById('ds-trader');
-  if(traderSel) traderSel.innerHTML = '<option value="">-- اختار التاجر --</option>'+traders.map(t=>`<option>${t}</option>`).join('');
-  const fTrader = document.getElementById('ds-filter-trader');
-  if(fTrader) fTrader.innerHTML = '<option value="">كل التجار</option>'+traders.map(t=>`<option>${t}</option>`).join('');
-  showToast('✅ تم الإضافة');
-}
-async function deleteTrader(i){
-  const traders = await getTraders();
-  const {data} = await sb.from('deferred_sales').select('id').eq('user_id',currentUser.id).eq('trader',traders[i]).limit(1);
-  const msg = data?.length
-    ? '⚠️ حذف هذا التاجر سيؤثر على البيانات المُسجلة مسبقاً - متأكد؟'
-    : 'هتحذف التاجر "'+traders[i]+'"؟';
-  if(!await showConfirm(msg, data?.length?'⚠️':'🗑️')) return;
-  traders.splice(i,1);
-  await saveTraders(traders);
-  document.getElementById('traders-list').innerHTML = renderTradersList(traders);
-  showToast('🗑️ تم الحذف');
 }
 </script>
 <script>
