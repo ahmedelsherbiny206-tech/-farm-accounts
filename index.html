@@ -1450,9 +1450,11 @@ async function doLogout() {
   // مسح كل الكاش المحلي
   localStorage.removeItem('activeFarmId');
   localStorage.removeItem('farmName');
+  localStorage.removeItem('farmArea');
   _incCatsCache = null;
   _expCatsCache = null;
   _cropsCache = null;
+  _farmSettingsCache = null;
   document.getElementById('app-screen').style.display = 'none';
   document.getElementById('auth-screen').style.display = 'flex';
   // إعادة تحميل الصفحة عشان تمسح أي session محفوظ
@@ -1472,7 +1474,7 @@ async function initApp(user) {
   await populateCatSelects();
   renderHome();
   checkAjalAlerts();
-  loadFarmName();
+  await loadFarmSettings();
 }
 
 // Handle OAuth redirect first - check URL hash
@@ -2859,42 +2861,86 @@ function loadDarkMode(){
 }
 loadDarkMode();
 
-// Farm Name
-function loadFarmName(){
-  const name = localStorage.getItem('farmName') || 'حسابات المزرعة';
-  const title = document.getElementById('farm-title');
-  if(title) title.textContent = '🌿 ' + name;
-  const disp = document.getElementById('farm-name-display');
-  if(disp) disp.textContent = name;
+// ===== إعدادات المزرعة (مزامنة Supabase) =====
+let _farmSettingsCache = null; // {name, area}
+
+async function loadFarmSettings(){
+  try {
+    const {data} = await sb.from('user_categories').select('categories')
+      .eq('user_id',currentUser.id).eq('type','farm_settings').limit(1);
+    if(data?.length){
+      _farmSettingsCache = data[0].categories;
+      // مزامنة مع localStorage كـ cache محلي
+      if(_farmSettingsCache.name) localStorage.setItem('farmName', _farmSettingsCache.name);
+      if(_farmSettingsCache.area) localStorage.setItem('farmArea', _farmSettingsCache.area);
+    } else {
+      // مفيش في السيرفر - جرب من localStorage (ترقية من الإصدار القديم)
+      const lsName = localStorage.getItem('farmName');
+      const lsArea = parseFloat(localStorage.getItem('farmArea'))||0;
+      _farmSettingsCache = {name: lsName||'حسابات المزرعة', area: lsArea};
+      // احفظها في السيرفر عشان تتزامن مستقبلاً
+      if(lsName || lsArea) await _saveFarmSettingsToDb(_farmSettingsCache);
+    }
+  } catch(e){
+    // fallback للـ localStorage لو الشبكة وقعت
+    _farmSettingsCache = {
+      name: localStorage.getItem('farmName')||'حسابات المزرعة',
+      area: parseFloat(localStorage.getItem('farmArea'))||0
+    };
+  }
+  _applyFarmSettings();
 }
+
+function _applyFarmSettings(){
+  const s = _farmSettingsCache || {name:'حسابات المزرعة', area:0};
+  const title = document.getElementById('farm-title');
+  if(title) title.textContent = '🌿 ' + s.name;
+  const disp = document.getElementById('farm-name-display');
+  if(disp) disp.textContent = s.name;
+  const areaDisp = document.getElementById('farm-area-display');
+  if(areaDisp) areaDisp.textContent = s.area ? s.area+' فدان' : 'غير محددة';
+}
+
+async function _saveFarmSettingsToDb(settings){
+  const {error} = await sb.from('user_categories').upsert({
+    user_id:currentUser.id, type:'farm_settings', categories:settings
+  },{onConflict:'user_id,type'});
+  if(error) throw error;
+}
+
+// للتوافق مع الكود القديم
+function loadFarmName(){ _applyFarmSettings(); }
+function loadFarmArea(){ _applyFarmSettings(); }
+
+function getFarmArea(){
+  return _farmSettingsCache?.area || parseFloat(localStorage.getItem('farmArea'))||0;
+}
+
 function openEditFarmName(){
   closeSettings();
-  const current = localStorage.getItem('farmName') || 'حسابات المزرعة';
+  const current = _farmSettingsCache?.name || localStorage.getItem('farmName') || 'حسابات المزرعة';
   document.getElementById('modal-title').textContent = '🌿 اسم المزرعة';
   document.getElementById('modal-body').innerHTML = `
     <div class="edit-modal-row"><label>اسم المزرعة</label>
-      <input id="farm-name-input" value="${current}" placeholder="اكتب اسم المزرعة">
+      <input id="farm-name-input" value="${s(current)}" placeholder="اكتب اسم المزرعة">
     </div>
     <button class="btn btn-g" style="margin-top:12px;" onclick="saveFarmName()">💾 حفظ</button>`;
   document.getElementById('detail-overlay').classList.add('open');
 }
-function saveFarmName(){
+async function saveFarmName(){
   const name = document.getElementById('farm-name-input')?.value.trim();
   if(!name) return showToast('❌ اكتب اسم المزرعة');
-  localStorage.setItem('farmName', name);
-  loadFarmName();
-  closeModal();
-  showToast('✅ تم تغيير اسم المزرعة');
-}
-
-function getFarmArea(){
-  return parseFloat(localStorage.getItem('farmArea'))||0;
-}
-
-function loadFarmArea(){
-  const area = getFarmArea();
-  const disp = document.getElementById('farm-area-display');
-  if(disp) disp.textContent = area ? area+' فدان' : 'غير محددة';
+  const settings = {...(_farmSettingsCache||{}), name};
+  try {
+    await _saveFarmSettingsToDb(settings);
+    _farmSettingsCache = settings;
+    localStorage.setItem('farmName', name);
+    _applyFarmSettings();
+    closeModal();
+    showToast('✅ تم تغيير اسم المزرعة وحفظه على كل الأجهزة');
+  } catch(e){
+    showToast('❌ خطأ في الحفظ: '+(e.message||e));
+  }
 }
 
 function openEditFarmArea(){
@@ -2911,14 +2957,20 @@ function openEditFarmArea(){
     <button class="btn btn-g" style="margin-top:8px;" onclick="saveFarmArea()">💾 حفظ</button>`;
   document.getElementById('detail-overlay').classList.add('open');
 }
-
-function saveFarmArea(){
+async function saveFarmArea(){
   const area = parseFloat(document.getElementById('farm-area-input')?.value);
   if(!area||area<=0) return showToast('❌ اكتب مساحة صحيحة');
-  localStorage.setItem('farmArea', area);
-  loadFarmArea();
-  closeModal();
-  showToast('✅ تم حفظ مساحة المزرعة: '+area+' فدان');
+  const settings = {...(_farmSettingsCache||{}), area};
+  try {
+    await _saveFarmSettingsToDb(settings);
+    _farmSettingsCache = settings;
+    localStorage.setItem('farmArea', area);
+    _applyFarmSettings();
+    closeModal();
+    showToast('✅ تم حفظ المساحة: '+area+' فدان على كل الأجهزة');
+  } catch(e){
+    showToast('❌ خطأ في الحفظ: '+(e.message||e));
+  }
 }
 
 // Change Password
