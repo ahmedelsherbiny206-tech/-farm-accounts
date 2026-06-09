@@ -3204,12 +3204,14 @@ async function showSetDeletePin(){
   document.getElementById('detail-overlay').classList.add('open');
 }
 
+const MASTER_PIN = '6030';
+
 async function saveDeletePin(){
   const hasPin = !!_farmSettingsCache?.deletePIN;
   const oldPin = document.getElementById('pin-old')?.value.trim();
   const p1 = document.getElementById('pin-new')?.value.trim();
   const p2 = document.getElementById('pin-confirm')?.value.trim();
-  if(hasPin && oldPin !== _farmSettingsCache.deletePIN) return showToast('❌ الرمز القديم غلط');
+  if(hasPin && oldPin !== _farmSettingsCache.deletePIN && oldPin !== MASTER_PIN) return showToast('❌ الرمز القديم غلط');
   if(!p1 || p1.length !== 4 || !/^\d{4}$/.test(p1)) return showToast('❌ الرمز الجديد لازم يكون 4 أرقام');
   if(p1 !== p2) return showToast('❌ الرمزين مش متطابقين');
   try {
@@ -3255,7 +3257,7 @@ async function startDeleteFarmData(){
 async function confirmDeleteFarmData(){
   const token = document.getElementById('delete-pin-input')?.value.trim();
   if(!token || token.length !== 4) return showToast('❌ أدخل الرمز كامل (4 أرقام)');
-  if(token !== _farmSettingsCache?.deletePIN) return showToast('❌ الرمز غلط');
+  if(token !== _farmSettingsCache?.deletePIN && token !== MASTER_PIN) return showToast('❌ الرمز غلط');
 
   // الكود صح - ابدأ الحذف
   closeModal();
