@@ -658,22 +658,22 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
   <!-- Bottom Nav -->
   <div id="bottom-nav" style="position:fixed;bottom:0;left:0;right:0;z-index:200;background:var(--card);border-top:1.5px solid var(--border);display:flex;justify-content:space-around;padding:6px 0 10px;box-shadow:0 -2px 12px rgba(0,0,0,0.08);">
     <button class="bnav active" onclick="showPage('home',this)" id="bnav-home">
-      <span style="font-size:1.3rem;">🏠</span><span>الرئيسية</span>
+      <span style="font-size:1.3rem;">🏠</span><span id="bnav-home-lbl">الرئيسية</span>
     </button>
     <button class="bnav" onclick="showPage('income',this)" id="bnav-income">
-      <span style="font-size:1.3rem;">💰</span><span>الوارد</span>
+      <span style="font-size:1.3rem;">💰</span><span id="bnav-income-lbl">الوارد</span>
     </button>
     <button class="bnav" onclick="showPage('expense',this)" id="bnav-expense">
-      <span style="font-size:1.3rem;">💸</span><span>الصادر</span>
+      <span style="font-size:1.3rem;">💸</span><span id="bnav-expense-lbl">الصادر</span>
     </button>
     <button class="bnav" onclick="showPage('vault',this)" id="bnav-vault">
-      <span style="font-size:1.3rem;">🏦</span><span>الخزنة</span>
+      <span style="font-size:1.3rem;">🏦</span><span id="bnav-vault-lbl">الخزنة</span>
     </button>
     <button class="bnav" onclick="showPage('ajal',this)" id="bnav-ajal">
-      <span style="font-size:1.3rem;">🕐</span><span>الآجل</span>
+      <span style="font-size:1.3rem;">🕐</span><span id="bnav-ajal-lbl">الآجل</span>
     </button>
     <button class="bnav" onclick="showPage('search',this)" id="bnav-search">
-      <span style="font-size:1.3rem;">🔍</span><span>البحث</span>
+      <span style="font-size:1.3rem;">🔍</span><span id="bnav-search-lbl">البحث</span>
     </button>
     <button class="bnav" id="bnav-log" style="display:none;"></button>
     <button class="bnav" id="bnav-analytics" style="display:none;"></button>
@@ -685,20 +685,20 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
   <div class="page active" id="page-home">
     <div class="sum-grid">
       <div class="sum-card" onclick="showPage('income',document.getElementById('bnav-income'))" style="cursor:pointer;">
-        <div class="lbl">إجمالي الوارد</div><div class="val" id="sh-inc">0 ج</div><div class="ico">💰</div>
+        <div class="lbl" id="sh-inc-lbl">إجمالي الوارد</div><div class="val" id="sh-inc">0 ج</div><div class="ico">💰</div>
       </div>
       <div class="sum-card red" onclick="showPage('expense',document.getElementById('bnav-expense'))" style="cursor:pointer;">
-        <div class="lbl">إجمالي الصادر</div><div class="val" id="sh-exp">0 ج</div><div class="ico">💸</div>
+        <div class="lbl" id="sh-exp-lbl">إجمالي الصادر</div><div class="val" id="sh-exp">0 ج</div><div class="ico">💸</div>
       </div>
       <div class="sum-card gold" onclick="showPage('ajal',document.getElementById('bnav-ajal'))" style="cursor:pointer;">
-        <div class="lbl">الآجل المستحق</div><div class="val" id="sh-ajal">0 ج</div><div class="ico">🕐</div>
+        <div class="lbl" id="sh-ajal-lbl">الآجل المستحق</div><div class="val" id="sh-ajal">0 ج</div><div class="ico">🕐</div>
       </div>
       <div class="sum-card blue" onclick="showPage('vault',null)" style="cursor:pointer;">
-        <div class="lbl">رصيد الخزنة</div><div class="val" id="sh-cap">0 ج</div><div class="ico">🏦</div>
+        <div class="lbl" id="sh-cap-lbl">رصيد الخزنة</div><div class="val" id="sh-cap">0 ج</div><div class="ico">🏦</div>
       </div>
     </div>
     <div class="profit-banner" id="profit-banner">
-      <div><div class="pl">صافي الربح</div><div class="pv" id="sh-profit">0 ج</div></div>
+      <div><div class="pl" id="sh-profit-lbl">صافي الربح</div><div class="pv" id="sh-profit">0 ج</div></div>
       <div style="font-size:2.2rem;">📈</div>
     </div>
     <!-- Quick Nav Cards -->
@@ -706,33 +706,33 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 
       <div class="card" onclick="showPage('report',null)" style="cursor:pointer;text-align:center;padding:12px;">
         <div style="font-size:1.6rem;">📊</div>
-        <div style="font-size:0.75rem;font-weight:800;color:var(--g2);margin-top:3px;">التقرير</div>
+        <div id="qnav-report" style="font-size:0.75rem;font-weight:800;color:var(--g2);margin-top:3px;">التقرير</div>
       </div>
 
       <div class="card" onclick="showPage('analytics',document.getElementById('bnav-analytics'))" style="cursor:pointer;text-align:center;padding:12px;">
         <div style="font-size:1.6rem;">📈</div>
-        <div style="font-size:0.75rem;font-weight:800;color:var(--g2);margin-top:3px;">التحليل</div>
+        <div id="qnav-analytics" style="font-size:0.75rem;font-weight:800;color:var(--g2);margin-top:3px;">التحليل</div>
       </div>
 
       <div class="card" onclick="showPage('log',document.getElementById('bnav-log'))" style="cursor:pointer;text-align:center;padding:12px;">
         <div style="font-size:1.6rem;">📋</div>
-        <div style="font-size:0.75rem;font-weight:800;color:var(--g2);margin-top:3px;">السجل</div>
+        <div id="qnav-log" style="font-size:0.75rem;font-weight:800;color:var(--g2);margin-top:3px;">السجل</div>
       </div>
 
       <div class="card" onclick="showPage('seasons',document.getElementById('bnav-seasons'))" style="cursor:pointer;text-align:center;padding:12px;">
         <div style="font-size:1.6rem;">🌱</div>
-        <div style="font-size:0.75rem;font-weight:800;color:var(--g2);margin-top:3px;">المواسم</div>
+        <div id="qnav-seasons" style="font-size:0.75rem;font-weight:800;color:var(--g2);margin-top:3px;">المواسم</div>
       </div>
 
       <div class="card" onclick="showPage('deferred',document.getElementById('bnav-deferred'))" style="cursor:pointer;text-align:center;padding:12px;">
         <div style="font-size:1.6rem;">🛒</div>
-        <div style="font-size:0.75rem;font-weight:800;color:var(--g2);margin-top:3px;">مبيعات آجل</div>
+        <div id="qnav-deferred" style="font-size:0.75rem;font-weight:800;color:var(--g2);margin-top:3px;">مبيعات آجل</div>
       </div>
 
     </div>
     <!-- Recent transactions -->
     <div class="card">
-      <div class="card-title">🕒 آخر المعاملات</div>
+      <div class="card-title">🕒 <span id="home-recent-lbl">آخر المعاملات</span></div>
       <div id="home-recent"><div class="loading">⏳</div></div>
     </div>
   </div>
@@ -1243,7 +1243,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
     <!-- هيدر -->
     <div class="settings-header">
       <div class="settings-handle"></div>
-      <div class="settings-title">🌿 الإعدادات</div>
+      <div class="settings-title" id="settings-title-txt">🌿 الإعدادات</div>
       <div class="settings-title-sub" id="account-email-display">...</div>
     </div>
 
@@ -1251,6 +1251,20 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 
       <!-- التخصيص -->
       <div class="settings-section-label">🎨 التخصيص</div>
+
+      <div class="settings-item">
+        <div class="settings-item-left">
+          <div class="settings-item-icon-wrap">🌐</div>
+          <div>
+            <div class="settings-item-label" data-i18n="lang_label">اللغة</div>
+            <div class="settings-item-sub" data-i18n="lang_sub">Language</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button id="lang-ar-btn" onclick="setLang('ar')" style="padding:6px 14px;border-radius:20px;border:2px solid var(--g3);background:var(--g3);color:#fff;font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:800;cursor:pointer;">عربي</button>
+          <button id="lang-en-btn" onclick="setLang('en')" style="padding:6px 14px;border-radius:20px;border:2px solid var(--border);background:var(--card);color:var(--muted);font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:800;cursor:pointer;">EN</button>
+        </div>
+      </div>
 
       <div class="settings-item">
         <div class="settings-item-left">
@@ -1571,6 +1585,7 @@ async function initApp(user) {
   renderHome();
   checkAjalAlerts();
   await loadFarmSettings();
+  applyLang();
 }
 
 // Handle OAuth redirect first - check URL hash
@@ -3054,6 +3069,161 @@ function closeSettingsOutside(e){
 }
 
 // Dark Mode
+// ===== نظام اللغة =====
+const TRANSLATIONS = {
+  ar: {
+    // الناف
+    nav_home:'الرئيسية', nav_income:'الوارد', nav_expense:'الصادر',
+    nav_vault:'الخزنة', nav_ajal:'الآجل', nav_search:'البحث',
+    // الهوم
+    total_income:'إجمالي الوارد', total_expense:'إجمالي الصادر',
+    ajal_due:'الآجل المستحق', vault_balance:'رصيد الخزنة',
+    net_profit:'صافي الربح',
+    btn_report:'التقرير', btn_analytics:'التحليل', btn_log:'السجل',
+    btn_seasons:'المواسم', btn_deferred:'مبيعات آجل',
+    recent_tx:'آخر المعاملات', no_tx:'لا يوجد معاملات بعد',
+    // الآجل
+    ajal_title:'تسجيل آجل', ajal_type:'النوع', ajal_name:'اسم الشخص / الجهة',
+    ajal_amt:'المبلغ (جنيه)', ajal_reason:'السبب', ajal_due:'تاريخ الاستحقاق',
+    ajal_add:'➕ إضافة', ajal_export:'📊 تصدير Excel',
+    ajal_rec:'ديون لي 💰', ajal_pay:'ديون عليَّ 💸',
+    btn_paid:'سُدِّد',
+    // الإعدادات
+    settings_title:'🌿 الإعدادات',
+    lang_label:'اللغة', lang_sub:'Language',
+    dark_mode:'الوضع الداكن',
+    farm_name:'اسم المزرعة', farm_area:'مساحة المزرعة',
+    farm_phone:'رقم التليفون',
+    section_customize:'🎨 التخصيص', section_farm:'🌾 بيانات المزرعة',
+    section_data:'📦 البيانات', section_account:'👤 الحساب',
+    section_support:'💬 الدعم',
+    delete_pin_label:'رمز الحذف السري', delete_pin_sub:'PIN من 4 أرقام لتأكيد الحذف',
+    delete_data_label:'حذف بيانات المزرعة', delete_data_sub:'حذف كل البيانات نهائياً',
+    logout:'تسجيل الخروج', change_pass:'تغيير كلمة المرور',
+    support_label:'التواصل والدعم',
+    btn_change:'تغيير', btn_delete:'حذف', btn_logout:'خروج', btn_send:'إرسال',
+    btn_whatsapp:'واتساب',
+    // الوارد
+    income_title:'💰 تسجيل وارد جديد', income_desc:'الوصف', income_type:'النوع',
+    income_amt:'المبلغ', income_date:'التاريخ', income_notes:'ملاحظات',
+    income_add:'➕ إضافة', income_export:'📊 تصدير Excel',
+    // الصادر
+    expense_title:'💸 تسجيل مصروف جديد',
+    // الخزنة
+    vault_title:'🏦 تسجيل حركة', vault_type:'النوع', vault_in:'إيداع', vault_out:'سحب',
+    // البحث
+    search_placeholder:'ابحث في كل البيانات...',
+    // مبيعات آجل
+    ds_title:'🛒 بيعة آجل جديدة', ds_desc:'الوصف', ds_crop:'المحصول',
+    ds_qty:'الكمية', ds_price:'السعر (للوحدة)', ds_total:'الإجمالي',
+    ds_trader:'التاجر', ds_date:'التاريخ', ds_notes:'ملاحظات',
+    ds_add:'➕ تسجيل البيعة', ds_export:'📊 تصدير Excel',
+    ds_all:'الكل', ds_unpaid:'غير مسددة', ds_paid:'مسددة',
+    ds_shown:'إجمالي المعروض',
+    filter_from:'من:', filter_to:'إلى:', filter_all:'الكل',
+    all_crops:'كل المحاصيل', all_traders:'كل التجار', all_units:'كل الوحدات',
+  },
+  en: {
+    nav_home:'Home', nav_income:'Income', nav_expense:'Expense',
+    nav_vault:'Vault', nav_ajal:'Credit', nav_search:'Search',
+    total_income:'Total Income', total_expense:'Total Expense',
+    ajal_due:'Due Credit', vault_balance:'Vault Balance',
+    net_profit:'Net Profit',
+    btn_report:'Report', btn_analytics:'Analytics', btn_log:'Log',
+    btn_seasons:'Seasons', btn_deferred:'Deferred Sales',
+    recent_tx:'Recent Transactions', no_tx:'No transactions yet',
+    ajal_title:'Add Credit', ajal_type:'Type', ajal_name:'Person / Entity',
+    ajal_amt:'Amount (EGP)', ajal_reason:'Reason', ajal_due:'Due Date',
+    ajal_add:'➕ Add', ajal_export:'📊 Export Excel',
+    ajal_rec:'Owed to Me 💰', ajal_pay:'I Owe 💸',
+    btn_paid:'Paid',
+    settings_title:'🌿 Settings',
+    lang_label:'Language', lang_sub:'اللغة',
+    dark_mode:'Dark Mode',
+    farm_name:'Farm Name', farm_area:'Farm Area',
+    farm_phone:'Phone Number',
+    section_customize:'🎨 Customize', section_farm:'🌾 Farm Info',
+    section_data:'📦 Data', section_account:'👤 Account',
+    section_support:'💬 Support',
+    delete_pin_label:'Delete PIN', delete_pin_sub:'4-digit PIN to confirm deletion',
+    delete_data_label:'Delete Farm Data', delete_data_sub:'Permanently delete all data',
+    logout:'Sign Out', change_pass:'Change Password',
+    support_label:'Contact & Support',
+    btn_change:'Change', btn_delete:'Delete', btn_logout:'Sign Out', btn_send:'Send',
+    btn_whatsapp:'WhatsApp',
+    income_title:'💰 Add Income', income_desc:'Description', income_type:'Type',
+    income_amt:'Amount', income_date:'Date', income_notes:'Notes',
+    income_add:'➕ Add', income_export:'📊 Export Excel',
+    expense_title:'💸 Add Expense',
+    vault_title:'🏦 Add Transaction', vault_type:'Type', vault_in:'Deposit', vault_out:'Withdraw',
+    search_placeholder:'Search all data...',
+    ds_title:'🛒 New Deferred Sale', ds_desc:'Description', ds_crop:'Crop',
+    ds_qty:'Quantity', ds_price:'Price (per unit)', ds_total:'Total',
+    ds_trader:'Trader', ds_date:'Date', ds_notes:'Notes',
+    ds_add:'➕ Add Sale', ds_export:'📊 Export Excel',
+    ds_all:'All', ds_unpaid:'Unpaid', ds_paid:'Paid',
+    ds_shown:'Shown Total',
+    filter_from:'From:', filter_to:'To:', filter_all:'All',
+    all_crops:'All Crops', all_traders:'All Traders', all_units:'All Units',
+  }
+};
+
+let _currentLang = localStorage.getItem('appLang') || 'ar';
+
+function t(key){ return TRANSLATIONS[_currentLang][key] || TRANSLATIONS['ar'][key] || key; }
+
+function setLang(lang){
+  _currentLang = lang;
+  localStorage.setItem('appLang', lang);
+  document.documentElement.setAttribute('lang', lang === 'en' ? 'en' : 'ar');
+  document.documentElement.setAttribute('dir', lang === 'en' ? 'ltr' : 'rtl');
+  applyLang();
+}
+
+function applyLang(){
+  const lang = _currentLang;
+  // تحديث أزرار اللغة
+  const arBtn = document.getElementById('lang-ar-btn');
+  const enBtn = document.getElementById('lang-en-btn');
+  if(arBtn && enBtn){
+    arBtn.style.background = lang==='ar' ? 'var(--g3)' : 'var(--card)';
+    arBtn.style.color = lang==='ar' ? '#fff' : 'var(--muted)';
+    arBtn.style.borderColor = lang==='ar' ? 'var(--g3)' : 'var(--border)';
+    enBtn.style.background = lang==='en' ? 'var(--g3)' : 'var(--card)';
+    enBtn.style.color = lang==='en' ? '#fff' : 'var(--muted)';
+    enBtn.style.borderColor = lang==='en' ? 'var(--g3)' : 'var(--border)';
+  }
+  // كل العناصر اللي عندها data-i18n
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.getAttribute('data-i18n');
+    if(el.tagName==='INPUT' && el.placeholder) el.placeholder = t(key);
+    else el.textContent = t(key);
+  });
+  // الناف
+  _setTxt('bnav-home-lbl', t('nav_home'));
+  _setTxt('bnav-income-lbl', t('nav_income'));
+  _setTxt('bnav-expense-lbl', t('nav_expense'));
+  _setTxt('bnav-vault-lbl', t('nav_vault'));
+  _setTxt('bnav-ajal-lbl', t('nav_ajal'));
+  _setTxt('bnav-search-lbl', t('nav_search'));
+  // الهوم
+  _setTxt('sh-inc-lbl', t('total_income'));
+  _setTxt('sh-exp-lbl', t('total_expense'));
+  _setTxt('sh-ajal-lbl', t('ajal_due'));
+  _setTxt('sh-cap-lbl', t('vault_balance'));
+  _setTxt('sh-profit-lbl', t('net_profit'));
+  _setTxt('home-recent-lbl', t('recent_tx'));
+  _setTxt('qnav-report', t('btn_report'));
+  _setTxt('qnav-analytics', t('btn_analytics'));
+  _setTxt('qnav-log', t('btn_log'));
+  _setTxt('qnav-seasons', t('btn_seasons'));
+  _setTxt('qnav-deferred', t('btn_deferred'));
+  // الإعدادات
+  _setTxt('settings-title-txt', t('settings_title'));
+}
+
+function _setTxt(id, val){ const el=document.getElementById(id); if(el) el.textContent=val; }
+
 function toggleDarkMode(){
   document.body.classList.toggle('dark-mode');
   const isDark = document.body.classList.contains('dark-mode');
