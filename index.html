@@ -1934,13 +1934,27 @@ async function renderAjalLists() {
 }
 
 async function markPaid(id) {
-  const {data:ajalData} = await sb.from('ajal').select('name,amount,type').eq('id',id).eq('user_id',currentUser.id);
+  const {data:ajalData} = await sb.from('ajal').select('name,amount,type,reason').eq('id',id).eq('user_id',currentUser.id);
+  const rec = ajalData?.[0];
+  if(!rec) return;
   await sb.from('ajal').update({paid:true}).eq('id',id).eq('user_id',currentUser.id);
-  const ajalName = ajalData?.[0]?.name || '';
-  const ajalAmt = ajalData?.[0]?.amount;
-  const ajalType = ajalData?.[0]?.type==='receivable'?'آجل لك':'آجل عليك';
-  logActivity('تسديد','ajal','تسديد '+ajalType+': '+ajalName, ajalAmt);
-  showToast('✅ تم تسجيل السداد');
+  const isReceivable = rec.type === 'receivable'; // لي عند غيري → بتجيلي فلوس
+  const vaultType = isReceivable ? 'in' : 'out';
+  const vaultDesc = isReceivable
+    ? 'تحصيل آجل من: ' + (rec.name||'')
+    : 'سداد آجل لـ: ' + (rec.name||'');
+  await sb.from('vault').insert({
+    user_id: currentUser.id,
+    type: vaultType,
+    description: vaultDesc + (rec.reason ? ' - ' + rec.reason : ''),
+    amount: rec.amount,
+    date: today(),
+    notes: '',
+    ref_id: id
+  });
+  const ajalType = isReceivable ? 'آجل لك' : 'آجل عليك';
+  logActivity('تسديد','ajal','تسديد '+ajalType+': '+(rec.name||''), rec.amount);
+  showToast(isReceivable ? '✅ تم التحصيل وأضيف للخزنة' : '✅ تم السداد وخصم من الخزنة');
   renderAjalLists(); renderHome();
 }
 
