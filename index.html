@@ -925,6 +925,13 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
         </div>
 
         <div class="form-row">
+          <label style="display:flex;justify-content:space-between;">الصنف
+            <button onclick="openVarietyManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">🌿 إدارة</button>
+          </label>
+          <select id="ds-variety"><option value="">-- اختار الصنف (اختياري) --</option></select>
+        </div>
+
+        <div class="form-row">
           <label style="display:flex;justify-content:space-between;">التاجر
             <button onclick="openTraderManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">👤 إدارة</button>
           </label>
@@ -946,7 +953,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
         <label>إلى:</label><input type="date" id="ds-to" onchange="renderDeferredSales()">
         <button class="clear-btn" onclick="clearDsFilter()">الكل</button>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
         <select id="ds-filter-crop" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
           <option value="">كل المحاصيل</option>
         </select>
@@ -956,15 +963,25 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
         <select id="ds-filter-unit" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
           <option value="">كل الوحدات</option>
         </select>
+        <select id="ds-filter-variety" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
+          <option value="">كل الأصناف</option>
+        </select>
       </div>
       <div style="display:flex;gap:6px;margin-bottom:10px;">
         <button class="filter-btn active" id="dsf-all" onclick="setDsFilter('all',this)">الكل</button>
         <button class="filter-btn" id="dsf-unpaid" onclick="setDsFilter('unpaid',this)">غير مسددة</button>
         <button class="filter-btn" id="dsf-paid" onclick="setDsFilter('paid',this)">مسددة</button>
       </div>
-      <div style="background:var(--g5);border-radius:12px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:0.8rem;font-weight:700;color:var(--muted);">إجمالي المعروض</span>
-        <span style="font-size:0.9rem;font-weight:900;color:var(--g2);" id="ds-total-shown">0 ج</span>
+      <!-- ملخص الإجماليات -->
+      <div style="background:var(--g5);border-radius:12px;padding:12px 14px;margin-bottom:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="text-align:center;">
+          <div style="font-size:0.75rem;font-weight:700;color:var(--muted);">إجمالي الفلوس</div>
+          <div style="font-size:1rem;font-weight:900;color:var(--g2);" id="ds-total-shown">0 ج</div>
+        </div>
+        <div style="text-align:center;border-right:1px solid var(--border);">
+          <div style="font-size:0.75rem;font-weight:700;color:var(--muted);">إجمالي الوحدات</div>
+          <div style="font-size:1rem;font-weight:900;color:var(--g2);" id="ds-units-shown">0</div>
+        </div>
       </div>
       <div id="ds-list"><div class="loading">⏳</div></div>
 
@@ -4103,8 +4120,66 @@ async function exportSeasonToExcel(seasonId){
 // ===== DEFERRED SALES =====
 let _tradersCache = null;
 let _unitsCache = null;
+let _varietiesCache = null;
 let _dsFilter = 'all';
 const DS_DEFAULT_UNITS = ['كرتون','كيلو','أردب','قيراط'];
+const DS_DEFAULT_VARIETIES = ['سان سيشن','فيستفال','فرتونه'];
+
+// جيب الأصناف
+async function getVarieties(){
+  if(_varietiesCache) return _varietiesCache;
+  try {
+    const {data} = await sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','varieties').limit(1);
+    _varietiesCache = data?.length ? data[0].categories : [...DS_DEFAULT_VARIETIES];
+  } catch(e){ _varietiesCache = [...DS_DEFAULT_VARIETIES]; }
+  return _varietiesCache;
+}
+async function saveVarieties(v){
+  _varietiesCache = v;
+  const {error} = await sb.from('user_categories').upsert({user_id:currentUser.id,type:'varieties',categories:v},{onConflict:'user_id,type'});
+  if(error) throw error;
+}
+
+// إدارة الأصناف
+async function openVarietyManager(){
+  const varieties = await getVarieties();
+  document.getElementById('modal-title').textContent = '🌿 إدارة الأصناف';
+  const renderVarietyList = (list) => list.map((v,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span style="flex:1;font-size:0.9rem;">${v}</span>
+      <button onclick="deleteVariety(${i})" style="background:var(--red-p);color:var(--red);border:none;border-radius:8px;padding:4px 10px;font-family:Cairo,sans-serif;cursor:pointer;font-size:0.8rem;">✕</button>
+    </div>`).join('');
+  const render = () => {
+    document.getElementById('modal-body').innerHTML = `
+      <div id="variety-list">${renderVarietyList(_varietiesCache)}</div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <input id="new-variety-input" type="text" placeholder="اسم الصنف الجديد" autocomplete="off"
+          style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.9rem;color:var(--text);">
+        <button onclick="addVariety()" style="padding:10px 16px;background:var(--g3);color:#fff;border:none;border-radius:10px;font-family:Cairo,sans-serif;font-weight:800;cursor:pointer;">➕</button>
+      </div>`;
+  };
+  render();
+  document.getElementById('detail-overlay').classList.add('open');
+  window._renderVarietyModal = render;
+}
+async function addVariety(){
+  const val = document.getElementById('new-variety-input')?.value.trim();
+  if(!val) return showToast('❌ اكتب اسم الصنف');
+  if(_varietiesCache.includes(val)) return showToast('❌ الصنف موجود');
+  try {
+    await saveVarieties([..._varietiesCache, val]);
+    window._renderVarietyModal?.();
+    initDeferredSalesPage();
+  } catch(e){ showToast('❌ خطأ في الحفظ'); }
+}
+async function deleteVariety(i){
+  const updated = _varietiesCache.filter((_,idx)=>idx!==i);
+  try {
+    await saveVarieties(updated);
+    window._renderVarietyModal?.();
+    initDeferredSalesPage();
+  } catch(e){ showToast('❌ خطأ في الحذف'); }
+}
 
 // تبديل التبويبات
 function switchAjalTab(tab){
@@ -4144,7 +4219,7 @@ async function saveTraders(t){
 
 // تهيئة صفحة المبيعات
 async function initDeferredSalesPage(){
-  const [crops, units, traders] = await Promise.all([getCrops(), getUnits(), getTraders()]);
+  const [crops, units, traders, varieties] = await Promise.all([getCrops(), getUnits(), getTraders(), getVarieties()]);
 
   const cropSel = document.getElementById('ds-crop');
   if(cropSel) cropSel.innerHTML = '<option value="">-- اختار المحصول --</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${c}</option>`).join('');
@@ -4163,6 +4238,12 @@ async function initDeferredSalesPage(){
 
   const fUnit = document.getElementById('ds-filter-unit');
   if(fUnit) fUnit.innerHTML = '<option value="">كل الوحدات</option>'+units.map(u=>`<option>${u}</option>`).join('');
+
+  const varietySel = document.getElementById('ds-variety');
+  if(varietySel) varietySel.innerHTML = '<option value="">-- اختار الصنف (اختياري) --</option>'+varieties.map(v=>`<option>${v}</option>`).join('');
+
+  const fVariety = document.getElementById('ds-filter-variety');
+  if(fVariety) fVariety.innerHTML = '<option value="">كل الأصناف</option>'+varieties.map(v=>`<option>${v}</option>`).join('');
 
   const dsDate = document.getElementById('ds-date');
   if(dsDate && !dsDate.value) dsDate.value = today();
@@ -4185,6 +4266,7 @@ async function addDeferredSale(){
   const qty = parseFloat(document.getElementById('ds-qty').value);
   const unit = document.getElementById('ds-unit').value;
   const price = parseFloat(document.getElementById('ds-price').value);
+  const variety = document.getElementById('ds-variety')?.value||null;
   const trader = document.getElementById('ds-trader').value||null;
   const date = document.getElementById('ds-date').value;
   const notes = document.getElementById('ds-notes').value;
@@ -4199,7 +4281,7 @@ async function addDeferredSale(){
   const {data:dsData, error} = await sb.from('deferred_sales').insert({
     user_id:currentUser.id,
     description:desc, crop, quantity:qty, unit, price, total,
-    trader, date, notes, paid:false
+    variety, trader, date, notes, paid:false
   }).select('id');
   if(error) return showToast('❌ خطأ: '+error.message);
 
@@ -4242,6 +4324,8 @@ function clearDsFilter(){
   document.getElementById('ds-to').value='';
   document.getElementById('ds-filter-crop').value='';
   document.getElementById('ds-filter-trader').value='';
+  document.getElementById('ds-filter-unit').value='';
+  document.getElementById('ds-filter-variety').value='';
   renderDeferredSales();
 }
 
@@ -4257,21 +4341,31 @@ async function renderDeferredSales(){
   const crop = document.getElementById('ds-filter-crop')?.value;
   const trader = document.getElementById('ds-filter-trader')?.value;
   const unit = document.getElementById('ds-filter-unit')?.value;
+  const variety = document.getElementById('ds-filter-variety')?.value;
 
   if(from) q=q.gte('date',from);
   if(to) q=q.lte('date',to);
   if(crop) q=q.eq('crop',crop);
   if(trader) q=q.eq('trader',trader);
   if(unit) q=q.eq('unit',unit);
+  if(variety) q=q.eq('variety',variety);
   if(_dsFilter==='paid') q=q.eq('paid',true);
   if(_dsFilter==='unpaid') q=q.eq('paid',false);
 
   const {data,error} = await q;
   if(error){ el.innerHTML='<div class="empty">❌ '+error.message+'</div>'; return; }
-  if(!data?.length){ el.innerHTML='<div class="empty">لا يوجد مبيعات</div>'; document.getElementById('ds-total-shown').textContent='0 ج'; return; }
+  if(!data?.length){
+    el.innerHTML='<div class="empty">لا يوجد مبيعات</div>';
+    document.getElementById('ds-total-shown').textContent='0 ج';
+    document.getElementById('ds-units-shown').textContent='0';
+    return;
+  }
 
   const total = data.reduce((s,x)=>s+Number(x.total||0),0);
+  const totalUnits = data.reduce((s,x)=>s+Number(x.quantity||0),0);
+  const unitLabel = data[0]?.unit || '';
   document.getElementById('ds-total-shown').textContent = Number(total).toLocaleString('en-US')+' ج';
+  document.getElementById('ds-units-shown').textContent = Number(totalUnits).toLocaleString('en-US')+(unitLabel?' '+unitLabel:'');
 
   el.innerHTML = data.map(x=>{
     const isPaid = x.paid;
@@ -4279,7 +4373,7 @@ async function renderDeferredSales(){
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div style="flex:1;min-width:0;">
           <div style="font-size:0.88rem;font-weight:900;color:var(--text);">${s(x.description||'')} ${isPaid?'<span style="font-size:0.6rem;background:#d4edda;color:#155724;padding:2px 6px;border-radius:8px;font-weight:800;">✅ مسددة</span>':''}</div>
-          <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">${fmtDate(x.date)}${x.crop?' · 🌾 '+s(x.crop):''}${x.trader?' · 👤 '+s(x.trader):''}</div>
+          <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">${fmtDate(x.date)}${x.crop?' · 🌾 '+s(x.crop):''}${x.variety?' · 🌿 '+s(x.variety):''}${x.trader?' · 👤 '+s(x.trader):''}</div>
           <div style="font-size:0.7rem;color:var(--muted);">${x.quantity} ${s(x.unit||'')} × ${Number(x.price).toLocaleString('en-US')} ج</div>
           ${x.notes?`<div style="font-size:0.68rem;color:var(--muted);margin-top:2px;">${s(x.notes)}</div>`:''}
         </div>
