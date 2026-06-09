@@ -68,6 +68,27 @@ body.dark-mode .tab.active { background: #2a2a2a; color: #52a375; }
 .confirm-yes{flex:1;padding:12px;border-radius:12px;border:none;background:var(--red);color:#fff;font-family:Cairo,sans-serif;font-size:0.9rem;font-weight:800;cursor:pointer;}
 .confirm-no{flex:1;padding:12px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.9rem;font-weight:800;cursor:pointer;}
 
+/* Setup Screen */
+.setup-overlay {
+  position:fixed;inset:0;background:var(--bg);z-index:999999;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  opacity:0;pointer-events:none;transition:opacity 0.3s;
+}
+.setup-overlay.open{opacity:1;pointer-events:all;}
+.setup-box {
+  background:var(--card);border-radius:24px;padding:28px 24px;width:100%;max-width:400px;
+  box-shadow:0 8px 40px rgba(61,90,42,0.15);text-align:center;
+}
+.setup-logo{font-size:3rem;margin-bottom:8px;}
+.setup-title{font-size:1.3rem;font-weight:900;color:var(--g1);margin-bottom:4px;}
+.setup-sub{font-size:0.82rem;color:var(--muted);margin-bottom:24px;}
+.setup-field{text-align:right;margin-bottom:14px;}
+.setup-field label{display:block;font-size:0.8rem;font-weight:700;color:var(--g2);margin-bottom:5px;}
+.setup-field input{width:100%;padding:11px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.95rem;color:var(--text);box-sizing:border-box;outline:none;}
+.setup-field input:focus{border-color:var(--g3);}
+.setup-start-btn{width:100%;padding:14px;border-radius:14px;border:none;background:var(--g1);color:#fff;font-family:Cairo,sans-serif;font-size:1rem;font-weight:900;cursor:pointer;margin-top:8px;letter-spacing:0.5px;}
+.setup-start-btn:active{opacity:0.85;}
+
 /* Settings Panel */
 .settings-overlay {
   position: fixed; inset: 0; background: rgba(42,31,14,0.55);
@@ -1256,6 +1277,17 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
         <button class="settings-btn" onclick="openEditFarmArea()">تعديل</button>
       </div>
 
+      <div class="settings-item">
+        <div class="settings-item-left">
+          <div class="settings-item-icon-wrap">📱</div>
+          <div>
+            <div class="settings-item-label">رقم التليفون</div>
+            <div class="settings-item-sub" id="farm-phone-display">غير محدد</div>
+          </div>
+        </div>
+        <button class="settings-btn" onclick="openEditPhone()">تعديل</button>
+      </div>
+
       <!-- البيانات -->
       <div class="settings-section-label">💾 البيانات</div>
 
@@ -1310,6 +1342,28 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       </div>
 
     </div>
+  </div>
+</div>
+
+<!-- SETUP SCREEN (first time) -->
+<div class="setup-overlay" id="setup-overlay">
+  <div class="setup-box">
+    <div class="setup-logo">🌿</div>
+    <div class="setup-title">أهلاً وسهلاً!</div>
+    <div class="setup-sub">قبل ما نبدأ، كمّل بياناتك الأساسية</div>
+    <div class="setup-field">
+      <label>🌿 اسم المزرعة</label>
+      <input id="setup-farm-name" placeholder="مثال: مزرعة النيل" type="text">
+    </div>
+    <div class="setup-field">
+      <label>📐 مساحة المزرعة (فدان)</label>
+      <input id="setup-farm-area" placeholder="مثال: 50" type="number" step="0.5" min="0">
+    </div>
+    <div class="setup-field">
+      <label>📱 رقم التليفون</label>
+      <input id="setup-phone" placeholder="مثال: 01012345678" type="tel">
+    </div>
+    <button class="setup-start-btn" onclick="finishSetup()">🚀 ابدأ الاستخدام</button>
   </div>
 </div>
 
@@ -2873,32 +2927,72 @@ async function loadFarmSettings(){
       // مزامنة مع localStorage كـ cache محلي
       if(_farmSettingsCache.name) localStorage.setItem('farmName', _farmSettingsCache.name);
       if(_farmSettingsCache.area) localStorage.setItem('farmArea', _farmSettingsCache.area);
+      _applyFarmSettings();
     } else {
       // مفيش في السيرفر - جرب من localStorage (ترقية من الإصدار القديم)
       const lsName = localStorage.getItem('farmName');
       const lsArea = parseFloat(localStorage.getItem('farmArea'))||0;
-      _farmSettingsCache = {name: lsName||'حسابات المزرعة', area: lsArea};
-      // احفظها في السيرفر عشان تتزامن مستقبلاً
-      if(lsName || lsArea) await _saveFarmSettingsToDb(_farmSettingsCache);
+      if(lsName || lsArea){
+        // مستخدم قديم - رفّع بياناته للسيرفر
+        _farmSettingsCache = {name: lsName||'حسابات المزرعة', area: lsArea, phone:''};
+        await _saveFarmSettingsToDb(_farmSettingsCache);
+        _applyFarmSettings();
+      } else {
+        // مستخدم جديد تماماً - عرض شاشة الترحيب
+        _farmSettingsCache = {name:'حسابات المزرعة', area:0, phone:''};
+        _applyFarmSettings();
+        showSetupScreen();
+      }
     }
   } catch(e){
     // fallback للـ localStorage لو الشبكة وقعت
     _farmSettingsCache = {
       name: localStorage.getItem('farmName')||'حسابات المزرعة',
-      area: parseFloat(localStorage.getItem('farmArea'))||0
+      area: parseFloat(localStorage.getItem('farmArea'))||0,
+      phone: ''
     };
+    _applyFarmSettings();
   }
-  _applyFarmSettings();
+}
+
+function showSetupScreen(){
+  document.getElementById('setup-overlay').classList.add('open');
+}
+function hideSetupScreen(){
+  document.getElementById('setup-overlay').classList.remove('open');
+}
+
+async function finishSetup(){
+  const name = document.getElementById('setup-farm-name').value.trim();
+  const area = parseFloat(document.getElementById('setup-farm-area').value)||0;
+  const phone = document.getElementById('setup-phone').value.trim();
+  if(!name) return showToast('❌ اكتب اسم المزرعة');
+  if(!area||area<=0) return showToast('❌ اكتب مساحة المزرعة');
+  if(!phone) return showToast('❌ اكتب رقم التليفون');
+  const settings = {name, area, phone};
+  try {
+    await _saveFarmSettingsToDb(settings);
+    _farmSettingsCache = settings;
+    localStorage.setItem('farmName', name);
+    localStorage.setItem('farmArea', area);
+    _applyFarmSettings();
+    hideSetupScreen();
+    showToast('✅ أهلاً بيك! تم حفظ بيانات المزرعة');
+  } catch(e){
+    showToast('❌ خطأ في الحفظ: '+(e.message||e));
+  }
 }
 
 function _applyFarmSettings(){
-  const s = _farmSettingsCache || {name:'حسابات المزرعة', area:0};
+  const s = _farmSettingsCache || {name:'حسابات المزرعة', area:0, phone:''};
   const title = document.getElementById('farm-title');
-  if(title) title.textContent = '🌿 ' + s.name;
+  if(title) title.textContent = '🌿 ' + (s.name||'حسابات المزرعة');
   const disp = document.getElementById('farm-name-display');
-  if(disp) disp.textContent = s.name;
+  if(disp) disp.textContent = s.name||'حسابات المزرعة';
   const areaDisp = document.getElementById('farm-area-display');
   if(areaDisp) areaDisp.textContent = s.area ? s.area+' فدان' : 'غير محددة';
+  const phoneDisp = document.getElementById('farm-phone-display');
+  if(phoneDisp) phoneDisp.textContent = s.phone||'غير محدد';
 }
 
 async function _saveFarmSettingsToDb(settings){
@@ -2968,6 +3062,32 @@ async function saveFarmArea(){
     _applyFarmSettings();
     closeModal();
     showToast('✅ تم حفظ المساحة: '+area+' فدان على كل الأجهزة');
+  } catch(e){
+    showToast('❌ خطأ في الحفظ: '+(e.message||e));
+  }
+}
+
+function openEditPhone(){
+  closeSettings();
+  const current = _farmSettingsCache?.phone||'';
+  document.getElementById('modal-title').textContent = '📱 رقم التليفون';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="edit-modal-row"><label>رقم التليفون</label>
+      <input id="phone-input" value="${s(current)}" placeholder="مثال: 01012345678" type="tel">
+    </div>
+    <button class="btn btn-g" style="margin-top:12px;" onclick="savePhone()">💾 حفظ</button>`;
+  document.getElementById('detail-overlay').classList.add('open');
+}
+async function savePhone(){
+  const phone = document.getElementById('phone-input')?.value.trim();
+  if(!phone) return showToast('❌ اكتب رقم التليفون');
+  const settings = {...(_farmSettingsCache||{}), phone};
+  try {
+    await _saveFarmSettingsToDb(settings);
+    _farmSettingsCache = settings;
+    _applyFarmSettings();
+    closeModal();
+    showToast('✅ تم حفظ رقم التليفون');
   } catch(e){
     showToast('❌ خطأ في الحفظ: '+(e.message||e));
   }
