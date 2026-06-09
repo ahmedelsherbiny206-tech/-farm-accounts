@@ -3172,19 +3172,27 @@ async function savePhone(){
 // تحديد / تغيير رمز الحذف السري
 async function showSetDeletePin(){
   closeSettings();
+  const hasPin = !!_farmSettingsCache?.deletePIN;
   document.getElementById('modal-title').textContent = '🔐 رمز الحذف السري';
   document.getElementById('modal-body').innerHTML = `
     <div style="text-align:center;margin-bottom:16px;font-size:0.85rem;color:var(--muted);line-height:1.6;">
-      حدد رمز PIN من 4 أرقام<br>هتحتاجه لتأكيد حذف البيانات
+      ${hasPin ? 'لتغيير الرمز، أدخل الرمز القديم أولاً' : 'حدد رمز PIN من 4 أرقام<br>هتحتاجه لتأكيد حذف البيانات'}
     </div>
+    ${hasPin ? `
     <div class="edit-modal-row">
+      <label>الرمز القديم</label>
+      <input id="pin-old" type="text" inputmode="numeric" maxlength="4" placeholder="••••"
+        autocomplete="off" dir="ltr"
+        style="text-align:center;font-size:2rem;font-weight:900;letter-spacing:14px;padding:14px;">
+    </div>` : ''}
+    <div class="edit-modal-row" style="margin-top:10px;">
       <label>الرمز الجديد</label>
       <input id="pin-new" type="text" inputmode="numeric" maxlength="4" placeholder="••••"
         autocomplete="off" dir="ltr"
         style="text-align:center;font-size:2rem;font-weight:900;letter-spacing:14px;padding:14px;">
     </div>
     <div class="edit-modal-row" style="margin-top:10px;">
-      <label>تأكيد الرمز</label>
+      <label>تأكيد الرمز الجديد</label>
       <input id="pin-confirm" type="text" inputmode="numeric" maxlength="4" placeholder="••••"
         autocomplete="off" dir="ltr"
         style="text-align:center;font-size:2rem;font-weight:900;letter-spacing:14px;padding:14px;">
@@ -3197,9 +3205,12 @@ async function showSetDeletePin(){
 }
 
 async function saveDeletePin(){
+  const hasPin = !!_farmSettingsCache?.deletePIN;
+  const oldPin = document.getElementById('pin-old')?.value.trim();
   const p1 = document.getElementById('pin-new')?.value.trim();
   const p2 = document.getElementById('pin-confirm')?.value.trim();
-  if(!p1 || p1.length !== 4 || !/^\d{4}$/.test(p1)) return showToast('❌ الرمز لازم يكون 4 أرقام بالظبط');
+  if(hasPin && oldPin !== _farmSettingsCache.deletePIN) return showToast('❌ الرمز القديم غلط');
+  if(!p1 || p1.length !== 4 || !/^\d{4}$/.test(p1)) return showToast('❌ الرمز الجديد لازم يكون 4 أرقام');
   if(p1 !== p2) return showToast('❌ الرمزين مش متطابقين');
   try {
     const settings = {...(_farmSettingsCache || {}), deletePIN: p1};
