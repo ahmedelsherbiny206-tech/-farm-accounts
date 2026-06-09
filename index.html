@@ -3701,14 +3701,16 @@ async function addDeferredSale(){
 
   const total = qty * price;
 
-  const {error} = await sb.from('deferred_sales').insert({
+  const {data:dsData, error} = await sb.from('deferred_sales').insert({
     user_id:currentUser.id,
     description:desc, crop, quantity:qty, unit, price, total,
     trader, date, notes, paid:false
-  });
+  }).select('id');
   if(error) return showToast('❌ خطأ: '+error.message);
 
-  // تسجيل في income (بدون خزنة)
+  const saleId = dsData?.[0]?.id || null;
+
+  // تسجيل في income (بدون خزنة) مع ref_id للربط
   await sb.from('income').insert({
     user_id:currentUser.id,
     description:'بيع آجل: '+desc+(trader?' - '+trader:''),
@@ -3716,7 +3718,8 @@ async function addDeferredSale(){
     crop:crop||null,
     amount:total,
     date,
-    notes:'بيعة آجل - '+qty+' '+unit+' × '+price+' ج'
+    notes:'بيعة آجل - '+qty+' '+unit+' × '+price+' ج',
+    ref_id: saleId
   });
 
   logActivity('إضافة','deferred_sales','بيعة آجل: '+desc, total);
@@ -3800,7 +3803,7 @@ async function payDeferredSale(id){
   const {data} = await sb.from('deferred_sales').select('*').eq('id',id).eq('user_id',currentUser.id);
   if(!data?.length) return showToast('❌ مش لاقي البيعة');
   const sale = data[0];
-  await sb.from('vault').insert({user_id:currentUser.id,type:'in',description:'تسديد بيعة آجل: '+(sale.description||''),amount:sale.total,date:today(),notes:''});
+  await sb.from('vault').insert({user_id:currentUser.id,type:'in',description:'تسديد بيعة آجل: '+(sale.description||''),amount:sale.total,date:today(),notes:'',ref_id:sale.id});
   await sb.from('deferred_sales').update({paid:true,paid_at:new Date().toISOString()}).eq('id',id).eq('user_id',currentUser.id);
   logActivity('تسديد','deferred_sales','تسديد بيعة آجل: '+(sale.description||''),sale.total);
   showToast('✅ تم التسديد وإضافته للخزنة');
@@ -3811,13 +3814,39 @@ async function payDeferredSale(id){
 // حذف بيعة
 async function deleteDeferredSale(id, isPaid){
   const msg = isPaid
-    ? '⚠️ هذه البيعة مسددة - حذفها قد يؤثر على رصيد الخزنة. متأكد؟'
-    : 'هتحذف البيعة دي؟';
+    ? '⚠️ هذه البيعة مسددة - سيتم حذفها من الوارد والخزنة أيضاً. متأكد؟'
+    : '🗑️ سيتم حذف البيعة ومقابلها من الوارد. متأكد؟';
   if(!await showConfirm(msg, isPaid?'⚠️':'🗑️')) return;
+
+  // جيب بيانات البيعة قبل الحذف
+  const {data:saleData} = await sb.from('deferred_sales').select('*').eq('id',id).eq('user_id',currentUser.id).limit(1);
+  const sale = saleData?.[0];
+
+  // حذف من deferred_sales
   await sb.from('deferred_sales').delete().eq('id',id).eq('user_id',currentUser.id);
-  logActivity('حذف','deferred_sales','حذف بيعة آجل');
-  showToast('🗑️ تم الحذف');
+
+  // حذف من income: بـ ref_id (للسجلات الجديدة) أو بالوصف والمبلغ (للقديمة)
+  if(sale){
+    const incDesc = 'بيع آجل: '+(sale.description||'');
+    // جديد: ref_id
+    await sb.from('income').delete().eq('user_id',currentUser.id).eq('ref_id', sale.id);
+    // قديم: بدون ref_id + وصف + مبلغ
+    await sb.from('income').delete().eq('user_id',currentUser.id).eq('category','مبيعات آجل').eq('amount',sale.total).ilike('description', incDesc+'%').is('ref_id',null);
+
+    // لو البيعة مسددة، احذف من الخزنة أيضاً
+    if(isPaid){
+      const vDesc = 'تسديد بيعة آجل: '+(sale.description||'');
+      // جديد: ref_id
+      await sb.from('vault').delete().eq('user_id',currentUser.id).eq('ref_id', sale.id);
+      // قديم: بدون ref_id + وصف + مبلغ
+      await sb.from('vault').delete().eq('user_id',currentUser.id).eq('type','in').eq('amount',sale.total).ilike('description', vDesc+'%').is('ref_id',null);
+    }
+  }
+
+  logActivity('حذف','deferred_sales','حذف بيعة آجل: '+(sale?.description||''));
+  showToast('🗑️ تم الحذف من الآجل والوارد'+(isPaid?' والخزنة':''));
   renderDeferredSales();
+  renderHome();
 }
 
 // تعديل بيعة
