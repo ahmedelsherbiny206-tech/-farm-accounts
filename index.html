@@ -3155,6 +3155,8 @@ async function savePhone(){
 }
 
 // ===== حذف بيانات المزرعة =====
+let _deleteOtpCode = null; // الكود المولّد مؤقتاً
+
 async function startDeleteFarmData(){
   closeSettings();
   // تحذير أول
@@ -3164,30 +3166,47 @@ async function startDeleteFarmData(){
   );
   if(!confirmed) return;
 
-  // إرسال OTP على الإيميل
-  showToast('📧 بنبعت كود التأكيد على إيميلك...');
-  const {error} = await sb.auth.signInWithOtp({
-    email: currentUser.email,
-    options: { shouldCreateUser: false }
-  });
-  if(error) return showToast('❌ خطأ في إرسال الكود: '+error.message);
+  // التحقق من وجود رقم التليفون
+  const phone = _farmSettingsCache?.phone;
+  if(!phone) return showToast('❌ أضف رقم التليفون في الإعدادات أولاً');
 
-  showToast('✅ تم إرسال الكود على '+currentUser.email);
+  // توليد كود عشوائي 6 أرقام
+  _deleteOtpCode = String(Math.floor(100000 + Math.random() * 900000));
+
+  // إرسال الكود على الواتساب
+  showToast('📱 بنبعت كود التأكيد على واتساپك...');
+  try {
+    const chatId = _formatPhone(phone);
+    const message = `🔐 *كود حذف بيانات المزرعة*\n\nالكود: *${_deleteOtpCode}*\n\n⚠️ لا تشارك هذا الكود مع أحد\nصالح لمدة 10 دقائق فقط`;
+    await fetch(`${WA_API_URL}/waInstance${WA_INSTANCE}/sendMessage/${WA_TOKEN}`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({chatId, message})
+    });
+    showToast('✅ تم إرسال الكود على واتساپ '+phone);
+  } catch(e){
+    showToast('❌ فشل إرسال الكود على الواتساب');
+    _deleteOtpCode = null;
+    return;
+  }
+
+  // إبطال الكود بعد 10 دقائق
+  setTimeout(() => { _deleteOtpCode = null; }, 10 * 60 * 1000);
 
   // عرض modal إدخال الكود
   document.getElementById('modal-title').textContent = '🔐 كود التأكيد';
   document.getElementById('modal-body').innerHTML = `
     <div style="text-align:center;margin-bottom:16px;">
-      <div style="font-size:2rem;margin-bottom:8px;">📧</div>
+      <div style="font-size:2rem;margin-bottom:8px;">📱</div>
       <div style="font-size:0.85rem;color:var(--muted);line-height:1.6;">
-        تم إرسال كود مكون من 6 أرقام على<br>
-        <strong style="color:var(--text);">${currentUser.email}</strong>
+        تم إرسال كود مكون من 6 أرقام على واتساپ<br>
+        <strong style="color:var(--text);">${phone}</strong>
       </div>
     </div>
     <div class="edit-modal-row">
       <label>أدخل الكود</label>
       <input id="delete-otp-input" type="text" inputmode="numeric" maxlength="6"
-        placeholder="000000" dir="ltr"
+        placeholder="000000" dir="ltr" autocomplete="off"
         style="text-align:center;font-size:1.5rem;font-weight:900;letter-spacing:8px;">
     </div>
     <button class="btn" style="width:100%;background:var(--red);color:#fff;border:none;margin-top:12px;padding:13px;border-radius:12px;font-size:0.95rem;font-weight:900;font-family:Cairo,sans-serif;cursor:pointer;"
@@ -3195,7 +3214,7 @@ async function startDeleteFarmData(){
       🗑️ تأكيد الحذف النهائي
     </button>
     <div style="font-size:0.75rem;color:var(--muted);text-align:center;margin-top:10px;">
-      لو مجاش الكود افتحش الإيميل في تاب جديد
+      الكود صالح 10 دقائق فقط
     </div>`;
   document.getElementById('detail-overlay').classList.add('open');
 }
@@ -3204,15 +3223,10 @@ async function confirmDeleteFarmData(){
   const token = document.getElementById('delete-otp-input')?.value.trim();
   if(!token || token.length < 6) return showToast('❌ أدخل الكود كامل');
 
-  showToast('⏳ جاري التحقق...');
-
   // التحقق من الكود
-  const {error: verifyError} = await sb.auth.verifyOtp({
-    email: currentUser.email,
-    token,
-    type: 'email'
-  });
-  if(verifyError) return showToast('❌ الكود غلط أو انتهت صلاحيته');
+  if(!_deleteOtpCode) return showToast('❌ انتهت صلاحية الكود - اطلب كود جديد');
+  if(token !== _deleteOtpCode) return showToast('❌ الكود غلط');
+  _deleteOtpCode = null; // استخدم مرة واحدة فقط
 
   // الكود صح - ابدأ الحذف
   closeModal();
