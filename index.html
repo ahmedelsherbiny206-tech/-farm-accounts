@@ -1327,6 +1327,18 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
         <a href="https://wa.me/201062025577" target="_blank" class="settings-btn" style="text-decoration:none;">واتساب</a>
       </div>
 
+      <!-- رمز الحذف السري -->
+      <div class="settings-item" style="margin-top:4px;">
+        <div class="settings-item-left">
+          <div class="settings-item-icon-wrap" style="background:#fff3cd;border-color:#ffc107;">🔐</div>
+          <div>
+            <div class="settings-item-label">رمز الحذف السري</div>
+            <div class="settings-item-sub">PIN من 4 أرقام لتأكيد الحذف</div>
+          </div>
+        </div>
+        <button class="settings-btn" onclick="showSetDeletePin()">تغيير</button>
+      </div>
+
       <!-- حذف البيانات -->
       <div class="settings-item" style="margin-top:4px;">
         <div class="settings-item-left">
@@ -3156,87 +3168,82 @@ async function savePhone(){
 }
 
 // ===== حذف بيانات المزرعة =====
-const BREVO_API_KEY = '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';
-const BREVO_SENDER_EMAIL = 'farmacc2026@gmail.com';
-let _deleteOtpCode = null;
-let _deleteOtpExpiry = null;
+
+// تحديد / تغيير رمز الحذف السري
+async function showSetDeletePin(){
+  closeSettings();
+  document.getElementById('modal-title').textContent = '🔐 رمز الحذف السري';
+  document.getElementById('modal-body').innerHTML = `
+    <div style="text-align:center;margin-bottom:16px;font-size:0.85rem;color:var(--muted);line-height:1.6;">
+      حدد رمز PIN من 4 أرقام<br>هتحتاجه لتأكيد حذف البيانات
+    </div>
+    <div class="edit-modal-row">
+      <label>الرمز الجديد</label>
+      <input id="pin-new" type="text" inputmode="numeric" maxlength="4" placeholder="••••"
+        autocomplete="off" dir="ltr"
+        style="text-align:center;font-size:2rem;font-weight:900;letter-spacing:14px;padding:14px;">
+    </div>
+    <div class="edit-modal-row" style="margin-top:10px;">
+      <label>تأكيد الرمز</label>
+      <input id="pin-confirm" type="text" inputmode="numeric" maxlength="4" placeholder="••••"
+        autocomplete="off" dir="ltr"
+        style="text-align:center;font-size:2rem;font-weight:900;letter-spacing:14px;padding:14px;">
+    </div>
+    <button class="btn" style="width:100%;background:var(--g3);color:#fff;border:none;margin-top:14px;padding:13px;border-radius:12px;font-size:0.95rem;font-weight:900;font-family:Cairo,sans-serif;cursor:pointer;"
+      onclick="saveDeletePin()">
+      💾 حفظ الرمز
+    </button>`;
+  document.getElementById('detail-overlay').classList.add('open');
+}
+
+async function saveDeletePin(){
+  const p1 = document.getElementById('pin-new')?.value.trim();
+  const p2 = document.getElementById('pin-confirm')?.value.trim();
+  if(!p1 || p1.length !== 4 || !/^\d{4}$/.test(p1)) return showToast('❌ الرمز لازم يكون 4 أرقام بالظبط');
+  if(p1 !== p2) return showToast('❌ الرمزين مش متطابقين');
+  const settings = await loadFarmSettings();
+  settings.deletePIN = p1;
+  await _saveFarmSettingsToDb(settings);
+  _farmSettingsCache = settings;
+  closeModal();
+  showToast('✅ تم حفظ رمز الحذف السري');
+}
 
 async function startDeleteFarmData(){
   closeSettings();
+  const settings = await loadFarmSettings();
+  if(!settings.deletePIN){
+    return showToast('❌ لازم تحدد رمز الحذف السري الأول من الإعدادات 🔐');
+  }
   const confirmed = await showConfirm(
     '⚠️ تحذير خطير!\n\nهتحذف كل بيانات المزرعة نهائياً:\nالوارد، الصادر، الخزنة، الآجل، المواسم، السجل...\n\nالعملية دي مش قابلة للتراجع!\n\nعايز تكمل؟',
     '🗑️'
   );
   if(!confirmed) return;
 
-  // توليد كود عشوائي 6 أرقام
-  _deleteOtpCode = String(Math.floor(100000 + Math.random() * 900000));
-  _deleteOtpExpiry = Date.now() + 10 * 60 * 1000; // صالح 10 دقايق
-
-  showToast('📧 بنبعت كود التأكيد على إيميلك...');
-
-  try {
-    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'api-key': BREVO_API_KEY
-      },
-      body: JSON.stringify({
-        sender: { name: 'حسابات المزرعة 🌿', email: BREVO_SENDER_EMAIL },
-        to: [{ email: currentUser.email }],
-        subject: 'كود تأكيد حذف البيانات - حسابات المزرعة',
-        htmlContent: `
-          <div dir="rtl" style="font-family:Arial,sans-serif;max-width:400px;margin:auto;padding:24px;background:#f5f0e8;border-radius:16px;">
-            <h2 style="color:#3d5a2a;text-align:center;">🌿 حسابات المزرعة</h2>
-            <p style="color:#555;">طلبت حذف كل بيانات المزرعة. كود التأكيد هو:</p>
-            <div style="text-align:center;background:#fff;border-radius:12px;padding:20px;margin:16px 0;">
-              <span style="font-size:2.5rem;font-weight:900;letter-spacing:12px;color:#3d5a2a;">${_deleteOtpCode}</span>
-            </div>
-            <p style="color:#888;font-size:0.85rem;text-align:center;">الكود صالح لمدة 10 دقائق فقط</p>
-            <p style="color:#c0392b;font-size:0.8rem;text-align:center;">⚠️ لو مطلبتش الكود ده، تجاهله</p>
-          </div>`
-      })
-    });
-    if(!res.ok) throw new Error('فشل الإرسال');
-    showToast('✅ تم إرسال الكود على ' + currentUser.email);
-  } catch(e) {
-    _deleteOtpCode = null;
-    return showToast('❌ خطأ في إرسال الكود: ' + e.message);
-  }
-
-  document.getElementById('modal-title').textContent = '🔐 كود التأكيد';
+  document.getElementById('modal-title').textContent = '🔐 رمز التأكيد';
   document.getElementById('modal-body').innerHTML = `
     <div style="text-align:center;margin-bottom:16px;">
-      <div style="font-size:2rem;margin-bottom:8px;">📧</div>
-      <div style="font-size:0.85rem;color:var(--muted);line-height:1.6;">
-        تم إرسال كود مكون من 6 أرقام على<br>
-        <strong style="color:var(--text);">${currentUser.email}</strong>
-      </div>
+      <div style="font-size:2.5rem;margin-bottom:8px;">🔐</div>
+      <div style="font-size:0.85rem;color:var(--muted);">أدخل رمز الحذف السري (4 أرقام)</div>
     </div>
     <div class="edit-modal-row">
-      <label>أدخل الكود</label>
-      <input id="delete-otp-input" type="text" inputmode="numeric" maxlength="6"
-        placeholder="000000" dir="ltr" autocomplete="off"
-        style="text-align:center;font-size:1.8rem;font-weight:900;letter-spacing:10px;padding:14px;">
+      <input id="delete-pin-input" type="text" inputmode="numeric" maxlength="4"
+        placeholder="••••" dir="ltr" autocomplete="off"
+        style="text-align:center;font-size:2.5rem;font-weight:900;letter-spacing:18px;padding:14px;">
     </div>
     <button class="btn" style="width:100%;background:var(--red);color:#fff;border:none;margin-top:12px;padding:13px;border-radius:12px;font-size:0.95rem;font-weight:900;font-family:Cairo,sans-serif;cursor:pointer;"
       onclick="confirmDeleteFarmData()">
       🗑️ تأكيد الحذف النهائي
-    </button>
-    <div style="font-size:0.75rem;color:var(--muted);text-align:center;margin-top:10px;">
-      الكود صالح 10 دقائق - افتح الإيميل بتاعك
-    </div>`;
+    </button>`;
   document.getElementById('detail-overlay').classList.add('open');
 }
 
 async function confirmDeleteFarmData(){
-  const token = document.getElementById('delete-otp-input')?.value.trim();
-  if(!token || token.length < 6) return showToast('❌ أدخل الكود كامل (6 أرقام)');
-  if(!_deleteOtpCode) return showToast('❌ انتهت صلاحية الكود - اطلب كود جديد');
-  if(Date.now() > _deleteOtpExpiry) { _deleteOtpCode = null; return showToast('❌ انتهت صلاحية الكود - اطلب كود جديد'); }
-  if(token !== _deleteOtpCode) return showToast('❌ الكود غلط');
-  _deleteOtpCode = null;
+  const token = document.getElementById('delete-pin-input')?.value.trim();
+  if(!token || token.length !== 4) return showToast('❌ أدخل الرمز كامل (4 أرقام)');
+  const settings = _farmSettingsCache || await loadFarmSettings();
+  if(token !== settings.deletePIN) return showToast('❌ الرمز غلط');
 
   // الكود صح - ابدأ الحذف
   closeModal();
