@@ -1471,7 +1471,8 @@ async function doGoogleAuth() {
   const {error} = await sb.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: 'https://ahmedelsherbiny206-tech.github.io/-farm-accounts/'
+      redirectTo: 'https://ahmedelsherbiny206-tech.github.io/-farm-accounts/',
+      queryParams: { prompt: 'select_account' }
     }
   });
   if(error) showToast('❌ خطأ: ' + error.message);
