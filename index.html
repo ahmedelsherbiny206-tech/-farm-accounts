@@ -1326,6 +1326,18 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
         <a href="https://wa.me/201062025577" target="_blank" class="settings-btn" style="text-decoration:none;">واتساب</a>
       </div>
 
+      <!-- حذف البيانات -->
+      <div class="settings-item" style="margin-top:4px;">
+        <div class="settings-item-left">
+          <div class="settings-item-icon-wrap" style="background:#fdecea;border-color:#f5c6cb;">🗑️</div>
+          <div>
+            <div class="settings-item-label" style="color:var(--red);">حذف بيانات المزرعة</div>
+            <div class="settings-item-sub">حذف كل البيانات نهائياً</div>
+          </div>
+        </div>
+        <button class="settings-btn" style="background:var(--red);color:#fff;border:none;" onclick="startDeleteFarmData()">حذف</button>
+      </div>
+
       <!-- خروج -->
       <div class="settings-item" style="margin-top:4px;">
         <div class="settings-item-left">
@@ -3139,6 +3151,101 @@ async function savePhone(){
     showToast('✅ تم حفظ رقم التليفون');
   } catch(e){
     showToast('❌ خطأ في الحفظ: '+(e.message||e));
+  }
+}
+
+// ===== حذف بيانات المزرعة =====
+async function startDeleteFarmData(){
+  closeSettings();
+  // تحذير أول
+  const confirmed = await showConfirm(
+    '⚠️ تحذير خطير!\n\nهتحذف كل بيانات المزرعة نهائياً:\nالوارد، الصادر، الخزنة، الآجل، المواسم، السجل...\n\nالعملية دي مش قابلة للتراجع!\n\nعايز تكمل؟',
+    '🗑️'
+  );
+  if(!confirmed) return;
+
+  // إرسال OTP على الإيميل
+  showToast('📧 بنبعت كود التأكيد على إيميلك...');
+  const {error} = await sb.auth.signInWithOtp({
+    email: currentUser.email,
+    options: { shouldCreateUser: false }
+  });
+  if(error) return showToast('❌ خطأ في إرسال الكود: '+error.message);
+
+  showToast('✅ تم إرسال الكود على '+currentUser.email);
+
+  // عرض modal إدخال الكود
+  document.getElementById('modal-title').textContent = '🔐 كود التأكيد';
+  document.getElementById('modal-body').innerHTML = `
+    <div style="text-align:center;margin-bottom:16px;">
+      <div style="font-size:2rem;margin-bottom:8px;">📧</div>
+      <div style="font-size:0.85rem;color:var(--muted);line-height:1.6;">
+        تم إرسال كود مكون من 6 أرقام على<br>
+        <strong style="color:var(--text);">${currentUser.email}</strong>
+      </div>
+    </div>
+    <div class="edit-modal-row">
+      <label>أدخل الكود</label>
+      <input id="delete-otp-input" type="text" inputmode="numeric" maxlength="6"
+        placeholder="000000" dir="ltr"
+        style="text-align:center;font-size:1.5rem;font-weight:900;letter-spacing:8px;">
+    </div>
+    <button class="btn" style="width:100%;background:var(--red);color:#fff;border:none;margin-top:12px;padding:13px;border-radius:12px;font-size:0.95rem;font-weight:900;font-family:Cairo,sans-serif;cursor:pointer;"
+      onclick="confirmDeleteFarmData()">
+      🗑️ تأكيد الحذف النهائي
+    </button>
+    <div style="font-size:0.75rem;color:var(--muted);text-align:center;margin-top:10px;">
+      لو مجاش الكود افتحش الإيميل في تاب جديد
+    </div>`;
+  document.getElementById('detail-overlay').classList.add('open');
+}
+
+async function confirmDeleteFarmData(){
+  const token = document.getElementById('delete-otp-input')?.value.trim();
+  if(!token || token.length < 6) return showToast('❌ أدخل الكود كامل');
+
+  showToast('⏳ جاري التحقق...');
+
+  // التحقق من الكود
+  const {error: verifyError} = await sb.auth.verifyOtp({
+    email: currentUser.email,
+    token,
+    type: 'email'
+  });
+  if(verifyError) return showToast('❌ الكود غلط أو انتهت صلاحيته');
+
+  // الكود صح - ابدأ الحذف
+  closeModal();
+  showToast('⏳ جاري حذف البيانات...');
+
+  const uid = currentUser.id;
+  try {
+    await Promise.all([
+      sb.from('income').delete().eq('user_id', uid),
+      sb.from('expenses').delete().eq('user_id', uid),
+      sb.from('capital').delete().eq('user_id', uid),
+      sb.from('vault').delete().eq('user_id', uid),
+      sb.from('ajal').delete().eq('user_id', uid),
+      sb.from('deferred_sales').delete().eq('user_id', uid),
+      sb.from('activity_log').delete().eq('user_id', uid),
+      sb.from('seasons').delete().eq('user_id', uid),
+      sb.from('user_categories').delete().eq('user_id', uid),
+    ]);
+
+    // مسح الـ cache المحلي
+    localStorage.removeItem('farmName');
+    localStorage.removeItem('farmArea');
+    _farmSettingsCache = null;
+    _cropsCache = null;
+    _incCatsCache = null;
+    _expCatsCache = null;
+    _tradersCache = null;
+    _unitsCache = null;
+
+    showToast('✅ تم حذف كل البيانات');
+    setTimeout(() => window.location.reload(), 1500);
+  } catch(e) {
+    showToast('❌ خطأ أثناء الحذف: '+(e.message||e));
   }
 }
 
