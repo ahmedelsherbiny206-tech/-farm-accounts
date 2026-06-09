@@ -2978,8 +2978,52 @@ async function finishSetup(){
     _applyFarmSettings();
     hideSetupScreen();
     showToast('✅ أهلاً بيك! تم حفظ بيانات المزرعة');
+    // إرسال رسالة ترحيب على واتساب
+    sendWelcomeWhatsApp(phone, name);
   } catch(e){
     showToast('❌ خطأ في الحفظ: '+(e.message||e));
+  }
+}
+
+// ===== إرسال رسالة ترحيب على واتساب =====
+const WA_INSTANCE  = '7107647578';
+const WA_TOKEN     = 'c545e40ffce54d75b6b884a69ec966168844ad803ba45918f';
+const WA_API_URL   = 'https://7107.api.greenapi.com';
+
+function _formatPhone(phone){
+  // تحويل الرقم المصري لصيغة دولية: 01xxxxxxxxx → 201xxxxxxxxx@c.us
+  let p = phone.replace(/\D/g,''); // أزل كل حاجة غير أرقام
+  if(p.startsWith('00')) p = p.slice(2);
+  if(p.startsWith('0'))  p = '2' + p;   // مصر: 0 → 20
+  if(!p.startsWith('2')) p = '2' + p;   // لو مش فيها كود دولة
+  return p + '@c.us';
+}
+
+async function sendWelcomeWhatsApp(phone, farmName){
+  try {
+    const chatId = _formatPhone(phone);
+    const message =
+`🌿 أهلاً وسهلاً بيك في *حسابات المزرعة*!
+
+✅ تم تسجيل مزرعتك: *${farmName}*
+
+البرنامج هيساعدك تتابع:
+• 💰 الوارد والصادر
+• 📦 مبيعات الآجل
+• 🏦 الخزنة
+• 📊 التقارير والتحليلات
+
+لأي مساعدة تواصل معنا 👇
+wa.me/201000676909`;
+
+    await fetch(`${WA_API_URL}/waInstance${WA_INSTANCE}/sendMessage/${WA_TOKEN}`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({chatId, message})
+    });
+  } catch(e){
+    // الرسالة فشلت - مش مشكلة، البرنامج شغال عادي
+    console.warn('WhatsApp welcome message failed:', e);
   }
 }
 
