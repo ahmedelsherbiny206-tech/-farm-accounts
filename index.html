@@ -934,7 +934,10 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
         <button class="btn btn-g" onclick="addDeferredSale()">➕ تسجيل البيعة</button>
       </div>
 
-      <!-- فلاتر -->
+      <!-- تصدير وفلاتر -->
+      <div style="display:flex;justify-content:flex-end;margin:14px 0 -4px;padding:0 2px;">
+        <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="exportDeferredToExcel()">📊 تصدير Excel</button>
+      </div>
       <div class="date-filter">
         <label>من:</label><input type="date" id="ds-from" onchange="renderDeferredSales()">
         <label>إلى:</label><input type="date" id="ds-to" onchange="renderDeferredSales()">
@@ -2435,6 +2438,46 @@ async function exportToExcel(type) {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, type==='income'?'الإيرادات':'المصاريف');
   XLSX.writeFile(wb, filename);
+  showToast('✅ تم التصدير!');
+}
+
+async function exportDeferredToExcel(){
+  showToast('⏳ جاري التصدير...');
+  let q = sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).order('date',{ascending:false});
+  const from = document.getElementById('ds-from')?.value;
+  const to   = document.getElementById('ds-to')?.value;
+  const crop = document.getElementById('ds-filter-crop')?.value;
+  const trader = document.getElementById('ds-filter-trader')?.value;
+  const unit = document.getElementById('ds-filter-unit')?.value;
+  if(from) q=q.gte('date',from);
+  if(to)   q=q.lte('date',to);
+  if(crop) q=q.eq('crop',crop);
+  if(trader) q=q.eq('trader',trader);
+  if(unit) q=q.eq('unit',unit);
+  if(_dsFilter==='paid')   q=q.eq('paid',true);
+  if(_dsFilter==='unpaid') q=q.eq('paid',false);
+  const {data:rows,error} = await q;
+  if(error) return showToast('❌ خطأ في التصدير');
+  const headers = ['الوصف','المحصول','الكمية','الوحدة','السعر','الإجمالي','التاجر','التاريخ','الحالة','ملاحظات'];
+  const data = (rows||[]).map(x=>({
+    'الوصف': x.description||'',
+    'المحصول': x.crop||'',
+    'الكمية': x.quantity||0,
+    'الوحدة': x.unit||'',
+    'السعر': x.price||0,
+    'الإجمالي': x.total||0,
+    'التاجر': x.trader||'',
+    'التاريخ': x.date||'',
+    'الحالة': x.paid?'مسددة':'غير مسددة',
+    'ملاحظات': x.notes||''
+  }));
+  const total = (rows||[]).reduce((s,x)=>s+Number(x.total||0),0);
+  data.push({'الوصف':'الإجمالي','المحصول':'','الكمية':'','الوحدة':'','السعر':'','الإجمالي':total,'التاجر':'','التاريخ':'','الحالة':'','ملاحظات':''});
+  const ws = XLSX.utils.json_to_sheet(data, {header: headers});
+  ws['!cols'] = [{wch:25},{wch:12},{wch:8},{wch:10},{wch:10},{wch:12},{wch:15},{wch:12},{wch:12},{wch:20}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'مبيعات آجل');
+  XLSX.writeFile(wb, 'مبيعات_آجل.xlsx');
   showToast('✅ تم التصدير!');
 }
 
