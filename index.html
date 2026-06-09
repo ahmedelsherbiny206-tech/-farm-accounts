@@ -3201,18 +3201,20 @@ async function saveDeletePin(){
   const p2 = document.getElementById('pin-confirm')?.value.trim();
   if(!p1 || p1.length !== 4 || !/^\d{4}$/.test(p1)) return showToast('❌ الرمز لازم يكون 4 أرقام بالظبط');
   if(p1 !== p2) return showToast('❌ الرمزين مش متطابقين');
-  const settings = await loadFarmSettings();
-  settings.deletePIN = p1;
-  await _saveFarmSettingsToDb(settings);
-  _farmSettingsCache = settings;
-  closeModal();
-  showToast('✅ تم حفظ رمز الحذف السري');
+  try {
+    const settings = {...(_farmSettingsCache || {}), deletePIN: p1};
+    await _saveFarmSettingsToDb(settings);
+    _farmSettingsCache = settings;
+    closeModal();
+    showToast('✅ تم حفظ رمز الحذف السري');
+  } catch(e) {
+    showToast('❌ خطأ في الحفظ: ' + (e.message||e));
+  }
 }
 
 async function startDeleteFarmData(){
   closeSettings();
-  const settings = await loadFarmSettings();
-  if(!settings.deletePIN){
+  if(!_farmSettingsCache?.deletePIN){
     return showToast('❌ لازم تحدد رمز الحذف السري الأول من الإعدادات 🔐');
   }
   const confirmed = await showConfirm(
@@ -3242,8 +3244,7 @@ async function startDeleteFarmData(){
 async function confirmDeleteFarmData(){
   const token = document.getElementById('delete-pin-input')?.value.trim();
   if(!token || token.length !== 4) return showToast('❌ أدخل الرمز كامل (4 أرقام)');
-  const settings = _farmSettingsCache || await loadFarmSettings();
-  if(token !== settings.deletePIN) return showToast('❌ الرمز غلط');
+  if(token !== _farmSettingsCache?.deletePIN) return showToast('❌ الرمز غلط');
 
   // الكود صح - ابدأ الحذف
   closeModal();
