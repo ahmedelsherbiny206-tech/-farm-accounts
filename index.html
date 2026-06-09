@@ -940,12 +940,15 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
         <label>إلى:</label><input type="date" id="ds-to" onchange="renderDeferredSales()">
         <button class="clear-btn" onclick="clearDsFilter()">الكل</button>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
         <select id="ds-filter-crop" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
           <option value="">كل المحاصيل</option>
         </select>
         <select id="ds-filter-trader" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
           <option value="">كل التجار</option>
+        </select>
+        <select id="ds-filter-unit" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
+          <option value="">كل الوحدات</option>
         </select>
       </div>
       <div style="display:flex;gap:6px;margin-bottom:10px;">
@@ -4042,6 +4045,9 @@ async function initDeferredSalesPage(){
   const fTrader = document.getElementById('ds-filter-trader');
   if(fTrader) fTrader.innerHTML = '<option value="">كل التجار</option>'+traders.map(t=>`<option>${t}</option>`).join('');
 
+  const fUnit = document.getElementById('ds-filter-unit');
+  if(fUnit) fUnit.innerHTML = '<option value="">كل الوحدات</option>'+units.map(u=>`<option>${u}</option>`).join('');
+
   const dsDate = document.getElementById('ds-date');
   if(dsDate && !dsDate.value) dsDate.value = today();
 
@@ -4134,11 +4140,13 @@ async function renderDeferredSales(){
   const to = document.getElementById('ds-to')?.value;
   const crop = document.getElementById('ds-filter-crop')?.value;
   const trader = document.getElementById('ds-filter-trader')?.value;
+  const unit = document.getElementById('ds-filter-unit')?.value;
 
   if(from) q=q.gte('date',from);
   if(to) q=q.lte('date',to);
   if(crop) q=q.eq('crop',crop);
   if(trader) q=q.eq('trader',trader);
+  if(unit) q=q.eq('unit',unit);
   if(_dsFilter==='paid') q=q.eq('paid',true);
   if(_dsFilter==='unpaid') q=q.eq('paid',false);
 
