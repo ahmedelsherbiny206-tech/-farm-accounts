@@ -857,6 +857,9 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 
   <!-- AJAL -->
   <div class="page" id="page-ajal">
+    <div style="display:flex;justify-content:flex-start;margin:14px 0 -4px;padding:0 2px;">
+      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="exportAjalToExcel()">📊 تصدير Excel</button>
+    </div>
     <div id="ajal-cash-section">
     <!-- قسم نقدي آجل -->
     <div id="ajal-section-normal">
@@ -874,9 +877,6 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       <div class="form-row"><label>تاريخ الاستحقاق</label><input type="date" id="aj-due"></div>
       <button class="btn btn-gold" onclick="addAjal()">➕ إضافة</button>
     </div>
-    <div style="display:flex;justify-content:flex-end;margin:10px 0 6px;">
-      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="exportAjalToExcel()">📊 تصدير Excel</button>
-    </div>
     <div style="font-size:0.82rem;font-weight:800;color:var(--muted);margin-bottom:8px;padding-right:4px;">ديون لي 💰</div>
     <div id="ajal-rec-list"><div class="loading">⏳</div></div>
     <div style="font-size:0.82rem;font-weight:800;color:var(--muted);margin:12px 0 8px;padding-right:4px;">ديون عليَّ 💸</div>
@@ -890,6 +890,9 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 
   <!-- مبيعات آجل - صفحة مستقلة -->
   <div class="page" id="page-deferred">
+      <div style="display:flex;justify-content:flex-start;margin:14px 0 -4px;padding:0 2px;">
+        <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="exportDeferredToExcel()">📊 تصدير Excel</button>
+      </div>
 
       <div class="card">
         <div class="card-title">🛒 بيعة آجل جديدة</div>
@@ -937,10 +940,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
         <button class="btn btn-g" onclick="addDeferredSale()">➕ تسجيل البيعة</button>
       </div>
 
-      <!-- تصدير وفلاتر -->
-      <div style="display:flex;justify-content:flex-end;margin:14px 0 -4px;padding:0 2px;">
-        <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="exportDeferredToExcel()">📊 تصدير Excel</button>
-      </div>
+      <!-- فلاتر -->
       <div class="date-filter">
         <label>من:</label><input type="date" id="ds-from" onchange="renderDeferredSales()">
         <label>إلى:</label><input type="date" id="ds-to" onchange="renderDeferredSales()">
@@ -999,14 +999,14 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 
   <!-- REPORT -->
   <div class="page" id="page-report">
+    <div style="display:flex;justify-content:flex-start;margin:14px 0 -4px;padding:0 2px;">
+      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="exportReportToExcel()">📊 تصدير Excel</button>
+    </div>
     <div class="card">
       <div class="card-title">📊 التقرير المالي</div>
       <div class="form-row"><label>من</label><input type="date" id="rep-from"></div>
       <div class="form-row"><label>إلى</label><input type="date" id="rep-to"></div>
       <button class="btn btn-g" onclick="renderReport()">عرض التقرير</button>
-    </div>
-    <div style="display:flex;justify-content:flex-start;margin-bottom:8px;">
-      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="exportReportToExcel()">📊 تصدير التقرير Excel</button>
     </div>
     <div class="card" id="report-content"><div class="empty">اختار فترة زمنية وأضغط عرض</div></div>
   </div>
