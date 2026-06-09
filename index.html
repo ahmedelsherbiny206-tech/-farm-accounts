@@ -752,7 +752,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
         </label>
         <select id="inc-crop"><option value="">-- اختار المحصول --</option></select>
       </div>
-      <div class="form-row"><label>المبلغ (جنيه)</label><input type="number" id="inc-amt" placeholder="0"></div>
+      <div class="form-row"><label>المبلغ (جنيه)</label><input type="text" inputmode="decimal" id="inc-amt" placeholder="0"></div>
       <div class="form-row"><label>التاريخ</label><input type="date" id="inc-date"></div>
       <div class="form-row"><label>ملاحظات</label><textarea id="inc-notes" placeholder="أي تفاصيل..."></textarea></div>
       <button class="btn btn-g" onclick="addIncome()">➕ إضافة</button>
@@ -797,7 +797,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
     <div class="card">
       <div class="card-title">💸 تسجيل صادر جديد</div>
       <div class="form-row"><label>الوصف</label><input type="text" id="exp-desc" placeholder="مثال: أسمدة، عمالة..."></div>
-      <div class="form-row"><label>المبلغ (جنيه)</label><input type="number" id="exp-amt" placeholder="0"></div>
+      <div class="form-row"><label>المبلغ (جنيه)</label><input type="text" inputmode="decimal" id="exp-amt" placeholder="0"></div>
       <div class="form-row">
         <label style="display:flex;justify-content:space-between;align-items:center;">
           التصنيف
@@ -866,7 +866,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
         </select>
       </div>
       <div class="form-row"><label>اسم الشخص / الجهة</label><input type="text" id="aj-name" placeholder="اسم الشخص"></div>
-      <div class="form-row"><label>المبلغ (جنيه)</label><input type="number" id="aj-amt" placeholder="0"></div>
+      <div class="form-row"><label>المبلغ (جنيه)</label><input type="text" inputmode="decimal" id="aj-amt" placeholder="0"></div>
       <div class="form-row"><label>السبب</label><input type="text" id="aj-reason" placeholder="مثال: بيع محصول..."></div>
       <div class="form-row"><label>تاريخ الاستحقاق</label><input type="date" id="aj-due"></div>
       <button class="btn btn-gold" onclick="addAjal()">➕ إضافة</button>
@@ -901,13 +901,13 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
             <button onclick="openUnitManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">⚙️ وحدات</button>
           </label>
           <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">
-            <input type="number" id="ds-qty" placeholder="0" step="0.1" min="0" oninput="calcDsTotal()">
+            <input type="text" inputmode="decimal" id="ds-qty" placeholder="0" oninput="calcDsTotal()">
             <select id="ds-unit"></select>
           </div>
         </div>
 
         <div class="form-row"><label>السعر (للوحدة)</label>
-          <input type="number" id="ds-price" placeholder="0" step="0.01" min="0" oninput="calcDsTotal()"></div>
+          <input type="text" inputmode="decimal" id="ds-price" placeholder="0" oninput="calcDsTotal()"></div>
 
         <div class="form-row"><label>الإجمالي</label>
           <div style="background:var(--g5);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-weight:900;color:var(--g2);font-size:1rem;" id="ds-total-display">0 ج</div>
@@ -967,7 +967,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
     </div>
     <div class="card">
       <div class="card-title">📦 تحديث رأس المال</div>
-      <div class="form-row"><label>المبلغ (جنيه)</label><input type="number" id="cap-amt" placeholder="أدخل رأس المال الحالي"></div>
+      <div class="form-row"><label>المبلغ (جنيه)</label><input type="text" inputmode="decimal" id="cap-amt" placeholder="أدخل رأس المال الحالي"></div>
       <div class="form-row"><label>التاريخ</label><input type="date" id="cap-date"></div>
       <div class="form-row"><label>ملاحظات</label><textarea id="cap-notes" placeholder="مثال: بداية الموسم..."></textarea></div>
       <button class="btn btn-blue" onclick="addCapital()">💾 حفظ</button>
@@ -1035,7 +1035,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
         <input type="text" id="vault-desc" placeholder="مثال: قبض من عميل، صرف مصاريف...">
       </div>
       <div class="form-row"><label>المبلغ (جنيه)</label>
-        <input type="number" id="vault-amt" placeholder="0">
+        <input type="text" inputmode="decimal" id="vault-amt" placeholder="0">
       </div>
       <div class="form-row"><label>التاريخ</label>
         <input type="date" id="vault-date">
@@ -1156,7 +1156,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
           </select>
         </div>
         <div><label style="font-size:0.72rem;color:var(--muted);font-weight:700;">من مبلغ</label>
-          <input type="number" id="search-min-amt" placeholder="0" onchange="doSearch()" style="width:100%;padding:7px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;"></div>
+          <input type="text" inputmode="decimal" id="search-min-amt" placeholder="0" onchange="doSearch()" style="width:100%;padding:7px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;"></div>
       </div>
     </div>
     <div id="search-results"><div class="empty">ابحث عن أي حاجة...</div></div>
@@ -1174,7 +1174,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       </div>
       <div class="form-row"><label>تاريخ البداية</label><input type="date" id="season-start"></div>
       <div class="form-row"><label>تاريخ النهاية المتوقع</label><input type="date" id="season-end"></div>
-      <div class="form-row"><label>المساحة (فدان)</label><input type="number" id="season-area" placeholder="0" step="0.1"></div>
+      <div class="form-row"><label>المساحة (فدان)</label><input type="text" inputmode="decimal" id="season-area" placeholder="0"></div>
       <div class="form-row"><label>ملاحظات</label><textarea id="season-notes" placeholder="أي تفاصيل..."></textarea></div>
       <button class="btn btn-g" onclick="addSeason()">➕ إضافة موسم</button>
     </div>
@@ -1357,7 +1357,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
     <div class="setup-field">
       <label>📐 مساحة المزرعة (فدان)</label>
       <div class="setup-field-wrap">
-        <input id="setup-farm-area" placeholder="مثال: 50" type="number" step="0.5" min="0" autocomplete="off">
+        <input id="setup-farm-area" placeholder="مثال: 50" type="text" inputmode="decimal" autocomplete="off">
         <button class="setup-clear-btn" type="button" onclick="document.getElementById('setup-farm-area').value='';document.getElementById('setup-farm-area').focus()">✕</button>
       </div>
     </div>
@@ -2680,7 +2680,7 @@ async function editItem(type, item) {
           ${crops.map(o=>`<option ${item.crop===o?'selected':''}>${o}</option>`).join('')}
         </select>
       </div>
-      <div class="edit-modal-row"><label>المبلغ</label><input type="number" min="0.01" id="edit-amt" value="${item.amount}"></div>
+      <div class="edit-modal-row"><label>المبلغ</label><input type="text" inputmode="decimal" id="edit-amt" value="${item.amount}"></div>
       <div class="edit-modal-row"><label>التاريخ</label><input type="date" id="edit-date" value="${item.date}"></div>
       <div class="edit-modal-row"><label>ملاحظات</label><textarea id="edit-notes">${s(item.notes||'')||''}</textarea></div>`;
   } else if(type==='expense') {
@@ -2700,12 +2700,12 @@ async function editItem(type, item) {
           ${crops.map(o=>`<option ${item.crop===o?'selected':''}>${o}</option>`).join('')}
         </select>
       </div>
-      <div class="edit-modal-row"><label>المبلغ</label><input type="number" min="0.01" id="edit-amt" value="${item.amount}"></div>
+      <div class="edit-modal-row"><label>المبلغ</label><input type="text" inputmode="decimal" id="edit-amt" value="${item.amount}"></div>
       <div class="edit-modal-row"><label>التاريخ</label><input type="date" id="edit-date" value="${item.date}"></div>
       <div class="edit-modal-row"><label>ملاحظات</label><textarea id="edit-notes">${s(item.notes||'')||''}</textarea></div>`;
   } else if(type==='capital') {
     fields = `
-      <div class="edit-modal-row"><label>المبلغ</label><input type="number" min="0.01" id="edit-amt" value="${item.amount}"></div>
+      <div class="edit-modal-row"><label>المبلغ</label><input type="text" inputmode="decimal" id="edit-amt" value="${item.amount}"></div>
       <div class="edit-modal-row"><label>التاريخ</label><input type="date" id="edit-date" value="${item.date}"></div>
       <div class="edit-modal-row"><label>ملاحظات</label><textarea id="edit-notes">${s(item.notes||'')||''}</textarea></div>`;
   }
@@ -2865,7 +2865,7 @@ function editVaultItem(item) {
   document.getElementById('modal-title').textContent = 'تعديل ' + (typeLabel[item.type]||'الحركة') + ' ✏️';
   document.getElementById('modal-body').innerHTML = `
     <div class="edit-modal-row"><label>البيان</label><input id="vedit-desc" value="${s(item.description||'')}"></div>
-    <div class="edit-modal-row"><label>المبلغ</label><input type="number" min="0.01" id="vedit-amt" value="${item.amount}"></div>
+    <div class="edit-modal-row"><label>المبلغ</label><input type="text" inputmode="decimal" id="vedit-amt" value="${item.amount}"></div>
     <div class="edit-modal-row"><label>التاريخ</label><input type="date" id="vedit-date" value="${item.date}"></div>
     <div class="edit-modal-row"><label>ملاحظات</label><textarea id="vedit-notes">${s(item.notes||'')||''}</textarea></div>
     <button class="btn btn-g" style="margin-top:12px;" onclick="saveVaultEdit('${item.id}')">💾 حفظ التعديل</button>`;
@@ -3092,7 +3092,7 @@ function openEditFarmArea(){
   document.getElementById('modal-title').textContent = '📐 مساحة المزرعة';
   document.getElementById('modal-body').innerHTML = `
     <div class="edit-modal-row"><label>إجمالي مساحة المزرعة (فدان)</label>
-      <input type="number" id="farm-area-input" value="${current||''}" placeholder="مثال: 50" step="0.5" min="0">
+      <input type="text" inputmode="decimal" id="farm-area-input" value="${current||''}" placeholder="مثال: 50">
     </div>
     <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px;">
       ده هيُستخدم لتوزيع المصاريف والإيرادات العامة على المواسم
@@ -3500,7 +3500,7 @@ async function editSeason(season){
       <input type="date" id="sedit-end" value="${season.end_date||''}">
     </div>
     <div class="edit-modal-row"><label>المساحة (فدان)</label>
-      <input type="number" id="sedit-area" value="${season.area||''}" step="0.1" placeholder="0">
+      <input type="text" inputmode="decimal" id="sedit-area" value="${season.area||''}" placeholder="0">
     </div>
     <div class="edit-modal-row"><label>ملاحظات</label>
       <textarea id="sedit-notes">${season.notes||''}</textarea>
@@ -4084,11 +4084,11 @@ async function editDeferredSale(id){
     </div>
     <div class="edit-modal-row"><label>الكمية</label>
       <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">
-        <input type="number" id="dse-qty" value="${x.quantity||''}" step="0.1" min="0">
+        <input type="text" inputmode="decimal" id="dse-qty" value="${x.quantity||''}">
         <select id="dse-unit">${units.map(u=>`<option ${x.unit===u?'selected':''}>${u}</option>`).join('')}</select>
       </div>
     </div>
-    <div class="edit-modal-row"><label>السعر</label><input type="number" id="dse-price" value="${x.price||''}" step="0.01" min="0"></div>
+    <div class="edit-modal-row"><label>السعر</label><input type="text" inputmode="decimal" id="dse-price" value="${x.price||''}"></div>
     <div class="edit-modal-row"><label>التاجر</label>
       <select id="dse-trader"><option value="">-- اختار --</option>${traders.map(t=>`<option ${x.trader===t?'selected':''}>${t}</option>`).join('')}</select>
     </div>
