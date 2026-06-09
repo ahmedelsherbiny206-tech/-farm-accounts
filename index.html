@@ -3155,30 +3155,61 @@ async function savePhone(){
 }
 
 // ===== حذف بيانات المزرعة =====
+const BREVO_API_KEY = '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';
+const BREVO_SENDER_EMAIL = 'farmacc2026@gmail.com';
+let _deleteOtpCode = null;
+let _deleteOtpExpiry = null;
+
 async function startDeleteFarmData(){
   closeSettings();
-  // تحذير أول
   const confirmed = await showConfirm(
     '⚠️ تحذير خطير!\n\nهتحذف كل بيانات المزرعة نهائياً:\nالوارد، الصادر، الخزنة، الآجل، المواسم، السجل...\n\nالعملية دي مش قابلة للتراجع!\n\nعايز تكمل؟',
     '🗑️'
   );
   if(!confirmed) return;
 
-  // إرسال OTP على الإيميل
-  showToast('📧 بنبعت كود التأكيد على إيميلك...');
-  const {error} = await sb.auth.signInWithOtp({
-    email: currentUser.email,
-    options: { shouldCreateUser: false }
-  });
-  if(error) return showToast('❌ خطأ: ' + error.message);
+  // توليد كود عشوائي 6 أرقام
+  _deleteOtpCode = String(Math.floor(100000 + Math.random() * 900000));
+  _deleteOtpExpiry = Date.now() + 10 * 60 * 1000; // صالح 10 دقايق
 
-  // عرض modal إدخال الكود
+  showToast('📧 بنبعت كود التأكيد على إيميلك...');
+
+  try {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': BREVO_API_KEY
+      },
+      body: JSON.stringify({
+        sender: { name: 'حسابات المزرعة 🌿', email: BREVO_SENDER_EMAIL },
+        to: [{ email: currentUser.email }],
+        subject: 'كود تأكيد حذف البيانات - حسابات المزرعة',
+        htmlContent: `
+          <div dir="rtl" style="font-family:Arial,sans-serif;max-width:400px;margin:auto;padding:24px;background:#f5f0e8;border-radius:16px;">
+            <h2 style="color:#3d5a2a;text-align:center;">🌿 حسابات المزرعة</h2>
+            <p style="color:#555;">طلبت حذف كل بيانات المزرعة. كود التأكيد هو:</p>
+            <div style="text-align:center;background:#fff;border-radius:12px;padding:20px;margin:16px 0;">
+              <span style="font-size:2.5rem;font-weight:900;letter-spacing:12px;color:#3d5a2a;">${_deleteOtpCode}</span>
+            </div>
+            <p style="color:#888;font-size:0.85rem;text-align:center;">الكود صالح لمدة 10 دقائق فقط</p>
+            <p style="color:#c0392b;font-size:0.8rem;text-align:center;">⚠️ لو مطلبتش الكود ده، تجاهله</p>
+          </div>`
+      })
+    });
+    if(!res.ok) throw new Error('فشل الإرسال');
+    showToast('✅ تم إرسال الكود على ' + currentUser.email);
+  } catch(e) {
+    _deleteOtpCode = null;
+    return showToast('❌ خطأ في إرسال الكود: ' + e.message);
+  }
+
   document.getElementById('modal-title').textContent = '🔐 كود التأكيد';
   document.getElementById('modal-body').innerHTML = `
     <div style="text-align:center;margin-bottom:16px;">
       <div style="font-size:2rem;margin-bottom:8px;">📧</div>
       <div style="font-size:0.85rem;color:var(--muted);line-height:1.6;">
-        تم إرسال كود 6 أرقام على<br>
+        تم إرسال كود مكون من 6 أرقام على<br>
         <strong style="color:var(--text);">${currentUser.email}</strong>
       </div>
     </div>
@@ -3193,7 +3224,7 @@ async function startDeleteFarmData(){
       🗑️ تأكيد الحذف النهائي
     </button>
     <div style="font-size:0.75rem;color:var(--muted);text-align:center;margin-top:10px;">
-      الكود صالح لمدة ساعة - افتح الإيميل بتاعك
+      الكود صالح 10 دقائق - افتح الإيميل بتاعك
     </div>`;
   document.getElementById('detail-overlay').classList.add('open');
 }
@@ -3201,14 +3232,10 @@ async function startDeleteFarmData(){
 async function confirmDeleteFarmData(){
   const token = document.getElementById('delete-otp-input')?.value.trim();
   if(!token || token.length < 6) return showToast('❌ أدخل الكود كامل (6 أرقام)');
-
-  showToast('⏳ جاري التحقق...');
-  const {error} = await sb.auth.verifyOtp({
-    email: currentUser.email,
-    token,
-    type: 'email'
-  });
-  if(error) return showToast('❌ الكود غلط أو انتهت صلاحيته');
+  if(!_deleteOtpCode) return showToast('❌ انتهت صلاحية الكود - اطلب كود جديد');
+  if(Date.now() > _deleteOtpExpiry) { _deleteOtpCode = null; return showToast('❌ انتهت صلاحية الكود - اطلب كود جديد'); }
+  if(token !== _deleteOtpCode) return showToast('❌ الكود غلط');
+  _deleteOtpCode = null;
 
   // الكود صح - ابدأ الحذف
   closeModal();
