@@ -678,6 +678,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
     <button class="bnav" id="bnav-log" style="display:none;"></button>
     <button class="bnav" id="bnav-analytics" style="display:none;"></button>
     <button class="bnav" id="bnav-seasons" style="display:none;"></button>
+    <button class="bnav" id="bnav-deferred" style="display:none;"></button>
   </div>
 
   <!-- HOME -->
@@ -721,6 +722,11 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       <div class="card" onclick="showPage('seasons',document.getElementById('bnav-seasons'))" style="cursor:pointer;text-align:center;padding:12px;">
         <div style="font-size:1.6rem;">🌱</div>
         <div style="font-size:0.75rem;font-weight:800;color:var(--g2);margin-top:3px;">المواسم</div>
+      </div>
+
+      <div class="card" onclick="showPage('deferred',document.getElementById('bnav-deferred'))" style="cursor:pointer;text-align:center;padding:12px;">
+        <div style="font-size:1.6rem;">🛒</div>
+        <div style="font-size:0.75rem;font-weight:800;color:var(--g2);margin-top:3px;">مبيعات آجل</div>
       </div>
 
     </div>
@@ -851,10 +857,6 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 
   <!-- AJAL -->
   <div class="page" id="page-ajal">
-    <div class="ajal-tabs">
-      <div class="ajal-tab active" id="tab-cash-ajal" onclick="switchAjalTab('cash')">🕐 نقدي آجل</div>
-      <div class="ajal-tab" id="tab-sales-ajal" onclick="switchAjalTab('sales')">🛒 مبيعات آجل</div>
-    </div>
     <div id="ajal-cash-section">
     <!-- قسم نقدي آجل -->
     <div id="ajal-section-normal">
@@ -881,8 +883,10 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 
   </div><!-- end ajal-cash-section -->
 
-    <!-- مبيعات آجل -->
-    <div id="ajal-sales-section" style="display:none;">
+  </div><!-- close page-ajal -->
+
+  <!-- مبيعات آجل - صفحة مستقلة -->
+  <div class="page" id="page-deferred">
 
       <div class="card">
         <div class="card-title">🛒 بيعة آجل جديدة</div>
@@ -955,9 +959,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       </div>
       <div id="ds-list"><div class="loading">⏳</div></div>
 
-    </div><!-- end ajal-sales-section -->
-
-  </div><!-- close page-ajal -->
+  </div><!-- end page-deferred -->
 
   <!-- CAPITAL -->
   <div class="page" id="page-capital">
@@ -1598,7 +1600,7 @@ function showPage(name, btn) {
   document.getElementById('page-'+name).classList.add('active');
   if(btn) btn.classList.add('active');
   else {
-    const map = {home:'bnav-home',income:'bnav-income',expense:'bnav-expense',vault:'bnav-vault',ajal:'bnav-ajal',log:'bnav-log',analytics:'bnav-analytics',search:'bnav-search',seasons:'bnav-seasons','season-detail':'bnav-seasons'};
+    const map = {home:'bnav-home',income:'bnav-income',expense:'bnav-expense',vault:'bnav-vault',ajal:'bnav-ajal',log:'bnav-log',analytics:'bnav-analytics',search:'bnav-search',seasons:'bnav-seasons','season-detail':'bnav-seasons',deferred:'bnav-deferred'};
     if(map[name]) document.getElementById(map[name]).classList.add('active');
     // else: no nav button to highlight
   }
@@ -1606,6 +1608,7 @@ function showPage(name, btn) {
   if(name==='income') renderIncomeList();
   if(name==='expense') renderExpenseList();
   if(name==='ajal') renderAjalLists();
+  if(name==='deferred') initDeferredSalesPage();
   if(name==='capital') renderCapitalList();
   if(name==='vault') { renderVaultList(); renderVaultSummary(); }
   if(name==='log') renderLogList();
@@ -3986,10 +3989,7 @@ const DS_DEFAULT_UNITS = ['كرتون','كيلو','أردب','قيراط'];
 
 // تبديل التبويبات
 function switchAjalTab(tab){
-  document.getElementById('ajal-cash-section').style.display = tab==='cash'?'block':'none';
-  document.getElementById('ajal-sales-section').style.display = tab==='sales'?'block':'none';
-  document.getElementById('tab-cash-ajal').classList.toggle('active', tab==='cash');
-  document.getElementById('tab-sales-ajal').classList.toggle('active', tab==='sales');
+  // مبيعات آجل انتقلت لصفحة مستقلة
   if(tab==='sales') initDeferredSalesPage();
 }
 
@@ -4111,7 +4111,7 @@ async function addDeferredSale(){
 // عرض المبيعات
 function setDsFilter(f, btn){
   _dsFilter = f;
-  document.querySelectorAll('#ajal-sales-section .filter-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#page-deferred .filter-btn').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
   renderDeferredSales();
 }
