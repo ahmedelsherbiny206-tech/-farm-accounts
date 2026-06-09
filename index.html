@@ -1588,6 +1588,7 @@ async function initApp(user) {
   renderHome();
   checkAjalAlerts();
   await loadFarmSettings();
+  setDateInputs();
 }
 
 // Handle OAuth redirect first - check URL hash
@@ -1636,6 +1637,7 @@ function showPage(name, btn) {
   if(name==='expense') renderExpenseList();
   if(name==='ajal') renderAjalLists();
   if(name==='deferred') initDeferredSalesPage();
+  setTimeout(setDateInputs, 100);
   if(name==='capital') renderCapitalList();
   if(name==='vault') { renderVaultList(); renderVaultSummary(); }
   if(name==='log') renderLogList();
@@ -1726,6 +1728,7 @@ async function addIncome() {
   document.getElementById('inc-amt').value='';
   document.getElementById('inc-notes').value='';
   document.getElementById('inc-crop').value='';
+  document.getElementById('inc-date').value=today();
   renderIncomeList(); renderHome();
 }
 
@@ -1829,6 +1832,7 @@ async function addExpense() {
   document.getElementById('exp-amt').value='';
   document.getElementById('exp-notes').value='';
   document.getElementById('exp-crop').value='';
+  document.getElementById('exp-date').value=today();
   renderExpenseList(); renderHome();
 }
 
@@ -2002,6 +2006,7 @@ async function addCapital() {
   showToast('✅ تم تحديث رأس المال وإضافته للخزنة');
   logActivity('إضافة','capital','رأس مال'+(notes?' ('+notes+')':''), amt);
   document.getElementById('cap-amt').value='';
+  document.getElementById('cap-date').value=today();
   document.getElementById('cap-notes').value='';
   renderCapitalList(); renderHome();
 }
@@ -2319,6 +2324,7 @@ async function addVaultTx(){
   showToast('✅ تم التسجيل');
   document.getElementById('vault-desc').value='';
   document.getElementById('vault-amt').value='';
+  document.getElementById('vault-date').value=today();
   document.getElementById('vault-notes').value='';
   renderVaultList();
   renderVaultSummary();
