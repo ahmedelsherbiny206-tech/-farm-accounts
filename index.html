@@ -1899,10 +1899,22 @@ async function addAjal() {
   const due=document.getElementById('aj-due').value;
   if(!name||!amt) return showToast('❌ اكمل البيانات');
   if(amt<=0) return showToast('❌ المبلغ لازم يكون أكبر من صفر');
-  const {error}=await sb.from('ajal').insert({type:type,name:name,amount:amt,reason:reason,due_date:due,user_id:currentUser.id});
+  const {data:inserted, error}=await sb.from('ajal').insert({type:type,name:name,amount:amt,reason:reason,due_date:due,user_id:currentUser.id}).select();
   if(error) return showToast('❌ خطأ: '+error.message);
-  showToast('✅ تم تسجيل الآجل');
-  logActivity('إضافة','ajal',(type==='receivable'?'آجل لك من: ':'آجل عليك لـ: ')+name+(reason?' ('+reason+')':''), amt);
+  const newId = inserted?.[0]?.id;
+  // مزامنة الخزنة فور التسجيل
+  const isReceivable = type === 'receivable'; // لي عند غيري = سلّفته → تخصم من الخزنة
+  await sb.from('vault').insert({
+    user_id: currentUser.id,
+    type: isReceivable ? 'out' : 'in',
+    description: isReceivable ? 'سلفت لـ: '+name : 'استلفت من: '+name,
+    amount: amt,
+    date: today(),
+    notes: reason||'',
+    ref_id: newId
+  });
+  showToast(isReceivable ? '✅ تم التسجيل وخصم من الخزنة' : '✅ تم التسجيل وأضيف للخزنة');
+  logActivity('إضافة','ajal',(isReceivable?'آجل لك من: ':'آجل عليك لـ: ')+name+(reason?' ('+reason+')':''), amt);
   document.getElementById('aj-name').value='';
   document.getElementById('aj-amt').value='';
   document.getElementById('aj-reason').value='';
@@ -1938,23 +1950,19 @@ async function markPaid(id) {
   const rec = ajalData?.[0];
   if(!rec) return;
   await sb.from('ajal').update({paid:true}).eq('id',id).eq('user_id',currentUser.id);
-  const isReceivable = rec.type === 'receivable'; // لي عند غيري → بتجيلي فلوس
-  const vaultType = isReceivable ? 'in' : 'out';
-  const vaultDesc = isReceivable
-    ? 'تحصيل آجل من: ' + (rec.name||'')
-    : 'سداد آجل لـ: ' + (rec.name||'');
+  const isReceivable = rec.type === 'receivable'; // لي عند غيري → رجّعلي فلوسي → تضاف للخزنة
   await sb.from('vault').insert({
     user_id: currentUser.id,
-    type: vaultType,
-    description: vaultDesc + (rec.reason ? ' - ' + rec.reason : ''),
+    type: isReceivable ? 'in' : 'out',
+    description: isReceivable ? 'رجّع سلفة: '+(rec.name||'') : 'رددت سلفة لـ: '+(rec.name||''),
     amount: rec.amount,
     date: today(),
-    notes: '',
+    notes: rec.reason||'',
     ref_id: id
   });
   const ajalType = isReceivable ? 'آجل لك' : 'آجل عليك';
   logActivity('تسديد','ajal','تسديد '+ajalType+': '+(rec.name||''), rec.amount);
-  showToast(isReceivable ? '✅ تم التحصيل وأضيف للخزنة' : '✅ تم السداد وخصم من الخزنة');
+  showToast(isReceivable ? '✅ استرجعت فلوسك وأضيفت للخزنة' : '✅ ردّيت السلفة وخصمت من الخزنة');
   renderAjalLists(); renderHome();
 }
 
