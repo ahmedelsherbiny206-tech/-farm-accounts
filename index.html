@@ -3164,38 +3164,51 @@ async function startDeleteFarmData(){
   );
   if(!confirmed) return;
 
-  const farmName = _farmSettingsCache?.name || 'المزرعة';
+  // إرسال OTP على الإيميل
+  showToast('📧 بنبعت كود التأكيد على إيميلك...');
+  const {error} = await sb.auth.signInWithOtp({
+    email: currentUser.email,
+    options: { shouldCreateUser: false }
+  });
+  if(error) return showToast('❌ خطأ: ' + error.message);
 
-  // عرض modal تأكيد بكتابة اسم المزرعة
-  document.getElementById('modal-title').textContent = '🗑️ تأكيد الحذف النهائي';
+  // عرض modal إدخال الكود
+  document.getElementById('modal-title').textContent = '🔐 كود التأكيد';
   document.getElementById('modal-body').innerHTML = `
-    <div style="background:#fdecea;border-radius:12px;padding:14px;margin-bottom:16px;text-align:center;">
-      <div style="font-size:1.8rem;margin-bottom:6px;">⚠️</div>
-      <div style="font-size:0.85rem;font-weight:700;color:var(--red);line-height:1.6;">
-        هتحذف كل بيانات المزرعة نهائياً<br>مش ممكن ترجعها تاني!
+    <div style="text-align:center;margin-bottom:16px;">
+      <div style="font-size:2rem;margin-bottom:8px;">📧</div>
+      <div style="font-size:0.85rem;color:var(--muted);line-height:1.6;">
+        تم إرسال كود 6 أرقام على<br>
+        <strong style="color:var(--text);">${currentUser.email}</strong>
       </div>
     </div>
     <div class="edit-modal-row">
-      <label>اكتب اسم المزرعة للتأكيد:</label>
-      <div style="background:var(--g5);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-weight:900;color:var(--g1);text-align:center;font-size:1rem;">
-        ${s(farmName)}
-      </div>
-      <input id="delete-confirm-input" type="text" placeholder="اكتب اسم المزرعة هنا"
-        autocomplete="off" autocorrect="off" spellcheck="false"
-        style="text-align:center;font-size:0.95rem;font-weight:700;">
+      <label>أدخل الكود</label>
+      <input id="delete-otp-input" type="text" inputmode="numeric" maxlength="6"
+        placeholder="000000" dir="ltr" autocomplete="off"
+        style="text-align:center;font-size:1.8rem;font-weight:900;letter-spacing:10px;padding:14px;">
     </div>
     <button class="btn" style="width:100%;background:var(--red);color:#fff;border:none;margin-top:12px;padding:13px;border-radius:12px;font-size:0.95rem;font-weight:900;font-family:Cairo,sans-serif;cursor:pointer;"
       onclick="confirmDeleteFarmData()">
-      🗑️ احذف كل البيانات
-    </button>`;
+      🗑️ تأكيد الحذف النهائي
+    </button>
+    <div style="font-size:0.75rem;color:var(--muted);text-align:center;margin-top:10px;">
+      الكود صالح لمدة ساعة - افتح الإيميل بتاعك
+    </div>`;
   document.getElementById('detail-overlay').classList.add('open');
 }
 
 async function confirmDeleteFarmData(){
-  const input = document.getElementById('delete-confirm-input')?.value.trim();
-  const farmName = _farmSettingsCache?.name || 'المزرعة';
-  if(!input) return showToast('❌ اكتب اسم المزرعة للتأكيد');
-  if(input !== farmName) return showToast('❌ الاسم غلط - اكتب: ' + farmName);
+  const token = document.getElementById('delete-otp-input')?.value.trim();
+  if(!token || token.length < 6) return showToast('❌ أدخل الكود كامل (6 أرقام)');
+
+  showToast('⏳ جاري التحقق...');
+  const {error} = await sb.auth.verifyOtp({
+    email: currentUser.email,
+    token,
+    type: 'email'
+  });
+  if(error) return showToast('❌ الكود غلط أو انتهت صلاحيته');
 
   // الكود صح - ابدأ الحذف
   closeModal();
