@@ -874,6 +874,9 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       <div class="form-row"><label>تاريخ الاستحقاق</label><input type="date" id="aj-due"></div>
       <button class="btn btn-gold" onclick="addAjal()">➕ إضافة</button>
     </div>
+    <div style="display:flex;justify-content:flex-end;margin:10px 0 6px;">
+      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="exportAjalToExcel()">📊 تصدير Excel</button>
+    </div>
     <div style="font-size:0.82rem;font-weight:800;color:var(--muted);margin-bottom:8px;padding-right:4px;">ديون لي 💰</div>
     <div id="ajal-rec-list"><div class="loading">⏳</div></div>
     <div style="font-size:0.82rem;font-weight:800;color:var(--muted);margin:12px 0 8px;padding-right:4px;">ديون عليَّ 💸</div>
@@ -2460,6 +2463,53 @@ async function exportToExcel(type) {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, type==='income'?'الإيرادات':'المصاريف');
   XLSX.writeFile(wb, filename);
+  showToast('✅ تم التصدير!');
+}
+
+async function exportAjalToExcel(){
+  showToast('⏳ جاري التصدير...');
+  const {data:rows, error} = await sb.from('ajal').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+  if(error) return showToast('❌ خطأ في التصدير');
+
+  const receivable = (rows||[]).filter(x=>x.type==='receivable');
+  const payable    = (rows||[]).filter(x=>x.type==='payable');
+
+  const headers = ['م','الاسم','المبلغ','السبب','تاريخ الاستحقاق','الحالة'];
+
+  const mapRow = (x, i) => ({
+    'م': i+1,
+    'الاسم': x.name||'',
+    'المبلغ': Number(x.amount||0),
+    'السبب': x.reason||'',
+    'تاريخ الاستحقاق': x.due_date ? fmtDate(x.due_date) : '',
+    'الحالة': x.paid ? 'مسدد ✓' : 'مستحق'
+  });
+
+  const recRows  = receivable.map(mapRow);
+  const payRows  = payable.map(mapRow);
+
+  const totalRec = receivable.reduce((s,x)=>s+Number(x.amount||0),0);
+  const totalPay = payable.reduce((s,x)=>s+Number(x.amount||0),0);
+  const pendRec  = receivable.filter(x=>!x.paid).reduce((s,x)=>s+Number(x.amount||0),0);
+  const pendPay  = payable.filter(x=>!x.paid).reduce((s,x)=>s+Number(x.amount||0),0);
+
+  recRows.push({'م':'','الاسم':'الإجمالي','المبلغ':totalRec,'السبب':'','تاريخ الاستحقاق':'','الحالة':''});
+  recRows.push({'م':'','الاسم':'المستحق فقط','المبلغ':pendRec,'السبب':'','تاريخ الاستحقاق':'','الحالة':''});
+  payRows.push({'م':'','الاسم':'الإجمالي','المبلغ':totalPay,'السبب':'','تاريخ الاستحقاق':'','الحالة':''});
+  payRows.push({'م':'','الاسم':'المستحق فقط','المبلغ':pendPay,'السبب':'','تاريخ الاستحقاق':'','الحالة':''});
+
+  const wb = XLSX.utils.book_new();
+  const colW = [{wch:4},{wch:20},{wch:12},{wch:20},{wch:16},{wch:10}];
+
+  const wsRec = XLSX.utils.json_to_sheet(recRows, {header: headers});
+  wsRec['!cols'] = colW;
+  XLSX.utils.book_append_sheet(wb, wsRec, 'ديون لي 💰');
+
+  const wsPay = XLSX.utils.json_to_sheet(payRows, {header: headers});
+  wsPay['!cols'] = colW;
+  XLSX.utils.book_append_sheet(wb, wsPay, 'ديون عليّ 💸');
+
+  XLSX.writeFile(wb, 'الآجل_النقدي.xlsx');
   showToast('✅ تم التصدير!');
 }
 
