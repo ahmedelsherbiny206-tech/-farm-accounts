@@ -680,6 +680,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
     <button class="bnav" id="bnav-seasons" style="display:none;"></button>
     <button class="bnav" id="bnav-deferred" style="display:none;"></button>
     <button class="bnav" id="bnav-sales-payment" style="display:none;"></button>
+    <button class="bnav" id="bnav-account-statement" style="display:none;"></button>
   </div>
 
   <!-- HOME -->
@@ -991,9 +992,10 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 
   <!-- صفحة سداد المبيعات -->
   <div class="page" id="page-sales-payment">
-    <div style="display:flex;align-items:center;gap:10px;margin:14px 0 10px;padding:0 2px;">
+    <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px;padding:0 2px;flex-wrap:wrap;">
       <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="showPage('deferred',document.getElementById('bnav-deferred'))">← رجوع</button>
-      <span style="font-size:0.95rem;font-weight:900;color:var(--g2);">💵 سداد مبيعات</span>
+      <span style="font-size:0.95rem;font-weight:900;color:var(--g2);flex:1;">💵 سداد مبيعات</span>
+      <button class="btn-sm" style="background:#1a6fa8;color:#fff;border:none;" onclick="showPage('account-statement',document.getElementById('bnav-account-statement'))">📋 كشف حساب</button>
     </div>
 
     <div class="card">
@@ -1047,6 +1049,37 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       <div id="sp-list"><div class="empty">لا يوجد سدادات</div></div>
     </div>
   </div><!-- end page-sales-payment -->
+
+  <!-- صفحة كشف الحساب -->
+  <div class="page" id="page-account-statement">
+    <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px;padding:0 2px;">
+      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="showPage('sales-payment',document.getElementById('bnav-sales-payment'))">← رجوع</button>
+      <span style="font-size:0.95rem;font-weight:900;color:#1a6fa8;">📋 كشف حساب</span>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 بيانات الكشف</div>
+      <div class="form-row">
+        <label>التاجر</label>
+        <select id="as-trader"><option value="">-- اختار التاجر --</option></select>
+      </div>
+      <div class="form-row">
+        <label>من</label>
+        <input type="date" id="as-from">
+      </div>
+      <div class="form-row">
+        <label>إلى</label>
+        <input type="date" id="as-to">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;">
+        <button class="btn" style="background:#1a6fa8;color:#fff;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-weight:900;font-size:0.9rem;cursor:pointer;" onclick="showAccountStatement()">📋 كشف حساب</button>
+        <button class="btn" style="background:var(--g2);color:#fff;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-weight:900;font-size:0.9rem;cursor:pointer;" onclick="showDetailedStatement()">📊 كشف تفصيلي</button>
+      </div>
+    </div>
+
+    <!-- نتيجة الكشف -->
+    <div id="as-result"></div>
+  </div><!-- end page-account-statement -->
 
   <!-- CAPITAL -->
   <div class="page" id="page-capital">
@@ -1689,7 +1722,7 @@ function showPage(name, btn) {
   document.getElementById('page-'+name).classList.add('active');
   if(btn) btn.classList.add('active');
   else {
-    const map = {home:'bnav-home',income:'bnav-income',expense:'bnav-expense',vault:'bnav-vault',ajal:'bnav-ajal',log:'bnav-log',analytics:'bnav-analytics',search:'bnav-search',seasons:'bnav-seasons','season-detail':'bnav-seasons',deferred:'bnav-deferred','sales-payment':'bnav-sales-payment'};
+    const map = {home:'bnav-home',income:'bnav-income',expense:'bnav-expense',vault:'bnav-vault',ajal:'bnav-ajal',log:'bnav-log',analytics:'bnav-analytics',search:'bnav-search',seasons:'bnav-seasons','season-detail':'bnav-seasons',deferred:'bnav-deferred','sales-payment':'bnav-sales-payment','account-statement':'bnav-account-statement'};
     if(map[name]) document.getElementById(map[name]).classList.add('active');
     // else: no nav button to highlight
   }
@@ -1699,6 +1732,7 @@ function showPage(name, btn) {
   if(name==='ajal') renderAjalLists();
   if(name==='deferred') initDeferredSalesPage();
   if(name==='sales-payment') initSalesPaymentPage();
+  if(name==='account-statement') initAccountStatementPage();
   setTimeout(setDateInputs, 100);
   if(name==='capital') renderCapitalList();
   if(name==='vault') { renderVaultList(); renderVaultSummary(); }
@@ -4829,5 +4863,205 @@ async function saveSpPayment(id){
   showToast('✅ تم التعديل');
   onSpTraderChange();
   renderHome();
+}
+
+// ===== كشف الحساب =====
+async function initAccountStatementPage(){
+  const traders = await getTraders();
+  const sel = document.getElementById('as-trader');
+  if(sel) sel.innerHTML = '<option value="">-- اختار التاجر --</option>' + traders.map(t=>`<option>${t}</option>`).join('');
+  document.getElementById('as-result').innerHTML = '';
+  setTimeout(setDateInputs, 100);
+}
+
+function _asValidate(){
+  const trader = document.getElementById('as-trader').value;
+  const from   = document.getElementById('as-from').value;
+  const to     = document.getElementById('as-to').value;
+  if(!trader) { showToast('❌ اختار التاجر'); return null; }
+  if(!from||!to) { showToast('❌ حدد الفترة الزمنية'); return null; }
+  return {trader, from, to};
+}
+
+async function showAccountStatement(){
+  const v = _asValidate(); if(!v) return;
+  const {trader, from, to} = v;
+  showToast('⏳ جاري التحميل...');
+
+  const [{data:sales},{data:payments}] = await Promise.all([
+    sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).gte('date',from).lte('date',to).order('date',{ascending:true}),
+    sb.from('vault').select('*').eq('user_id',currentUser.id).eq('category','سداد_مبيعات').like('description','سداد مبيعات: '+trader).gte('date',from).lte('date',to).order('date',{ascending:true})
+  ]);
+
+  const totalSales    = (sales||[]).reduce((s,x)=>s+Number(x.total||0),0);
+  const totalPayments = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const balance       = totalSales - totalPayments;
+
+  const el = document.getElementById('as-result');
+  el.innerHTML = `
+    <div style="display:flex;justify-content:flex-start;margin:10px 0 4px;">
+      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="exportAccountStatementExcel('${trader}','${from}','${to}')">📊 تصدير Excel</button>
+    </div>
+    <div class="card" id="as-summary-card">
+      <div class="card-title">📋 كشف حساب - ${trader}</div>
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px;">${fmtDate(from)} → ${fmtDate(to)}</div>
+
+      <!-- إجماليات -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
+        <div style="background:var(--g5);border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--muted);">إجمالي المشتريات</div>
+          <div style="font-size:0.9rem;font-weight:900;color:var(--g2);">${Number(totalSales).toLocaleString('en-US')} ج</div>
+        </div>
+        <div style="background:#fdecea;border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--muted);">إجمالي السدادات</div>
+          <div style="font-size:0.9rem;font-weight:900;color:var(--g2);">${Number(totalPayments).toLocaleString('en-US')} ج</div>
+        </div>
+        <div style="background:${balance>0?'#fff3cd':'#d4edda'};border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--muted);">الرصيد المتبقي</div>
+          <div style="font-size:0.9rem;font-weight:900;color:${balance>0?'var(--red)':'var(--g2)'};">${Number(balance).toLocaleString('en-US')} ج</div>
+        </div>
+      </div>
+
+      <!-- المشتريات -->
+      <div style="font-size:0.82rem;font-weight:900;color:var(--g2);margin-bottom:6px;">🛒 المشتريات</div>
+      ${(sales||[]).length ? (sales||[]).map(x=>`
+        <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:0.8rem;">
+          <div>
+            <span style="color:var(--muted);">${fmtDate(x.date)}</span>
+            <span style="margin:0 6px;">·</span>
+            <span>${s(x.description||'')}${x.variety?' - '+s(x.variety):''}${x.crop?' ('+s(x.crop)+')':''}</span>
+          </div>
+          <span style="font-weight:900;color:var(--text);">${Number(x.total||0).toLocaleString('en-US')} ج</span>
+        </div>`).join('') : '<div style="color:var(--muted);font-size:0.8rem;">لا يوجد مشتريات</div>'}
+
+      <!-- السدادات -->
+      <div style="font-size:0.82rem;font-weight:900;color:var(--g2);margin:12px 0 6px;">💵 السدادات</div>
+      ${(payments||[]).length ? (payments||[]).map(x=>`
+        <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:0.8rem;">
+          <div>
+            <span style="color:var(--muted);">${fmtDate(x.date)}</span>
+            ${x.notes?`<span style="margin:0 6px;">·</span><span style="color:var(--muted);">${s(x.notes)}</span>`:''}
+          </div>
+          <span style="font-weight:900;color:var(--g2);">+${Number(x.amount||0).toLocaleString('en-US')} ج</span>
+        </div>`).join('') : '<div style="color:var(--muted);font-size:0.8rem;">لا يوجد سدادات</div>'}
+    </div>`;
+}
+
+async function showDetailedStatement(){
+  const v = _asValidate(); if(!v) return;
+  const {trader, from, to} = v;
+  showToast('⏳ جاري التحميل...');
+
+  const {data:sales} = await sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).gte('date',from).lte('date',to).order('date',{ascending:true});
+
+  // تجميع حسب (صنف + وحدة + محصول)
+  const groups = {};
+  (sales||[]).forEach(x=>{
+    const key = [x.variety||'—', x.unit||'—', x.crop||'—'].join('||');
+    if(!groups[key]) groups[key] = {variety:x.variety||'', unit:x.unit||'', crop:x.crop||'', qty:0, total:0, rows:[]};
+    groups[key].qty   += Number(x.quantity||0);
+    groups[key].total += Number(x.total||0);
+    groups[key].rows.push(x);
+  });
+
+  const totalAll = (sales||[]).reduce((s,x)=>s+Number(x.total||0),0);
+  const totalQty = (sales||[]).reduce((s,x)=>s+Number(x.quantity||0),0);
+
+  const el = document.getElementById('as-result');
+  el.innerHTML = `
+    <div style="display:flex;justify-content:flex-start;margin:10px 0 4px;">
+      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="exportDetailedStatementExcel('${trader}','${from}','${to}')">📊 تصدير Excel</button>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 كشف تفصيلي - ${trader}</div>
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px;">${fmtDate(from)} → ${fmtDate(to)}</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+        <div style="background:var(--g5);border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--muted);">إجمالي الفلوس</div>
+          <div style="font-size:0.9rem;font-weight:900;color:var(--g2);">${Number(totalAll).toLocaleString('en-US')} ج</div>
+        </div>
+        <div style="background:var(--g5);border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--muted);">إجمالي الوحدات</div>
+          <div style="font-size:0.9rem;font-weight:900;color:var(--g2);">${Number(totalQty).toLocaleString('en-US')}</div>
+        </div>
+      </div>
+
+      ${Object.values(groups).map(g=>`
+        <div style="background:var(--g5);border-radius:12px;padding:12px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="font-size:0.85rem;font-weight:900;color:var(--g2);">
+              ${g.variety||'بدون صنف'} · ${g.unit||'—'}${g.crop?' · '+g.crop:''}
+            </div>
+            <div style="text-align:left;">
+              <div style="font-size:0.72rem;color:var(--muted);">${Number(g.qty).toLocaleString('en-US')} وحدة</div>
+              <div style="font-size:0.88rem;font-weight:900;color:var(--g2);">${Number(g.total).toLocaleString('en-US')} ج</div>
+            </div>
+          </div>
+          ${g.rows.map(x=>`
+            <div style="display:flex;justify-content:space-between;font-size:0.75rem;padding:5px 0;border-top:1px solid var(--border);">
+              <span style="color:var(--muted);">${fmtDate(x.date)} · ${x.quantity} ${x.unit||''} × ${Number(x.price||0).toLocaleString('en-US')} ج</span>
+              <span style="font-weight:800;">${Number(x.total||0).toLocaleString('en-US')} ج</span>
+            </div>`).join('')}
+        </div>`).join('')}
+
+      ${!Object.keys(groups).length ? '<div class="empty">لا يوجد مبيعات في هذه الفترة</div>' : ''}
+    </div>`;
+}
+
+async function exportAccountStatementExcel(trader, from, to){
+  showToast('⏳ جاري التصدير...');
+  const [{data:sales},{data:payments}] = await Promise.all([
+    sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).gte('date',from).lte('date',to).order('date',{ascending:true}),
+    sb.from('vault').select('*').eq('user_id',currentUser.id).eq('category','سداد_مبيعات').like('description','سداد مبيعات: '+trader).gte('date',from).lte('date',to).order('date',{ascending:true})
+  ]);
+
+  const totalSales    = (sales||[]).reduce((s,x)=>s+Number(x.total||0),0);
+  const totalPayments = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+
+  const salesRows = (sales||[]).map((x,i)=>({'م':i+1,'التاريخ':x.date,'الوصف':x.description||'','الصنف':x.variety||'','المحصول':x.crop||'','الكمية':x.quantity||0,'الوحدة':x.unit||'','الإجمالي':Number(x.total||0)}));
+  salesRows.push({'م':'','التاريخ':'','الوصف':'الإجمالي','الصنف':'','المحصول':'','الكمية':'','الوحدة':'','الإجمالي':totalSales});
+
+  const payRows = (payments||[]).map((x,i)=>({'م':i+1,'التاريخ':x.date,'المبلغ':Number(x.amount||0),'ملاحظات':x.notes||''}));
+  payRows.push({'م':'','التاريخ':'الإجمالي','المبلغ':totalPayments,'ملاحظات':''});
+  payRows.push({'م':'','التاريخ':'الرصيد المتبقي','المبلغ':totalSales-totalPayments,'ملاحظات':''});
+
+  const wb = XLSX.utils.book_new();
+  const ws1 = XLSX.utils.json_to_sheet(salesRows,{header:['م','التاريخ','الوصف','الصنف','المحصول','الكمية','الوحدة','الإجمالي']});
+  ws1['!cols']=[{wch:4},{wch:12},{wch:25},{wch:12},{wch:12},{wch:8},{wch:10},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, ws1, 'المشتريات');
+  const ws2 = XLSX.utils.json_to_sheet(payRows,{header:['م','التاريخ','المبلغ','ملاحظات']});
+  ws2['!cols']=[{wch:4},{wch:12},{wch:12},{wch:20}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'السدادات');
+  XLSX.writeFile(wb, `كشف_حساب_${trader}.xlsx`);
+  showToast('✅ تم التصدير!');
+}
+
+async function exportDetailedStatementExcel(trader, from, to){
+  showToast('⏳ جاري التصدير...');
+  const {data:sales} = await sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).gte('date',from).lte('date',to).order('date',{ascending:true});
+
+  const groups = {};
+  (sales||[]).forEach(x=>{
+    const key = [x.variety||'—',x.unit||'—',x.crop||'—'].join('||');
+    if(!groups[key]) groups[key]={variety:x.variety||'',unit:x.unit||'',crop:x.crop||'',rows:[]};
+    groups[key].rows.push(x);
+  });
+
+  const wb = XLSX.utils.book_new();
+  Object.values(groups).forEach(g=>{
+    const sheetName = [g.variety||'بدون صنف', g.unit||'—'].join('-').slice(0,31);
+    const rows = g.rows.map((x,i)=>({'م':i+1,'التاريخ':x.date,'الكمية':x.quantity||0,'السعر':x.price||0,'الإجمالي':Number(x.total||0),'ملاحظات':x.notes||''}));
+    const totQty = g.rows.reduce((s,x)=>s+Number(x.quantity||0),0);
+    const totAmt = g.rows.reduce((s,x)=>s+Number(x.total||0),0);
+    rows.push({'م':'','التاريخ':'الإجمالي','الكمية':totQty,'السعر':'','الإجمالي':totAmt,'ملاحظات':''});
+    const ws = XLSX.utils.json_to_sheet(rows,{header:['م','التاريخ','الكمية','السعر','الإجمالي','ملاحظات']});
+    ws['!cols']=[{wch:4},{wch:12},{wch:8},{wch:10},{wch:12},{wch:20}];
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  });
+
+  if(!Object.keys(groups).length) return showToast('❌ لا يوجد بيانات');
+  XLSX.writeFile(wb, `كشف_تفصيلي_${trader}.xlsx`);
+  showToast('✅ تم التصدير!');
 }
 </script>
