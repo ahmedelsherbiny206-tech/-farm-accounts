@@ -687,13 +687,19 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
   <div class="page active" id="page-home">
     <div class="sum-grid">
       <div class="sum-card" onclick="showPage('income',document.getElementById('bnav-income'))" style="cursor:pointer;">
-        <div class="lbl">إجمالي الوارد</div><div class="val" id="sh-inc">0 ج</div><div class="ico">💰</div>
+        <div class="lbl">إجمالي الوارد</div><div class="val" id="sh-inc">0 ج</div>
+        <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;" id="sh-inc-count"></div>
+        <div class="ico">💰</div>
       </div>
       <div class="sum-card red" onclick="showPage('expense',document.getElementById('bnav-expense'))" style="cursor:pointer;">
-        <div class="lbl">إجمالي الصادر</div><div class="val" id="sh-exp">0 ج</div><div class="ico">💸</div>
+        <div class="lbl">إجمالي الصادر</div><div class="val" id="sh-exp">0 ج</div>
+        <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;" id="sh-exp-count"></div>
+        <div class="ico">💸</div>
       </div>
       <div class="sum-card gold" onclick="showPage('ajal',document.getElementById('bnav-ajal'))" style="cursor:pointer;">
-        <div class="lbl">الآجل المستحق</div><div class="val" id="sh-ajal">0 ج</div><div class="ico">🕐</div>
+        <div class="lbl">الآجل المستحق</div><div class="val" id="sh-ajal">0 ج</div>
+        <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;" id="sh-ajal-count"></div>
+        <div class="ico">🕐</div>
       </div>
       <div class="sum-card blue" onclick="showPage('vault',null)" style="cursor:pointer;">
         <div class="lbl">رصيد الخزنة</div><div class="val" id="sh-cap">0 ج</div><div class="ico">🏦</div>
@@ -702,6 +708,23 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
     <div class="profit-banner" id="profit-banner">
       <div><div class="pl">صافي الربح</div><div class="pv" id="sh-profit">0 ج</div></div>
       <div style="font-size:2.2rem;">📈</div>
+    </div>
+    <!-- الموسم النشط -->
+    <div id="home-active-season" style="display:none;background:linear-gradient(135deg,#1B5E20,#2E7D32);color:#fff;border-radius:14px;padding:12px 16px;margin-bottom:12px;display:none;align-items:center;justify-content:space-between;cursor:pointer;" onclick="showPage('seasons',document.getElementById('bnav-seasons'))">
+      <div>
+        <div style="font-size:0.7rem;opacity:0.8;margin-bottom:2px;">🌱 الموسم النشط</div>
+        <div style="font-weight:900;font-size:0.95rem;" id="home-season-name">-</div>
+        <div style="font-size:0.68rem;opacity:0.75;margin-top:2px;" id="home-season-dates"></div>
+      </div>
+      <div style="text-align:left;">
+        <div style="font-size:0.68rem;opacity:0.8;">صافي الموسم</div>
+        <div style="font-weight:900;font-size:1rem;" id="home-season-profit">0 ج</div>
+      </div>
+    </div>
+    <!-- مديونيات التجار -->
+    <div id="home-debts-card" style="display:none;" class="card">
+      <div class="card-title" style="margin-bottom:8px;">👥 مديونيات التجار</div>
+      <div id="home-debts-list"></div>
     </div>
     <!-- Quick Nav Cards -->
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
@@ -795,6 +818,9 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       <span style="font-size:0.8rem;font-weight:700;color:var(--g2);">إجمالي المحدد / المعروض</span>
       <span style="font-size:0.9rem;font-weight:900;color:var(--g2);" id="inc-total-val">0 ج</span>
     </div>
+    <div style="position:relative;margin-bottom:8px;">
+      <input type="text" placeholder="🔍 بحث سريع..." oninput="quickFilter('income-list',this.value)" style="width:100%;padding:8px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.85rem;box-sizing:border-box;">
+    </div>
     <div id="income-list"><div class="loading">⏳ جاري التحميل...</div></div>
   </div>
 
@@ -854,6 +880,9 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       <span style="font-size:0.8rem;font-weight:700;color:var(--red);">إجمالي المعروض</span>
       <span style="font-size:0.9rem;font-weight:900;color:var(--red);" id="exp-total-val">0 ج</span>
     </div>
+    <div style="position:relative;margin-bottom:8px;">
+      <input type="text" placeholder="🔍 بحث سريع..." oninput="quickFilter('expense-list',this.value)" style="width:100%;padding:8px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.85rem;box-sizing:border-box;">
+    </div>
     <div id="expense-list"><div class="loading">⏳ جاري التحميل...</div></div>
   </div>
 
@@ -878,6 +907,9 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       <div class="form-row"><label>السبب</label><input type="text" id="aj-reason" placeholder="مثال: بيع محصول..."></div>
       <div class="form-row"><label>تاريخ الاستحقاق</label><input type="date" id="aj-due"></div>
       <button class="btn btn-gold" onclick="addAjal()">➕ إضافة</button>
+    </div>
+    <div style="position:relative;margin-bottom:8px;">
+      <input type="text" placeholder="🔍 بحث سريع..." oninput="quickFilter('ajal-rec-list',this.value);quickFilter('ajal-pay-list',this.value)" style="width:100%;padding:8px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.85rem;box-sizing:border-box;">
     </div>
     <div style="font-size:0.82rem;font-weight:800;color:var(--muted);margin-bottom:8px;padding-right:4px;">ديون لي 💰</div>
     <div id="ajal-rec-list"><div class="loading">⏳</div></div>
@@ -986,6 +1018,9 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
           <div style="font-size:0.75rem;font-weight:700;color:var(--muted);">إجمالي الوحدات</div>
           <div style="font-size:1rem;font-weight:900;color:var(--g2);" id="ds-units-shown">0</div>
         </div>
+      </div>
+      <div style="position:relative;margin-bottom:8px;">
+        <input type="text" placeholder="🔍 بحث سريع..." oninput="quickFilter('ds-list',this.value)" style="width:100%;padding:8px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.85rem;box-sizing:border-box;">
       </div>
       <div id="ds-list"><div class="loading">⏳</div></div>
 
@@ -1201,6 +1236,9 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
     <div id="vault-total-bar" style="background:var(--g5);border-radius:10px;padding:8px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
       <span style="font-size:0.8rem;font-weight:700;color:var(--g2);">إجمالي المعروض</span>
       <span style="font-size:0.9rem;font-weight:900;color:var(--g2);" id="vault-total-val">0 ج</span>
+    </div>
+    <div style="position:relative;margin-bottom:8px;">
+      <input type="text" placeholder="🔍 بحث سريع..." oninput="quickFilter('vault-list',this.value)" style="width:100%;padding:8px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.85rem;box-sizing:border-box;">
     </div>
     <div id="vault-list"><div class="loading">⏳ جاري التحميل...</div></div>
   </div>
@@ -1782,44 +1820,87 @@ function closeMoreMenu() {
 
 // ===== HOME =====
 async function renderHome() {
-  const d = '';
-  let qInc = sb.from('income').select('amount').eq('user_id',currentUser.id);
-  let qExp = sb.from('expenses').select('amount').eq('user_id',currentUser.id);
-  if(d) { qInc = qInc.eq('date',d); qExp = qExp.eq('date',d); }
-  const [rInc, rExp, rAjal, rCap, rRecInc, rRecExp] = await Promise.all([
-    qInc, qExp,
+  const [rInc, rExp, rAjal, rCap, rRecInc, rRecExp, rVault, rSales, rPayments, rSeasons] = await Promise.all([
+    sb.from('income').select('amount').eq('user_id',currentUser.id),
+    sb.from('expenses').select('amount').eq('user_id',currentUser.id),
     sb.from('ajal').select('amount,type,paid').eq('user_id',currentUser.id).eq('paid',false).eq('type','receivable'),
     sb.from('capital').select('amount,date').eq('user_id',currentUser.id).order('date',{ascending:false}).limit(1),
     sb.from('income').select('description,amount,date').eq('user_id',currentUser.id).order('date',{ascending:false}).limit(3),
     sb.from('expenses').select('description,amount,date').eq('user_id',currentUser.id).order('date',{ascending:false}).limit(3),
+    sb.from('vault').select('amount,type').eq('user_id',currentUser.id),
+    sb.from('deferred_sales').select('trader,total').eq('user_id',currentUser.id),
+    sb.from('vault').select('amount,description,category').eq('user_id',currentUser.id).in('category',['سداد_مبيعات','تسوية_مبيعات']),
+    sb.from('seasons').select('*').eq('user_id',currentUser.id).is('end_date',null).order('start_date',{ascending:false}).limit(1),
   ]);
+
   const totalInc = (rInc.data||[]).reduce((s,x)=>s+Number(x.amount),0);
   const totalExp = (rExp.data||[]).reduce((s,x)=>s+Number(x.amount),0);
   const totalAjal = (rAjal.data||[]).reduce((s,x)=>s+Number(x.amount),0);
   const capVal = rCap.data?.length ? rCap.data[0].amount : 0;
   const profit = totalInc - totalExp;
 
-  // Vault - only manual entries (in/out), not auto
-  const vaultOpening = await getVaultOpeningBalance();
-  const vaultData = await sb.from('vault').select('amount,type').eq('user_id',currentUser.id);
-  const vdIn = ((vaultData.data)||[]).filter(x=>x.type==='in').reduce((s,x)=>s+Number(x.amount),0);
-  const vdOut = ((vaultData.data)||[]).filter(x=>x.type==='out').reduce((s,x)=>s+Number(x.amount),0);
-  const vdIncAuto = ((vaultData.data)||[]).filter(x=>x.type==='income_auto').reduce((s,x)=>s+Number(x.amount),0);
-  const vdExpAuto = ((vaultData.data)||[]).filter(x=>x.type==='expense_auto').reduce((s,x)=>s+Number(x.amount),0);
-  const vdCapAuto = ((vaultData.data)||[]).filter(x=>x.type==='capital_auto').reduce((s,x)=>s+Number(x.amount),0);
-  const vdOpeningVault = ((vaultData.data)||[]).filter(x=>x.type==='opening').reduce((s,x)=>s+Number(x.amount),0);
-  const vaultBal = vdOpeningVault + vdIn + vdCapAuto + vdIncAuto - vdOut - vdExpAuto;
+  const vd = rVault.data||[];
+  const vaultBal = vd.filter(x=>x.type==='opening').reduce((s,x)=>s+Number(x.amount),0)
+    + vd.filter(x=>x.type==='in').reduce((s,x)=>s+Number(x.amount),0)
+    + vd.filter(x=>x.type==='capital_auto').reduce((s,x)=>s+Number(x.amount),0)
+    + vd.filter(x=>x.type==='income_auto').reduce((s,x)=>s+Number(x.amount),0)
+    - vd.filter(x=>x.type==='out').reduce((s,x)=>s+Number(x.amount),0)
+    - vd.filter(x=>x.type==='expense_auto').reduce((s,x)=>s+Number(x.amount),0);
 
   document.getElementById('sh-inc').textContent = fmt(totalInc);
   document.getElementById('sh-exp').textContent = fmt(totalExp);
   document.getElementById('sh-ajal').textContent = fmt(totalAjal);
   document.getElementById('sh-cap').textContent = fmt(vaultBal);
   document.getElementById('sh-profit').textContent = fmt(Math.abs(profit));
+  const incCount = document.getElementById('sh-inc-count');
+  if(incCount) incCount.textContent = (rInc.data||[]).length + ' عملية';
+  const expCount = document.getElementById('sh-exp-count');
+  if(expCount) expCount.textContent = (rExp.data||[]).length + ' عملية';
+  const ajalCount = document.getElementById('sh-ajal-count');
+  if(ajalCount) ajalCount.textContent = (rAjal.data||[]).length + ' دين';
   const capEl = document.getElementById('sh-capital-val');
   if(capEl) capEl.textContent = fmt(capVal);
   const pb = document.getElementById('profit-banner');
   pb.querySelector('.pl').textContent = profit>=0 ? 'صافي الربح 📈' : 'صافي الخسارة 📉';
   pb.className = 'profit-banner' + (profit<0?' loss':'');
+
+  // الموسم النشط
+  const seasonBox = document.getElementById('home-active-season');
+  const activeSeason = (rSeasons.data||[])[0];
+  if(activeSeason && seasonBox) {
+    document.getElementById('home-season-name').textContent = activeSeason.name + (activeSeason.crop?' · 🌾'+activeSeason.crop:'');
+    document.getElementById('home-season-dates').textContent = 'من ' + fmtDate(activeSeason.start_date);
+    const endD = today();
+    const [si, se] = await Promise.all([
+      sb.from('income').select('amount').eq('user_id',currentUser.id).eq('crop',activeSeason.crop||'').gte('date',activeSeason.start_date).lte('date',endD),
+      sb.from('expenses').select('amount').eq('user_id',currentUser.id).eq('crop',activeSeason.crop||'').gte('date',activeSeason.start_date).lte('date',endD),
+    ]);
+    const sProfit = (si.data||[]).reduce((s,x)=>s+Number(x.amount),0) - (se.data||[]).reduce((s,x)=>s+Number(x.amount),0);
+    document.getElementById('home-season-profit').textContent = (sProfit>=0?'':'-') + fmt(Math.abs(sProfit));
+    seasonBox.style.display = 'flex';
+  } else if(seasonBox) { seasonBox.style.display = 'none'; }
+
+  // مديونيات التجار
+  const salesByTrader = {};
+  (rSales.data||[]).forEach(x=>{ salesByTrader[x.trader]=(salesByTrader[x.trader]||0)+Number(x.total||0); });
+  const paidByTrader = {};
+  (rPayments.data||[]).forEach(x=>{
+    const t = (x.description||'').replace('سداد مبيعات: ','');
+    paidByTrader[t]=(paidByTrader[t]||0)+Number(x.amount||0);
+  });
+  const traders = Object.keys(salesByTrader);
+  const debts = traders.map(t=>({trader:t, debt: salesByTrader[t]-(paidByTrader[t]||0)})).filter(x=>x.debt>0).sort((a,b)=>b.debt-a.debt);
+  const debtsCard = document.getElementById('home-debts-card');
+  const debtsList = document.getElementById('home-debts-list');
+  if(debts.length && debtsCard && debtsList) {
+    debtsCard.style.display = '';
+    debtsList.innerHTML = debts.map(x=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;"
+        onclick="showPage('sales-payment',null);setTimeout(()=>{const s=document.getElementById('sp-trader');if(s){s.value='${s(x.trader)}';onSpTraderChange();}},400)">
+        <div style="font-size:0.85rem;font-weight:800;">👤 ${s(x.trader)}</div>
+        <div style="font-size:0.9rem;font-weight:900;color:var(--red);">${fmt(x.debt)} ج</div>
+      </div>`).join('');
+  } else if(debtsCard) { debtsCard.style.display = 'none'; }
 
   // Recent transactions
   const recent = document.getElementById('home-recent');
@@ -2310,6 +2391,16 @@ function showDetail(type, item) {
   document.getElementById('detail-overlay').classList.add('open');
 }
 function closeModal() { document.getElementById('detail-overlay').classList.remove('open'); }
+
+function quickFilter(listId, query) {
+  const q = query.trim().toLowerCase();
+  const list = document.getElementById(listId);
+  if(!list) return;
+  Array.from(list.children).forEach(el => {
+    if(!q) { el.style.display = ''; return; }
+    el.style.display = el.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
 
 function goToSource(page, itemId) {
   closeModal();
@@ -4988,6 +5079,14 @@ async function addSalesPayment(){
   if(!trader) return showToast('❌ اختار التاجر');
   if(!amount || amount <= 0) return showToast('❌ اكتب المبلغ');
   if(!date) return showToast('❌ اختار التاريخ');
+
+  // تحذير لو المبلغ أكبر من المديونية
+  const debtTxt = document.getElementById('sp-debt-val')?.textContent||'';
+  const currentDebt = parseNum(debtTxt.replace(' ج','').replace(/,/g,''));
+  if(amount > currentDebt && currentDebt >= 0) {
+    const ok = await showConfirm(`⚠️ المبلغ (${fmt(amount)} ج) أكبر من المديونية (${fmt(currentDebt)} ج).\nهل أنت متأكد؟`);
+    if(!ok) return;
+  }
 
   const {error} = await sb.from('vault').insert({
     user_id: currentUser.id,
