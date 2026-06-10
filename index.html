@@ -722,10 +722,6 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       </div>
     </div>
     <!-- مديونيات التجار -->
-    <div id="home-debts-card" style="display:none;" class="card">
-      <div class="card-title" style="margin-bottom:8px;">👥 مديونيات التجار</div>
-      <div id="home-debts-list"></div>
-    </div>
     <!-- Quick Nav Cards -->
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
 
@@ -1895,19 +1891,6 @@ async function renderHome() {
     paidByTrader[t]=(paidByTrader[t]||0)+Number(x.amount||0);
   });
   const traders = Object.keys(salesByTrader);
-  const debts = traders.map(t=>({trader:t, debt: salesByTrader[t]-(paidByTrader[t]||0)})).filter(x=>x.debt>0).sort((a,b)=>b.debt-a.debt);
-  const debtsCard = document.getElementById('home-debts-card');
-  const debtsList = document.getElementById('home-debts-list');
-  if(debts.length && debtsCard && debtsList) {
-    debtsCard.style.display = '';
-    window._debtTraders = debts.map(x=>x.trader);
-    debtsList.innerHTML = debts.map((x,i)=>`
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;"
-        onclick="goToDebtTrader(${i})">
-        <div style="font-size:0.85rem;font-weight:800;">👤 ${s(x.trader)}</div>
-        <div style="font-size:0.9rem;font-weight:900;color:var(--red);">${fmt(x.debt)} ج</div>
-      </div>`).join('');
-  } else if(debtsCard) { debtsCard.style.display = 'none'; }
 
   // Recent transactions
   const recent = document.getElementById('home-recent');
