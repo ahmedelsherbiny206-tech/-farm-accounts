@@ -2250,11 +2250,10 @@ async function renderCapitalList() {
   const {data}=await q;
   const el=document.getElementById('capital-list');
   if(!data?.length){el.innerHTML='<div class="empty">لا يوجد سجل بعد</div>';return;}
-  // Update current capital display from latest entry
-  const latest = await sb.from('capital').select('amount,date').eq('user_id',currentUser.id).order('date',{ascending:false}).limit(1);
-  if(latest.data?.length){
-    document.getElementById('cap-display').textContent=Number(latest.data[0].amount).toLocaleString('ar-EG')+' جنيه';
-    document.getElementById('cap-updated').textContent='آخر تحديث: '+fmtDate(latest.data[0].date);
+  const {data:latestCap} = await sb.from('capital').select('amount,date').eq('user_id',currentUser.id).order('date',{ascending:false}).limit(1);
+  if(latestCap?.length){
+    document.getElementById('cap-display').textContent=Number(latestCap[0].amount).toLocaleString('en-US')+' جنيه';
+    document.getElementById('cap-updated').textContent='آخر تحديث: '+fmtDate(latestCap[0].date);
   }
   el.innerHTML=data.map(x=>`
     <div class="item cap ${capSelected.has(x.id)?'selected':''}" id="cap-item-${x.id}">
