@@ -1041,6 +1041,9 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
         <span style="font-size:0.8rem;font-weight:700;color:var(--muted);">إجمالي المسدَّد</span>
         <span style="font-size:0.95rem;font-weight:900;color:var(--g2);" id="sp-total-paid">0 ج</span>
       </div>
+      <div style="margin-bottom:8px;">
+        <button id="sp-bulk-delete-btn" onclick="bulkDeleteSpPayments()" style="display:none;background:var(--red);color:#fff;border:none;padding:8px 16px;border-radius:10px;font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:800;cursor:pointer;">🗑️ حذف المحدد</button>
+      </div>
       <div id="sp-list"><div class="empty">لا يوجد سدادات</div></div>
     </div>
   </div><!-- end page-sales-payment -->
@@ -4722,11 +4725,15 @@ function clearSpFilter(){
   renderSalesPayments();
 }
 
+let _spSelected = new Set();
+
 async function renderSalesPayments(){
   const el = document.getElementById('sp-list');
   const trader = document.getElementById('sp-trader').value;
   if(!trader || !el) return;
   el.innerHTML = '<div class="loading">⏳</div>';
+  _spSelected.clear();
+  updateSpDeleteBtn();
 
   const from = document.getElementById('sp-from')?.value;
   const to   = document.getElementById('sp-to')?.value;
@@ -4748,12 +4755,79 @@ async function renderSalesPayments(){
   document.getElementById('sp-total-paid').textContent = Number(total).toLocaleString('en-US') + ' ج';
 
   el.innerHTML = data.map(x=>`
-    <div class="item" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;">
-      <div>
-        <div style="font-size:0.85rem;font-weight:800;">💵 سداد من: ${s(x.description.replace('سداد مبيعات: ',''))}</div>
+    <div class="item" style="display:flex;align-items:center;gap:10px;padding:12px 14px;">
+      <input type="checkbox" style="width:18px;height:18px;cursor:pointer;accent-color:var(--g3);"
+        onchange="toggleSpSelect('${x.id}',this.checked)">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:0.85rem;font-weight:800;">💵 ${Number(x.amount||0).toLocaleString('en-US')} ج</div>
         <div style="font-size:0.72rem;color:var(--muted);">${fmtDate(x.date)}${x.notes?' · '+s(x.notes):''}</div>
       </div>
-      <div style="font-size:0.95rem;font-weight:900;color:var(--g2);">${Number(x.amount||0).toLocaleString('en-US')} ج</div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn-sm" style="background:var(--blue-p);color:var(--blue);border:none;" onclick="editSpPayment('${x.id}',${x.amount},'${x.date}','${s(x.notes||'')}')">✏️</button>
+        <button class="btn-sm btn-r" onclick="deleteSpPayment('${x.id}')">🗑️</button>
+      </div>
     </div>`).join('');
+}
+
+function toggleSpSelect(id, checked){
+  if(checked) _spSelected.add(id);
+  else _spSelected.delete(id);
+  updateSpDeleteBtn();
+}
+
+function updateSpDeleteBtn(){
+  const btn = document.getElementById('sp-bulk-delete-btn');
+  if(!btn) return;
+  if(_spSelected.size > 0){
+    btn.style.display = 'inline-block';
+    btn.textContent = '🗑️ حذف المحدد ('+_spSelected.size+')';
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+async function deleteSpPayment(id){
+  if(!await showConfirm('⚠️ هتحذف هذا السداد من الخزنة. متأكد؟','🗑️')) return;
+  await sb.from('vault').delete().eq('id',id).eq('user_id',currentUser.id);
+  showToast('🗑️ تم الحذف');
+  onSpTraderChange();
+  renderHome();
+}
+
+async function bulkDeleteSpPayments(){
+  if(!_spSelected.size) return;
+  if(!await showConfirm('⚠️ هتحذف '+_spSelected.size+' سداد من الخزنة. متأكد؟','🗑️')) return;
+  await sb.from('vault').delete().in('id',[..._spSelected]).eq('user_id',currentUser.id);
+  showToast('🗑️ تم حذف '+_spSelected.size+' سداد');
+  _spSelected.clear();
+  onSpTraderChange();
+  renderHome();
+}
+
+function editSpPayment(id, amount, date, notes){
+  document.getElementById('modal-title').textContent = '✏️ تعديل السداد';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="edit-modal-row"><label>المبلغ</label>
+      <input type="text" inputmode="decimal" id="spedit-amount" value="${amount}" autocomplete="off"></div>
+    <div class="edit-modal-row"><label>التاريخ</label>
+      <input type="date" id="spedit-date" value="${date}"></div>
+    <div class="edit-modal-row"><label>ملاحظات</label>
+      <input type="text" id="spedit-notes" value="${notes}" autocomplete="off"></div>
+    <button class="btn btn-g" style="width:100%;margin-top:10px;" onclick="saveSpPayment('${id}')">💾 حفظ</button>`;
+  document.getElementById('detail-overlay').classList.add('open');
+}
+
+async function saveSpPayment(id){
+  const amount = parseFloat(document.getElementById('spedit-amount').value);
+  const date   = document.getElementById('spedit-date').value;
+  const notes  = document.getElementById('spedit-notes').value.trim();
+  if(!amount || amount <= 0) return showToast('❌ أدخل المبلغ');
+  if(!date) return showToast('❌ أدخل التاريخ');
+  const {error} = await sb.from('vault').update({amount, date, notes}).eq('id',id).eq('user_id',currentUser.id);
+  if(error) return showToast('❌ خطأ: '+error.message);
+  closeModal();
+  showToast('✅ تم التعديل');
+  onSpTraderChange();
+  renderHome();
 }
 </script>
