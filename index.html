@@ -710,7 +710,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       <div style="font-size:2.2rem;">📈</div>
     </div>
     <!-- الموسم النشط -->
-    <div id="home-active-season" style="display:none;background:linear-gradient(135deg,#1B5E20,#2E7D32);color:#fff;border-radius:14px;padding:12px 16px;margin-bottom:12px;display:none;align-items:center;justify-content:space-between;cursor:pointer;" onclick="showPage('seasons',document.getElementById('bnav-seasons'))">
+    <div id="home-active-season" style="display:none;background:linear-gradient(135deg,#1B5E20,#2E7D32);color:#fff;border-radius:14px;padding:12px 16px;margin-bottom:12px;align-items:center;justify-content:space-between;cursor:pointer;" onclick="showPage('seasons',document.getElementById('bnav-seasons'))">
       <div>
         <div style="font-size:0.7rem;opacity:0.8;margin-bottom:2px;">🌱 الموسم النشط</div>
         <div style="font-weight:900;font-size:0.95rem;" id="home-season-name">-</div>
@@ -1830,7 +1830,7 @@ async function renderHome() {
     sb.from('vault').select('amount,type').eq('user_id',currentUser.id),
     sb.from('deferred_sales').select('trader,total').eq('user_id',currentUser.id),
     sb.from('vault').select('amount,description,category').eq('user_id',currentUser.id).in('category',['سداد_مبيعات','تسوية_مبيعات']),
-    sb.from('seasons').select('*').eq('user_id',currentUser.id).is('end_date',null).order('start_date',{ascending:false}).limit(1),
+    sb.from('seasons').select('*').eq('user_id',currentUser.id).or('end_date.is.null,end_date.gte.'+today()).order('start_date',{ascending:false}).limit(1),
   ]);
 
   const totalInc = (rInc.data||[]).reduce((s,x)=>s+Number(x.amount),0);
@@ -1869,14 +1869,19 @@ async function renderHome() {
   const activeSeason = (rSeasons.data||[])[0];
   if(activeSeason && seasonBox) {
     document.getElementById('home-season-name').textContent = activeSeason.name + (activeSeason.crop?' · 🌾'+activeSeason.crop:'');
-    document.getElementById('home-season-dates').textContent = 'من ' + fmtDate(activeSeason.start_date);
-    const endD = today();
-    const [si, se] = await Promise.all([
-      sb.from('income').select('amount').eq('user_id',currentUser.id).eq('crop',activeSeason.crop||'').gte('date',activeSeason.start_date).lte('date',endD),
-      sb.from('expenses').select('amount').eq('user_id',currentUser.id).eq('crop',activeSeason.crop||'').gte('date',activeSeason.start_date).lte('date',endD),
-    ]);
-    const sProfit = (si.data||[]).reduce((s,x)=>s+Number(x.amount),0) - (se.data||[]).reduce((s,x)=>s+Number(x.amount),0);
-    document.getElementById('home-season-profit').textContent = (sProfit>=0?'':'-') + fmt(Math.abs(sProfit));
+    const endLabel = activeSeason.end_date ? (' → '+fmtDate(activeSeason.end_date)) : '';
+    document.getElementById('home-season-dates').textContent = 'من ' + fmtDate(activeSeason.start_date) + endLabel;
+    if(activeSeason.crop) {
+      const endD = activeSeason.end_date || today();
+      const [si, se] = await Promise.all([
+        sb.from('income').select('amount').eq('user_id',currentUser.id).eq('crop',activeSeason.crop).gte('date',activeSeason.start_date).lte('date',endD),
+        sb.from('expenses').select('amount').eq('user_id',currentUser.id).eq('crop',activeSeason.crop).gte('date',activeSeason.start_date).lte('date',endD),
+      ]);
+      const sProfit = (si.data||[]).reduce((s,x)=>s+Number(x.amount),0) - (se.data||[]).reduce((s,x)=>s+Number(x.amount),0);
+      document.getElementById('home-season-profit').textContent = (sProfit>=0?'':'-') + fmt(Math.abs(sProfit));
+    } else {
+      document.getElementById('home-season-profit').textContent = '-';
+    }
     seasonBox.style.display = 'flex';
   } else if(seasonBox) { seasonBox.style.display = 'none'; }
 
@@ -1894,9 +1899,10 @@ async function renderHome() {
   const debtsList = document.getElementById('home-debts-list');
   if(debts.length && debtsCard && debtsList) {
     debtsCard.style.display = '';
-    debtsList.innerHTML = debts.map(x=>`
+    window._debtTraders = debts.map(x=>x.trader);
+    debtsList.innerHTML = debts.map((x,i)=>`
       <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;"
-        onclick="showPage('sales-payment',null);setTimeout(()=>{const s=document.getElementById('sp-trader');if(s){s.value='${s(x.trader)}';onSpTraderChange();}},400)">
+        onclick="goToDebtTrader(${i})">
         <div style="font-size:0.85rem;font-weight:800;">👤 ${s(x.trader)}</div>
         <div style="font-size:0.9rem;font-weight:900;color:var(--red);">${fmt(x.debt)} ج</div>
       </div>`).join('');
@@ -2011,7 +2017,7 @@ function updateIncTotal(data){
 async function deleteSelectedIncome(){
   if(!incomeSelected.size) return;
   if(!await showConfirm('هتحذف '+incomeSelected.size+' عنصر؟')) return;
-  const {data:selData} = await sb.from('income').select('id,amount,date').in('id',[...incomeSelected]);
+  const {data:selData} = await sb.from('income').select('id,amount,date').in('id',[...incomeSelected]).eq('user_id',currentUser.id);
   const {error:ide}=await sb.from('income').delete().in('id',[...incomeSelected]).eq('user_id',currentUser.id);
   if(ide) return showToast('❌ خطأ في الحذف: '+ide.message);
   for(const item of (selData||[])){
@@ -2115,12 +2121,12 @@ function updateExpTotal(data){
 async function deleteSelectedExpense(){
   if(!expSelected.size) return;
   if(!await showConfirm('هتحذف '+expSelected.size+' عنصر؟')) return;
-  const {data:selData} = await sb.from('expenses').select('amount,date').in('id',[...expSelected]);
+  const {data:selData} = await sb.from('expenses').select('id,amount,date').in('id',[...expSelected]).eq('user_id',currentUser.id);
   const {error:ede}=await sb.from('expenses').delete().in('id',[...expSelected]).eq('user_id',currentUser.id);
   if(ede) return showToast('❌ خطأ في الحذف: '+ede.message);
-  // Delete from vault
   for(const item of (selData||[])){
-    await sb.from('vault').delete().eq('type','expense_auto').eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id);
+    const {data:vd}=await sb.from('vault').delete().eq('type','expense_auto').eq('ref_id',item.id).eq('user_id',currentUser.id).select('id');
+    if(!vd?.length) await sb.from('vault').delete().eq('type','expense_auto').eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id).is('ref_id',null);
   }
   showToast('🗑️ تم الحذف');
   renderExpenseList(); renderHome();
@@ -2276,11 +2282,12 @@ function updateCapSelBtn(){
 async function deleteSelectedCapital(){
   if(!capSelected.size) return;
   if(!await showConfirm('هتحذف '+capSelected.size+' عنصر؟')) return;
-  const {data:selData} = await sb.from('capital').select('amount,date').in('id',[...capSelected]);
+  const {data:selData} = await sb.from('capital').select('id,amount,date').in('id',[...capSelected]).eq('user_id',currentUser.id);
   const {error:cde}=await sb.from('capital').delete().in('id',[...capSelected]).eq('user_id',currentUser.id);
   if(cde) return showToast('❌ خطأ في الحذف: '+cde.message);
   for(const item of (selData||[])){
-    await sb.from('vault').delete().eq('type','capital_auto').eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id);
+    const {data:vd}=await sb.from('vault').delete().eq('type','capital_auto').eq('ref_id',item.id).eq('user_id',currentUser.id).select('id');
+    if(!vd?.length) await sb.from('vault').delete().eq('type','capital_auto').eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id).is('ref_id',null);
   }
   showToast('🗑️ تم الحذف');
   logActivity('حذف جماعي','capital','حذف '+capSelected.size+' رأس مال');
@@ -2400,6 +2407,22 @@ function quickFilter(listId, query) {
     if(!q) { el.style.display = ''; return; }
     el.style.display = el.textContent.toLowerCase().includes(q) ? '' : 'none';
   });
+}
+
+function goToDebtTrader(idx) {
+  const trader = (window._debtTraders||[])[idx];
+  if(!trader) return;
+  showPage('sales-payment', null);
+  const poll = (start) => {
+    const sel = document.getElementById('sp-trader');
+    if(sel && sel.options.length > 1) {
+      sel.value = trader;
+      onSpTraderChange();
+      return;
+    }
+    if(Date.now() - start < 3000) setTimeout(()=>poll(start), 100);
+  };
+  setTimeout(()=>poll(Date.now()), 150);
 }
 
 function goToSource(page, itemId) {
@@ -2684,7 +2707,7 @@ function updateVaultTotal(data){
 async function deleteSelectedVault(){
   if(!vaultSelected.size) return;
   if(!await showConfirm('هتحذف '+vaultSelected.size+' حركة؟')) return;
-  const {data:selItems} = await sb.from('vault').select('*').in('id',[...vaultSelected]);
+  const {data:selItems} = await sb.from('vault').select('*').in('id',[...vaultSelected]).eq('user_id',currentUser.id);
   const {error:vde}=await sb.from('vault').delete().in('id',[...vaultSelected]).eq('user_id',currentUser.id);
   if(vde) return showToast('❌ خطأ في الحذف: '+vde.message);
   // Delete from source tables
@@ -5051,6 +5074,13 @@ async function addTaswiya(){
   if(!amount || amount <= 0) return showToast('❌ اكتب المبلغ');
   if(!date) return showToast('❌ اختار التاريخ');
 
+  const debtTxt = document.getElementById('sp-debt-val')?.textContent||'';
+  const currentDebt = parseNum(debtTxt.replace(' ج','').replace(/,/g,''));
+  if(amount > currentDebt && currentDebt >= 0) {
+    const ok = await showConfirm(`⚠️ مبلغ التسوية (${fmt(amount)} ج) أكبر من المديونية (${fmt(currentDebt)} ج).\nهل أنت متأكد؟`,'⚠️');
+    if(!ok) return;
+  }
+
   // تسوية: تُسجَّل في كشف الحساب بدون أي تأثير على الخزنة
   const {error} = await sb.from('vault').insert({
     user_id: currentUser.id,
@@ -5084,7 +5114,7 @@ async function addSalesPayment(){
   const debtTxt = document.getElementById('sp-debt-val')?.textContent||'';
   const currentDebt = parseNum(debtTxt.replace(' ج','').replace(/,/g,''));
   if(amount > currentDebt && currentDebt >= 0) {
-    const ok = await showConfirm(`⚠️ المبلغ (${fmt(amount)} ج) أكبر من المديونية (${fmt(currentDebt)} ج).\nهل أنت متأكد؟`);
+    const ok = await showConfirm(`⚠️ المبلغ (${fmt(amount)} ج) أكبر من المديونية (${fmt(currentDebt)} ج).\nهل أنت متأكد؟`,'⚠️');
     if(!ok) return;
   }
 
