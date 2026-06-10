@@ -679,6 +679,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
     <button class="bnav" id="bnav-analytics" style="display:none;"></button>
     <button class="bnav" id="bnav-seasons" style="display:none;"></button>
     <button class="bnav" id="bnav-deferred" style="display:none;"></button>
+    <button class="bnav" id="bnav-sales-payment" style="display:none;"></button>
   </div>
 
   <!-- HOME -->
@@ -890,8 +891,9 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 
   <!-- مبيعات آجل - صفحة مستقلة -->
   <div class="page" id="page-deferred">
-      <div style="display:flex;justify-content:flex-start;margin:14px 0 -4px;padding:0 2px;">
+      <div style="display:flex;justify-content:flex-start;gap:8px;margin:14px 0 -4px;padding:0 2px;">
         <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="exportDeferredToExcel()">📊 تصدير Excel</button>
+        <button class="btn-sm" style="background:var(--g3);color:#fff;border:none;" onclick="showPage('sales-payment',document.getElementById('bnav-sales-payment'))">💵 سداد مبيعات</button>
       </div>
 
       <div class="card">
@@ -986,6 +988,62 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       <div id="ds-list"><div class="loading">⏳</div></div>
 
   </div><!-- end page-deferred -->
+
+  <!-- صفحة سداد المبيعات -->
+  <div class="page" id="page-sales-payment">
+    <div style="display:flex;align-items:center;gap:10px;margin:14px 0 10px;padding:0 2px;">
+      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="showPage('deferred',document.getElementById('bnav-deferred'))">← رجوع</button>
+      <span style="font-size:0.95rem;font-weight:900;color:var(--g2);">💵 سداد مبيعات</span>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💵 تسجيل سداد</div>
+
+      <div class="form-row">
+        <label>التاجر</label>
+        <select id="sp-trader" onchange="onSpTraderChange()">
+          <option value="">-- اختار التاجر --</option>
+        </select>
+      </div>
+
+      <!-- مديونية التاجر -->
+      <div id="sp-debt-box" style="display:none;background:var(--g5);border-radius:12px;padding:12px 14px;margin-bottom:10px;display:none;justify-content:space-between;align-items:center;">
+        <span style="font-size:0.85rem;font-weight:700;color:var(--muted);">إجمالي المديونية</span>
+        <span style="font-size:1.1rem;font-weight:900;color:var(--red);" id="sp-debt-val">0 ج</span>
+      </div>
+
+      <div class="form-row">
+        <label>المبلغ المسدَّد</label>
+        <input type="text" inputmode="decimal" id="sp-amount" placeholder="0">
+      </div>
+
+      <div class="form-row">
+        <label>التاريخ</label>
+        <input type="date" id="sp-date">
+      </div>
+
+      <div class="form-row">
+        <label>ملاحظات</label>
+        <input type="text" id="sp-notes" placeholder="اختياري...">
+      </div>
+
+      <button class="btn btn-g" onclick="addSalesPayment()">💾 تسجيل السداد</button>
+    </div>
+
+    <!-- فلتر التاريخ - يظهر بس لما يتاختار تاجر -->
+    <div id="sp-history-section" style="display:none;">
+      <div class="date-filter" style="margin-top:12px;">
+        <label>من:</label><input type="date" id="sp-from" onchange="renderSalesPayments()">
+        <label>إلى:</label><input type="date" id="sp-to" onchange="renderSalesPayments()">
+        <button class="clear-btn" onclick="clearSpFilter()">الكل</button>
+      </div>
+      <div style="background:var(--g5);border-radius:12px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:0.8rem;font-weight:700;color:var(--muted);">إجمالي المسدَّد</span>
+        <span style="font-size:0.95rem;font-weight:900;color:var(--g2);" id="sp-total-paid">0 ج</span>
+      </div>
+      <div id="sp-list"><div class="empty">لا يوجد سدادات</div></div>
+    </div>
+  </div><!-- end page-sales-payment -->
 
   <!-- CAPITAL -->
   <div class="page" id="page-capital">
@@ -1628,7 +1686,7 @@ function showPage(name, btn) {
   document.getElementById('page-'+name).classList.add('active');
   if(btn) btn.classList.add('active');
   else {
-    const map = {home:'bnav-home',income:'bnav-income',expense:'bnav-expense',vault:'bnav-vault',ajal:'bnav-ajal',log:'bnav-log',analytics:'bnav-analytics',search:'bnav-search',seasons:'bnav-seasons','season-detail':'bnav-seasons',deferred:'bnav-deferred'};
+    const map = {home:'bnav-home',income:'bnav-income',expense:'bnav-expense',vault:'bnav-vault',ajal:'bnav-ajal',log:'bnav-log',analytics:'bnav-analytics',search:'bnav-search',seasons:'bnav-seasons','season-detail':'bnav-seasons',deferred:'bnav-deferred','sales-payment':'bnav-sales-payment'};
     if(map[name]) document.getElementById(map[name]).classList.add('active');
     // else: no nav button to highlight
   }
@@ -1637,6 +1695,7 @@ function showPage(name, btn) {
   if(name==='expense') renderExpenseList();
   if(name==='ajal') renderAjalLists();
   if(name==='deferred') initDeferredSalesPage();
+  if(name==='sales-payment') initSalesPaymentPage();
   setTimeout(setDateInputs, 100);
   if(name==='capital') renderCapitalList();
   if(name==='vault') { renderVaultList(); renderVaultSummary(); }
@@ -4596,5 +4655,105 @@ async function deleteTrader(i){
   const fTrader=document.getElementById('ds-filter-trader');
   if(fTrader) fTrader.innerHTML='<option value="">كل التجار</option>'+traders.map(t=>`<option>${t}</option>`).join('');
   showToast('🗑️ تم الحذف');
+}
+
+// ===== سداد المبيعات =====
+async function initSalesPaymentPage(){
+  const traders = await getTraders();
+  const sel = document.getElementById('sp-trader');
+  if(sel) sel.innerHTML = '<option value="">-- اختار التاجر --</option>' + traders.map(t=>`<option>${t}</option>`).join('');
+  document.getElementById('sp-debt-box').style.display = 'none';
+  document.getElementById('sp-history-section').style.display = 'none';
+  document.getElementById('sp-list').innerHTML = '<div class="empty">اختار تاجر أولاً</div>';
+  setTimeout(setDateInputs, 100);
+}
+
+async function onSpTraderChange(){
+  const trader = document.getElementById('sp-trader').value;
+  if(!trader){
+    document.getElementById('sp-debt-box').style.display = 'none';
+    document.getElementById('sp-history-section').style.display = 'none';
+    return;
+  }
+  // احسب المديونية
+  const {data} = await sb.from('deferred_sales').select('total').eq('user_id',currentUser.id).eq('trader',trader).eq('paid',false);
+  const debt = (data||[]).reduce((s,x)=>s+Number(x.total||0),0);
+  const box = document.getElementById('sp-debt-box');
+  box.style.display = 'flex';
+  document.getElementById('sp-debt-val').textContent = Number(debt).toLocaleString('en-US') + ' ج';
+  document.getElementById('sp-debt-val').style.color = debt > 0 ? 'var(--red)' : 'var(--g2)';
+  // أظهر سجل السدادات
+  document.getElementById('sp-history-section').style.display = 'block';
+  renderSalesPayments();
+}
+
+async function addSalesPayment(){
+  const trader = document.getElementById('sp-trader').value;
+  const amount = parseFloat(document.getElementById('sp-amount').value);
+  const date   = document.getElementById('sp-date').value;
+  const notes  = document.getElementById('sp-notes').value.trim();
+  if(!trader) return showToast('❌ اختار التاجر');
+  if(!amount || amount <= 0) return showToast('❌ اكتب المبلغ');
+  if(!date) return showToast('❌ اختار التاريخ');
+
+  const {error} = await sb.from('vault').insert({
+    user_id: currentUser.id,
+    type: 'in',
+    description: 'سداد مبيعات: ' + trader,
+    amount,
+    date,
+    notes: notes || '',
+    category: 'سداد_مبيعات'
+  });
+  if(error) return showToast('❌ خطأ: ' + error.message);
+
+  logActivity('إضافة','vault','سداد مبيعات من: '+trader, amount);
+  showToast('✅ تم تسجيل السداد');
+  document.getElementById('sp-amount').value = '';
+  document.getElementById('sp-notes').value = '';
+  document.getElementById('sp-date').value = today();
+  onSpTraderChange();
+  renderHome();
+}
+
+function clearSpFilter(){
+  document.getElementById('sp-from').value = '';
+  document.getElementById('sp-to').value = '';
+  renderSalesPayments();
+}
+
+async function renderSalesPayments(){
+  const el = document.getElementById('sp-list');
+  const trader = document.getElementById('sp-trader').value;
+  if(!trader || !el) return;
+  el.innerHTML = '<div class="loading">⏳</div>';
+
+  const from = document.getElementById('sp-from')?.value;
+  const to   = document.getElementById('sp-to')?.value;
+
+  let q = sb.from('vault').select('*')
+    .eq('user_id', currentUser.id)
+    .eq('category','سداد_مبيعات')
+    .like('description', 'سداد مبيعات: ' + trader)
+    .order('date', {ascending: false});
+
+  if(from) q = q.gte('date', from);
+  if(to)   q = q.lte('date', to);
+
+  const {data, error} = await q;
+  if(error){ el.innerHTML='<div class="empty">❌ خطأ</div>'; return; }
+  if(!data?.length){ el.innerHTML='<div class="empty">لا يوجد سدادات</div>'; document.getElementById('sp-total-paid').textContent='0 ج'; return; }
+
+  const total = data.reduce((s,x)=>s+Number(x.amount||0),0);
+  document.getElementById('sp-total-paid').textContent = Number(total).toLocaleString('en-US') + ' ج';
+
+  el.innerHTML = data.map(x=>`
+    <div class="item" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;">
+      <div>
+        <div style="font-size:0.85rem;font-weight:800;">💵 سداد من: ${s(x.description.replace('سداد مبيعات: ',''))}</div>
+        <div style="font-size:0.72rem;color:var(--muted);">${fmtDate(x.date)}${x.notes?' · '+s(x.notes):''}</div>
+      </div>
+      <div style="font-size:0.95rem;font-weight:900;color:var(--g2);">${Number(x.amount||0).toLocaleString('en-US')} ج</div>
+    </div>`).join('');
 }
 </script>
