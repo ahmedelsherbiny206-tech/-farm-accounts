@@ -1820,6 +1820,7 @@ function closeMoreMenu() {
 
 // ===== HOME =====
 async function renderHome() {
+  try {
   const [rInc, rExp, rAjal, rCap, rRecInc, rRecExp, rVault, rSales, rPayments, rSeasons] = await Promise.all([
     sb.from('income').select('amount').eq('user_id',currentUser.id),
     sb.from('expenses').select('amount').eq('user_id',currentUser.id),
@@ -1920,6 +1921,7 @@ async function renderHome() {
       <div><div class="i-desc">${s(x.description)}</div><div class="i-sub">${fmtDate(x.date)}</div></div>
       <div class="i-amt">${x.t==='expense'?'-':'+'} ${fmt(x.amount)}</div>
     </div>`).join('');
+  } catch(e) { console.error('renderHome error:', e); }
 }
 
 // ===== INCOME =====
