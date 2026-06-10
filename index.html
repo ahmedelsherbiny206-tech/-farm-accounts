@@ -5036,7 +5036,8 @@ async function showAccountStatement(){
       <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="exportAccountStatementExcel('${trader}','${from}','${to}')">📊 تصدير Excel</button>
     </div>
     <div class="card" id="as-summary-card">
-      <div class="card-title">📋 كشف حساب - ${trader}</div>
+      <div style="background:#1a6fa8;color:#fff;border-radius:10px;padding:8px 14px;margin-bottom:10px;font-size:0.82rem;font-weight:900;text-align:center;">📋 كشف حساب إجمالي</div>
+      <div class="card-title">📋 ${trader}</div>
       <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px;">${fmtDate(from)} → ${fmtDate(to)}</div>
 
       <!-- إجماليات -->
@@ -5108,7 +5109,8 @@ async function showDetailedStatement(){
       <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="exportDetailedStatementExcel('${trader}','${from}','${to}')">📊 تصدير Excel</button>
     </div>
     <div class="card">
-      <div class="card-title">📊 كشف تفصيلي - ${trader}</div>
+      <div style="background:var(--g2);color:#fff;border-radius:10px;padding:8px 14px;margin-bottom:10px;font-size:0.82rem;font-weight:900;text-align:center;">📊 كشف تفصيلي حسب الصنف</div>
+      <div class="card-title">📊 ${trader}</div>
       <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px;">${fmtDate(from)} → ${fmtDate(to)}</div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
