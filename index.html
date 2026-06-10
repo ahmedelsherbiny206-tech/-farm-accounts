@@ -17,7 +17,7 @@
 <title>حسابات المزرعة</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <style>
 :root {
   --g1: #3d5a2a; --g2: #4a6a32; --g3: #5a7a3a; --g4: #8aab5a; --g5: #eef5e4;
@@ -2528,6 +2528,68 @@ async function delVaultItem(id){
 
 
 // ===== EXCEL EXPORT =====
+// ===== Excel Professional Styling Helper =====
+function xlStyle(ws, headerRowIndex, totalRows, numCols, opts = {}) {
+  // Colors
+  const HEADER_BG  = opts.headerBg  || '1F4E79';   // dark blue
+  const HEADER_FG  = opts.headerFg  || 'FFFFFF';
+  const TOTAL_BG   = opts.totalBg   || 'D6E4F0';
+  const TOTAL_FG   = opts.totalFg   || '1F4E79';
+  const ALT_BG     = opts.altBg     || 'EBF5FB';
+  const TITLE_BG   = opts.titleBg   || '2E75B6';
+  const TITLE_FG   = opts.titleFg   || 'FFFFFF';
+
+  const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+  const maxR   = range.e.r;
+  const maxC   = range.e.c;
+
+  const border = {
+    top:    {style:'thin', color:{rgb:'B0C4DE'}},
+    bottom: {style:'thin', color:{rgb:'B0C4DE'}},
+    left:   {style:'thin', color:{rgb:'B0C4DE'}},
+    right:  {style:'thin', color:{rgb:'B0C4DE'}}
+  };
+
+  for(let R = 0; R <= maxR; R++) {
+    for(let C = 0; C <= maxC; C++) {
+      const addr = XLSX.utils.encode_cell({r:R, c:C});
+      if(!ws[addr]) ws[addr] = {v:'', t:'s'};
+
+      const isHeader = R === headerRowIndex;
+      const isTotal  = totalRows && totalRows.includes(R);
+      const isTitle  = opts.titleRow !== undefined && R === opts.titleRow;
+      const isAlt    = !isHeader && !isTotal && !isTitle && (R % 2 === 0);
+      const isNum    = typeof ws[addr].v === 'number';
+
+      ws[addr].s = {
+        font: {
+          name: 'Calibri',
+          sz: isTitle ? 14 : isHeader ? 11 : 10,
+          bold: isHeader || isTotal || isTitle,
+          color: {rgb: isTitle ? TITLE_FG : isHeader ? HEADER_FG : isTotal ? TOTAL_FG : '1A1A1A'}
+        },
+        fill: {
+          fgColor: {rgb: isTitle ? TITLE_BG : isHeader ? HEADER_BG : isTotal ? TOTAL_BG : isAlt ? ALT_BG : 'FFFFFF'},
+          patternType: 'solid'
+        },
+        alignment: {
+          horizontal: isNum ? 'center' : 'right',
+          vertical: 'center',
+          readingOrder: 2,
+          wrapText: false
+        },
+        border
+      };
+    }
+  }
+
+  // Row heights
+  if(!ws['!rows']) ws['!rows'] = [];
+  for(let R = 0; R <= maxR; R++) {
+    ws['!rows'][R] = {hpt: R === headerRowIndex || (opts.titleRow !== undefined && R === opts.titleRow) ? 22 : 18};
+  }
+}
+
 async function exportToExcel(type) {
   showToast('⏳ جاري التصدير...');
   let data = [], filename = '', headers = [];
@@ -2573,13 +2635,12 @@ async function exportToExcel(type) {
 
   if(!data.length) return showToast('❌ لا يوجد بيانات للتصدير');
 
-  // Add total row
   const total = data.reduce((s,x)=>s+Number(x['المبلغ']||0),0);
   data.push({'الوصف':'الإجمالي','النوع':'','المبلغ':total,'التاريخ':'','ملاحظات':''});
 
   const ws = XLSX.utils.json_to_sheet(data, {header: headers});
-  // Style header row width
-  ws['!cols'] = [{wch:30},{wch:15},{wch:12},{wch:12},{wch:25}];
+  ws['!cols'] = [{wch:32},{wch:16},{wch:14},{wch:14},{wch:28}];
+  xlStyle(ws, 0, [data.length]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, type==='income'?'الإيرادات':'المصاريف');
   XLSX.writeFile(wb, filename);
@@ -2619,15 +2680,17 @@ async function exportAjalToExcel(){
   payRows.push({'م':'','الاسم':'المستحق فقط','المبلغ':pendPay,'السبب':'','تاريخ الاستحقاق':'','الحالة':''});
 
   const wb = XLSX.utils.book_new();
-  const colW = [{wch:4},{wch:20},{wch:12},{wch:20},{wch:16},{wch:10}];
+  const colW = [{wch:4},{wch:22},{wch:14},{wch:22},{wch:18},{wch:12}];
 
   const wsRec = XLSX.utils.json_to_sheet(recRows, {header: headers});
   wsRec['!cols'] = colW;
-  XLSX.utils.book_append_sheet(wb, wsRec, 'ديون لي 💰');
+  xlStyle(wsRec, 0, [recRows.length-2, recRows.length-1]);
+  XLSX.utils.book_append_sheet(wb, wsRec, 'ديون لي');
 
   const wsPay = XLSX.utils.json_to_sheet(payRows, {header: headers});
   wsPay['!cols'] = colW;
-  XLSX.utils.book_append_sheet(wb, wsPay, 'ديون عليّ 💸');
+  xlStyle(wsPay, 0, [payRows.length-2, payRows.length-1]);
+  XLSX.utils.book_append_sheet(wb, wsPay, 'ديون علي');
 
   XLSX.writeFile(wb, 'الآجل_النقدي.xlsx');
   showToast('✅ تم التصدير!');
@@ -2666,7 +2729,8 @@ async function exportDeferredToExcel(){
   const total = (rows||[]).reduce((s,x)=>s+Number(x.total||0),0);
   data.push({'الوصف':'الإجمالي','المحصول':'','الكمية':'','الوحدة':'','السعر':'','الإجمالي':total,'التاجر':'','التاريخ':'','الحالة':'','ملاحظات':''});
   const ws = XLSX.utils.json_to_sheet(data, {header: headers});
-  ws['!cols'] = [{wch:25},{wch:12},{wch:8},{wch:10},{wch:10},{wch:12},{wch:15},{wch:12},{wch:12},{wch:20}];
+  ws['!cols'] = [{wch:27},{wch:14},{wch:9},{wch:11},{wch:11},{wch:13},{wch:16},{wch:13},{wch:13},{wch:22}];
+  xlStyle(ws, 0, [data.length]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'مبيعات آجل');
   XLSX.writeFile(wb, 'مبيعات_آجل.xlsx');
@@ -2706,6 +2770,7 @@ async function exportReportToExcel() {
 
   const wsInc = XLSX.utils.aoa_to_sheet(incRows);
   wsInc['!cols'] = [{wch:5},{wch:32},{wch:16},{wch:16},{wch:14},{wch:14},{wch:28}];
+  xlStyle(wsInc, 0, [incRows.length-1, incRows.length-2]);
   XLSX.utils.book_append_sheet(wb, wsInc, 'الإيرادات');
 
   // ===== Sheet 2: المصاريف =====
@@ -2722,6 +2787,7 @@ async function exportReportToExcel() {
 
   const wsExp = XLSX.utils.aoa_to_sheet(expRows);
   wsExp['!cols'] = [{wch:5},{wch:32},{wch:16},{wch:16},{wch:14},{wch:14},{wch:28}];
+  xlStyle(wsExp, 0, [expRows.length-1, expRows.length-2]);
   XLSX.utils.book_append_sheet(wb, wsExp, 'المصاريف');
 
   // ===== Sheet 3: الآجل =====
@@ -2733,6 +2799,7 @@ async function exportReportToExcel() {
   });
   const wsAjal = XLSX.utils.aoa_to_sheet(ajalRows);
   wsAjal['!cols'] = [{wch:5},{wch:22},{wch:10},{wch:14},{wch:25},{wch:16},{wch:12}];
+  xlStyle(wsAjal, 0, []);
   XLSX.utils.book_append_sheet(wb, wsAjal, 'الآجل');
 
   // ===== Sheet 4: ملخص =====
@@ -2742,27 +2809,28 @@ async function exportReportToExcel() {
   const ajalAlaik = (rAjal.data||[]).filter(x=>x.type==='payable').reduce((s,x)=>s+Number(x.amount||0),0);
 
   const sumRows = [
-    [farmName],
+    [farmName, '', '', ''],
     [''],
     ['الفترة من:', fmtDate(from), 'الفترة إلى:', fmtDate(to)],
     [''],
-    ['البيان', 'المبلغ (ج)'],
-    ['إجمالي الإيرادات', totalInc],
-    ['إجمالي المصاريف', totalExp],
+    ['البيان', 'المبلغ (ج)', '', ''],
+    ['إجمالي الإيرادات', totalInc, '', ''],
+    ['إجمالي المصاريف', totalExp, '', ''],
     [''],
-    [profit>=0?'✅ صافي الربح':'❌ صافي الخسارة', Math.abs(profit)],
+    [profit>=0?'صافي الربح':'صافي الخسارة', Math.abs(profit), '', ''],
     [''],
-    ['رأس المال', capVal],
-    ['آجل لك (غير مسدد)', ajalLak],
-    ['آجل عليك (غير مسدد)', ajalAlaik],
+    ['رأس المال', capVal, '', ''],
+    ['آجل لك (غير مسدد)', ajalLak, '', ''],
+    ['آجل عليك (غير مسدد)', ajalAlaik, '', ''],
     [''],
-    ['عدد سجلات الإيرادات', (rInc.data||[]).length],
-    ['عدد سجلات المصاريف', (rExp.data||[]).length],
+    ['عدد سجلات الإيرادات', (rInc.data||[]).length, '', ''],
+    ['عدد سجلات المصاريف', (rExp.data||[]).length, '', ''],
   ];
 
   const wsSummary = XLSX.utils.aoa_to_sheet(sumRows);
   wsSummary['!cols'] = [{wch:30},{wch:18},{wch:14},{wch:18}];
   wsSummary['!merges'] = [{s:{r:0,c:0},e:{r:0,c:3}}];
+  xlStyle(wsSummary, 4, [5,6,8,10,11,12,14,15], {titleRow:0});
   XLSX.utils.book_append_sheet(wb, wsSummary, 'ملخص');
 
   // ترتيب الشيتس - الملخص أول
@@ -4179,7 +4247,8 @@ async function exportSeasonToExcel(seasonId){
     sumRows.push(['نصيب الموسم من المصاريف العامة', genExpTotal]);
   }
   const wsSum = XLSX.utils.aoa_to_sheet(sumRows);
-  wsSum['!cols']=[{wch:30},{wch:18}];
+  wsSum['!cols']=[{wch:32},{wch:20}];
+  xlStyle(wsSum, 7, [8,9,10,11,12,13,14,15,16,17,18,19], {titleRow:0});
   XLSX.utils.book_append_sheet(wb, wsSum, 'ملخص الموسم');
 
   // Sheet 2: الإيرادات
@@ -4189,6 +4258,7 @@ async function exportSeasonToExcel(seasonId){
   incRows.push(['','','الإجمالي',totalInc,'','']);
   const wsInc=XLSX.utils.aoa_to_sheet(incRows);
   wsInc['!cols']=[{wch:5},{wch:32},{wch:16},{wch:14},{wch:14},{wch:25}];
+  xlStyle(wsInc, 0, [incRows.length-1]);
   XLSX.utils.book_append_sheet(wb, wsInc, 'الإيرادات');
 
   // Sheet 3: المصاريف
@@ -4198,6 +4268,7 @@ async function exportSeasonToExcel(seasonId){
   expRows.push(['','','الإجمالي',totalExp,'','']);
   const wsExp=XLSX.utils.aoa_to_sheet(expRows);
   wsExp['!cols']=[{wch:5},{wch:32},{wch:16},{wch:14},{wch:14},{wch:25}];
+  xlStyle(wsExp, 0, [expRows.length-1]);
   XLSX.utils.book_append_sheet(wb, wsExp, 'المصاريف');
 
   // Sheet 4: المصاريف حسب التصنيف
@@ -4210,7 +4281,8 @@ async function exportSeasonToExcel(seasonId){
   });
   catRows.push(['الإجمالي',totalExp,'100%']);
   const wsCat=XLSX.utils.aoa_to_sheet(catRows);
-  wsCat['!cols']=[{wch:25},{wch:14},{wch:10}];
+  wsCat['!cols']=[{wch:27},{wch:16},{wch:12}];
+  xlStyle(wsCat, 0, [catRows.length-1]);
   XLSX.utils.book_append_sheet(wb, wsCat, 'المصاريف حسب التصنيف');
 
   wb.SheetNames=['ملخص الموسم','الإيرادات','المصاريف','المصاريف حسب التصنيف'];
@@ -5028,10 +5100,12 @@ async function exportAccountStatementExcel(trader, from, to){
 
   const wb = XLSX.utils.book_new();
   const ws1 = XLSX.utils.json_to_sheet(salesRows,{header:['م','التاريخ','الوصف','الصنف','المحصول','الكمية','الوحدة','الإجمالي']});
-  ws1['!cols']=[{wch:4},{wch:12},{wch:25},{wch:12},{wch:12},{wch:8},{wch:10},{wch:12}];
+  ws1['!cols']=[{wch:4},{wch:13},{wch:27},{wch:14},{wch:14},{wch:9},{wch:11},{wch:14}];
+  xlStyle(ws1, 0, [salesRows.length]);
   XLSX.utils.book_append_sheet(wb, ws1, 'المشتريات');
   const ws2 = XLSX.utils.json_to_sheet(payRows,{header:['م','التاريخ','المبلغ','ملاحظات']});
-  ws2['!cols']=[{wch:4},{wch:12},{wch:12},{wch:20}];
+  ws2['!cols']=[{wch:4},{wch:13},{wch:14},{wch:25}];
+  xlStyle(ws2, 0, [payRows.length-2, payRows.length-1]);
   XLSX.utils.book_append_sheet(wb, ws2, 'السدادات');
   XLSX.writeFile(wb, `كشف_حساب_${trader}.xlsx`);
   showToast('✅ تم التصدير!');
@@ -5056,7 +5130,8 @@ async function exportDetailedStatementExcel(trader, from, to){
     const totAmt = g.rows.reduce((s,x)=>s+Number(x.total||0),0);
     rows.push({'م':'','التاريخ':'الإجمالي','الكمية':totQty,'السعر':'','الإجمالي':totAmt,'ملاحظات':''});
     const ws = XLSX.utils.json_to_sheet(rows,{header:['م','التاريخ','الكمية','السعر','الإجمالي','ملاحظات']});
-    ws['!cols']=[{wch:4},{wch:12},{wch:8},{wch:10},{wch:12},{wch:20}];
+    ws['!cols']=[{wch:4},{wch:13},{wch:10},{wch:12},{wch:14},{wch:22}];
+    xlStyle(ws, 0, [rows.length]);
     XLSX.utils.book_append_sheet(wb, ws, sheetName);
   });
 
