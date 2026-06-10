@@ -4615,7 +4615,7 @@ async function payDeferredSale(id){
   const {data} = await sb.from('deferred_sales').select('*').eq('id',id).eq('user_id',currentUser.id);
   if(!data?.length) return showToast('❌ مش لاقي البيعة');
   const sale = data[0];
-  await sb.from('vault').insert({user_id:currentUser.id,type:'in',description:'تسديد بيعة آجل: '+(sale.description||''),amount:sale.total,date:today(),notes:'',ref_id:sale.id});
+  await sb.from('vault').insert({user_id:currentUser.id,type:'in',description:'سداد مبيعات: '+(sale.trader||''),amount:sale.total,date:today(),notes:'تسديد بيعة: '+(sale.description||''),category:'سداد_مبيعات',ref_id:sale.id});
   await sb.from('deferred_sales').update({paid:true,paid_at:new Date().toISOString()}).eq('id',id).eq('user_id',currentUser.id);
   logActivity('تسديد','deferred_sales','تسديد بيعة آجل: '+(sale.description||''),sale.total);
   showToast('✅ تم التسديد وإضافته للخزنة');
