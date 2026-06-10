@@ -2548,7 +2548,7 @@ async function renderVaultList(){
         <div class="i-amt" style="color:${x.type==='out'||x.type==='expense_auto'?'var(--red)':'var(--g2)'}">
           ${x.type==='out'||x.type==='expense_auto'?'-':'+'} ${fmt(x.amount)}
         </div>
-        ${x.type==='in'||x.type==='out'?`
+        ${(x.type==='in'||x.type==='out') && !x.category?`
           <button class="btn-sm" style="background:var(--blue-p);color:var(--blue);" onclick="event.stopPropagation();editVaultItem(${JSON.stringify(x).replace(/"/g,'&quot;')})">✏️</button>
           <button class="del-btn" onclick="event.stopPropagation();delVaultItem('${x.id}')">✕</button>
         `:''}
