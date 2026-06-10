@@ -2300,16 +2300,18 @@ async function deleteSelectedCapital(){
 // ===== DELETE =====
 async function delItem(table, id) {
   if(!await showConfirm('هتحذف العنصر ده؟')) return;
-  // Get item details before delete for vault cleanup
   const {data:itemData} = await sb.from(table).select('description,amount,date').eq('id',id).eq('user_id',currentUser.id);
   await sb.from(table).delete().eq('id',id).eq('user_id',currentUser.id);
-  // Auto delete from vault if income or expense
-  if(table==='income') {
-    await sb.from('vault').delete().eq('type','income_auto').eq('amount',itemData?.[0]?.amount||0).eq('date',itemData?.[0]?.date||'').eq('user_id',currentUser.id);
-  }
-  if(table==='expenses') {
-    await sb.from('vault').delete().eq('type','expense_auto').eq('amount',itemData?.[0]?.amount||0).eq('date',itemData?.[0]?.date||'').eq('user_id',currentUser.id);
-  }
+
+  const delVault = async (vType) => {
+    const {data:vd} = await sb.from('vault').delete().eq('type',vType).eq('ref_id',id).eq('user_id',currentUser.id).select('id');
+    if(!vd?.length) await sb.from('vault').delete().eq('type',vType).eq('amount',itemData?.[0]?.amount||0).eq('date',itemData?.[0]?.date||'').eq('user_id',currentUser.id).is('ref_id',null);
+  };
+
+  if(table==='income')   await delVault('income_auto');
+  if(table==='expenses') await delVault('expense_auto');
+  if(table==='capital')  await delVault('capital_auto');
+
   showToast('🗑️ تم الحذف');
   const delDesc = itemData?.[0]?.description || itemData?.[0]?.name || itemData?.[0]?.reason || '';
   const delType = table==='income'?'وارد': table==='expenses'?'صادر': table==='capital'?'رأس مال': table==='ajal'?'آجل':'';
@@ -2318,14 +2320,7 @@ async function delItem(table, id) {
   if(table==='income') renderIncomeList();
   if(table==='expenses') renderExpenseList();
   if(table==='ajal') renderAjalLists();
-  if(table==='capital') {
-    await sb.from('vault').delete()
-      .eq('type','capital_auto')
-      .eq('amount',itemData?.[0]?.amount||0)
-      .eq('date',itemData?.[0]?.date||'')
-      .eq('user_id',currentUser.id);
-    renderCapitalList(); renderVaultSummary();
-  }
+  if(table==='capital') { renderCapitalList(); renderVaultSummary(); }
 }
 
 // ===== DETAIL MODAL =====
