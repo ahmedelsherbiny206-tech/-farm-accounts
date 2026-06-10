@@ -1566,6 +1566,22 @@ async function logActivity(action, table_name, description, amount=null){
 
 // ===== UTILS =====
 function today() { return new Date().toISOString().split('T')[0]; }
+function toWesternNum(v){ return String(v||'').replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)); }
+function parseNum(v){ return parseFloat(toWesternNum(v))||0; }
+
+// تحويل تلقائي لأي input بـ inputmode=decimal أو type=number عند الكتابة
+document.addEventListener('input', e => {
+  const el = e.target;
+  if(el.tagName !== 'INPUT') return;
+  if(el.inputMode === 'decimal' || el.inputMode === 'numeric' || el.type === 'number') {
+    const converted = toWesternNum(el.value);
+    if(converted !== el.value) {
+      const pos = el.selectionStart;
+      el.value = converted;
+      try { el.setSelectionRange(pos, pos); } catch(_){}
+    }
+  }
+});
 function fmt(n) { return Number(n||0).toLocaleString('en-US') + ' ج'; }
 function fmtDate(d) {
   if(!d) return '';
@@ -1813,7 +1829,7 @@ async function addIncome() {
   const desc=document.getElementById('inc-desc').value.trim();
   const type=document.getElementById('inc-type').value;
   const crop=document.getElementById('inc-crop').value;
-  const amt=parseFloat(document.getElementById('inc-amt').value);
+  const amt=parseNum(document.getElementById('inc-amt').value);
   const date=document.getElementById('inc-date').value;
   const notes=document.getElementById('inc-notes').value;
   if(!desc||!amt) return showToast('❌ اكمل البيانات');
@@ -1915,7 +1931,7 @@ async function deleteSelectedIncome(){
 // ===== EXPENSE =====
 async function addExpense() {
   const desc=document.getElementById('exp-desc').value.trim();
-  const amt=parseFloat(document.getElementById('exp-amt').value);
+  const amt=parseNum(document.getElementById('exp-amt').value);
   const cat=document.getElementById('exp-cat').value;
   const crop=document.getElementById('exp-crop').value;
   const date=document.getElementById('exp-date').value;
@@ -2018,7 +2034,7 @@ async function deleteSelectedExpense(){
 async function addAjal() {
   const type=document.getElementById('aj-type').value;
   const name=document.getElementById('aj-name').value.trim();
-  const amt=parseFloat(document.getElementById('aj-amt').value);
+  const amt=parseNum(document.getElementById('aj-amt').value);
   const reason=document.getElementById('aj-reason').value.trim();
   const due=document.getElementById('aj-due').value;
   if(!name||!amt) return showToast('❌ اكمل البيانات');
@@ -2092,7 +2108,7 @@ async function markPaid(id) {
 
 // ===== CAPITAL =====
 async function addCapital() {
-  const amt=parseFloat(document.getElementById('cap-amt').value);
+  const amt=parseNum(document.getElementById('cap-amt').value);
   const date=document.getElementById('cap-date').value;
   const notes=document.getElementById('cap-notes').value;
   if(!amt) return showToast('❌ أدخل المبلغ');
@@ -2340,7 +2356,7 @@ async function doRestore(event) {
 async function quickAdd() {
   const type=document.getElementById('q-type').value;
   const desc=document.getElementById('q-desc').value.trim();
-  const amt=parseFloat(document.getElementById('q-amt').value);
+  const amt=parseNum(document.getElementById('q-amt').value);
   if(!desc||!amt) return showToast('❌ اكمل البيانات');
   const table=type==='income'?'income':'expenses';
   const vaultType=type==='income'?'income_auto':'expense_auto';
@@ -2395,7 +2411,7 @@ async function renderVaultSummary(){
 async function addVaultTx(){
   const type = document.getElementById('vault-type').value;
   const desc = document.getElementById('vault-desc').value.trim();
-  const amt = parseFloat(document.getElementById('vault-amt').value);
+  const amt = parseNum(document.getElementById('vault-amt').value);
   const date = document.getElementById('vault-date').value;
   const notes = document.getElementById('vault-notes').value;
   if(!desc||!amt) return showToast('❌ اكمل البيانات');
@@ -3079,7 +3095,7 @@ async function editItem(type, item) {
 }
 
 async function saveEdit(table, id, type) {
-  const amt = parseFloat(document.getElementById('edit-amt')?.value);
+  const amt = parseNum(document.getElementById('edit-amt')?.value);
   if(!amt || amt<=0) return showToast('❌ المبلغ لازم يكون أكبر من صفر');
   const date = document.getElementById('edit-date')?.value;
   const notes = document.getElementById('edit-notes')?.value||'';
@@ -3237,7 +3253,7 @@ function editVaultItem(item) {
 
 async function saveVaultEdit(id) {
   const desc = document.getElementById('vedit-desc')?.value.trim();
-  const amt = parseFloat(document.getElementById('vedit-amt')?.value);
+  const amt = parseNum(document.getElementById('vedit-amt')?.value);
   const date = document.getElementById('vedit-date')?.value;
   const notes = document.getElementById('vedit-notes')?.value||'';
   if(!desc||!amt) return showToast('❌ اكمل البيانات');
@@ -3332,7 +3348,7 @@ function hideSetupScreen(){
 
 async function finishSetup(){
   const name = document.getElementById('setup-farm-name').value.trim();
-  const area = parseFloat(document.getElementById('setup-farm-area').value)||0;
+  const area = parseNum(document.getElementById('setup-farm-area').value)||0;
   const phone = document.getElementById('setup-phone').value.trim();
   if(!name) return showToast('❌ اكتب اسم المزرعة');
   if(!area||area<=0) return showToast('❌ اكتب مساحة المزرعة');
@@ -3464,7 +3480,7 @@ function openEditFarmArea(){
   document.getElementById('detail-overlay').classList.add('open');
 }
 async function saveFarmArea(){
-  const area = parseFloat(document.getElementById('farm-area-input')?.value);
+  const area = parseNum(document.getElementById('farm-area-input')?.value);
   if(!area||area<=0) return showToast('❌ اكتب مساحة صحيحة');
   const settings = {...(_farmSettingsCache||{}), area};
   try {
@@ -3855,7 +3871,7 @@ async function doSearch(){
   const from=document.getElementById('search-from').value;
   const to=document.getElementById('search-to').value;
   const crop=document.getElementById('search-crop').value;
-  const minAmt=parseFloat(document.getElementById('search-min-amt').value)||0;
+  const minAmt=parseNum(document.getElementById('search-min-amt').value)||0;
   const el=document.getElementById('search-results');
   if(!q&&!from&&!to&&!crop&&!minAmt){ el.innerHTML='<div class="empty">ابحث عن أي حاجة...</div>'; return; }
   el.innerHTML='<div class="loading">⏳ جاري البحث...</div>';
@@ -3956,7 +3972,7 @@ async function addSeason(){
   const crop=document.getElementById('season-crop').value;
   const start=document.getElementById('season-start').value;
   const end=document.getElementById('season-end').value;
-  const area=parseFloat(document.getElementById('season-area').value)||null;
+  const area=parseNum(document.getElementById('season-area').value)||null;
   const notes=document.getElementById('season-notes').value;
   if(!name||!start) return showToast('❌ اكتب اسم الموسم وتاريخ البداية');
   const {error}=await sb.from('seasons').insert({user_id:currentUser.id,name,crop:crop||null,start_date:start,end_date:end||null,area,notes});
@@ -4005,7 +4021,7 @@ async function saveSeasonEdit(id){
   const crop = document.getElementById('sedit-crop')?.value || null;
   const start = document.getElementById('sedit-start')?.value;
   const end = document.getElementById('sedit-end')?.value || null;
-  const area = parseFloat(document.getElementById('sedit-area')?.value) || null;
+  const area = parseNum(document.getElementById('sedit-area')?.value) || null;
   const notes = document.getElementById('sedit-notes')?.value || '';
   if(!name||!start) return showToast('❌ اكتب اسم الموسم وتاريخ البداية');
   const {error} = await sb.from('seasons').update({name, crop, start_date:start, end_date:end, area, notes}).eq('id',id).eq('user_id',currentUser.id);
@@ -4459,8 +4475,8 @@ async function initDeferredSalesPage(){
 
 // حساب الإجمالي
 function calcDsTotal(){
-  const qty = parseFloat(document.getElementById('ds-qty')?.value)||0;
-  const price = parseFloat(document.getElementById('ds-price')?.value)||0;
+  const qty = parseNum(document.getElementById('ds-qty')?.value)||0;
+  const price = parseNum(document.getElementById('ds-price')?.value)||0;
   const el = document.getElementById('ds-total-display');
   if(el) el.textContent = Number(qty*price).toLocaleString('en-US')+' ج';
 }
@@ -4469,9 +4485,9 @@ function calcDsTotal(){
 async function addDeferredSale(){
   const desc = document.getElementById('ds-desc').value.trim();
   const crop = document.getElementById('ds-crop').value||null;
-  const qty = parseFloat(document.getElementById('ds-qty').value);
+  const qty = parseNum(document.getElementById('ds-qty').value);
   const unit = document.getElementById('ds-unit').value;
-  const price = parseFloat(document.getElementById('ds-price').value);
+  const price = parseNum(document.getElementById('ds-price').value);
   const variety = document.getElementById('ds-variety')?.value||null;
   const trader = document.getElementById('ds-trader').value||null;
   const date = document.getElementById('ds-date').value;
@@ -4676,9 +4692,9 @@ async function editDeferredSale(id){
 async function saveDsEdit(id){
   const desc = document.getElementById('dse-desc')?.value.trim();
   const crop = document.getElementById('dse-crop')?.value||null;
-  const qty = parseFloat(document.getElementById('dse-qty')?.value);
+  const qty = parseNum(document.getElementById('dse-qty')?.value);
   const unit = document.getElementById('dse-unit')?.value;
-  const price = parseFloat(document.getElementById('dse-price')?.value);
+  const price = parseNum(document.getElementById('dse-price')?.value);
   const trader = document.getElementById('dse-trader')?.value||null;
   const date = document.getElementById('dse-date')?.value;
   const notes = document.getElementById('dse-notes')?.value||'';
@@ -4830,7 +4846,7 @@ async function onSpTraderChange(){
 
 async function addTaswiya(){
   const trader = document.getElementById('sp-trader').value;
-  const amount = parseFloat(document.getElementById('sp-amount').value);
+  const amount = parseNum(document.getElementById('sp-amount').value);
   const date   = document.getElementById('sp-date').value;
   const notes  = document.getElementById('sp-notes').value.trim();
   if(!trader) return showToast('❌ اختار التاجر');
@@ -4859,7 +4875,7 @@ async function addTaswiya(){
 
 async function addSalesPayment(){
   const trader = document.getElementById('sp-trader').value;
-  const amount = parseFloat(document.getElementById('sp-amount').value);
+  const amount = parseNum(document.getElementById('sp-amount').value);
   const date   = document.getElementById('sp-date').value;
   const notes  = document.getElementById('sp-notes').value.trim();
   if(!trader) return showToast('❌ اختار التاجر');
@@ -4985,7 +5001,7 @@ function editSpPayment(id, amount, date, notes){
 }
 
 async function saveSpPayment(id){
-  const amount = parseFloat(document.getElementById('spedit-amount').value);
+  const amount = parseNum(document.getElementById('spedit-amount').value);
   const date   = document.getElementById('spedit-date').value;
   const notes  = document.getElementById('spedit-notes').value.trim();
   if(!amount || amount <= 0) return showToast('❌ أدخل المبلغ');
