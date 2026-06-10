@@ -2314,16 +2314,21 @@ function closeModal() { document.getElementById('detail-overlay').classList.remo
 function goToSource(page, itemId) {
   closeModal();
   showPage(page, null);
-  if(!itemId) return;
-  setTimeout(() => {
+  if(!itemId || itemId === 'null') return;
+  const start = Date.now();
+  const poll = () => {
     const el = document.getElementById(itemId);
-    if(!el) return;
-    el.scrollIntoView({behavior:'smooth', block:'center'});
-    el.style.transition = 'box-shadow 0.3s, outline 0.3s';
-    el.style.outline = '3px solid var(--g2)';
-    el.style.boxShadow = '0 0 0 4px rgba(76,175,80,0.25)';
-    setTimeout(() => { el.style.outline = ''; el.style.boxShadow = ''; }, 2000);
-  }, 500);
+    if(el) {
+      el.scrollIntoView({behavior:'smooth', block:'center'});
+      el.style.transition = 'box-shadow 0.3s, outline 0.3s';
+      el.style.outline = '3px solid var(--g2)';
+      el.style.boxShadow = '0 0 0 4px rgba(76,175,80,0.25)';
+      setTimeout(() => { el.style.outline = ''; el.style.boxShadow = ''; }, 2000);
+      return;
+    }
+    if(Date.now() - start < 4000) setTimeout(poll, 100);
+  };
+  setTimeout(poll, 150);
 }
 
 // ===== REPORT =====
