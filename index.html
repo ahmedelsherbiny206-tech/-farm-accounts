@@ -2243,6 +2243,7 @@ function showDetail(type, item) {
   const titles = {income:'تفاصيل الوارد 💰', expense:'تفاصيل الصادر 💸', ajal:'تفاصيل الآجل 🕐', capital:'تفاصيل رأس المال 📦', vault:'تفاصيل حركة الخزنة 🏦'};
   document.getElementById('modal-title').textContent = titles[type]||'التفاصيل';
   let rows = [];
+  let extraHtml = '';
   if(type==='income'||type==='expense') {
     rows = [
       ['الوصف', item.desc],
@@ -2265,10 +2266,45 @@ function showDetail(type, item) {
       ['التاريخ', fmtDate(item.date)],
       ['ملاحظات', item.notes||'-'],
     ];
+  } else if(type==='vault') {
+    const typeLabel = {
+      in:'📥 قبض يدوي', out:'📤 صرف يدوي',
+      income_auto:'💰 إيراد تلقائي', expense_auto:'💸 مصروف تلقائي',
+      capital_auto:'📦 رأس مال تلقائي', opening:'🏦 رصيد افتتاحي',
+      taswiya:'📋 تسوية'
+    };
+    rows = [
+      ['الوصف', item.description||'-'],
+      ['المبلغ', fmt(item.amount)],
+      ['التاريخ', fmtDate(item.date)],
+      ['النوع', typeLabel[item.type]||item.type],
+    ];
+    if(item.category) rows.push(['التصنيف', item.category]);
+    if(item.notes) rows.push(['ملاحظات', item.notes]);
+
+    // زرار المصدر حسب النوع
+    const srcMap = {
+      income_auto: {label:'💰 الإيرادات', page:'income'},
+      expense_auto: {label:'💸 المصاريف', page:'expense'},
+      capital_auto: {label:'📦 رأس المال', page:'capital'},
+    };
+    const isSales = item.category==='سداد_مبيعات' || item.category==='تسوية_مبيعات';
+    if(srcMap[item.type]) {
+      const {label, page} = srcMap[item.type];
+      extraHtml = `<div style="margin-top:16px;text-align:center;">
+        <button onclick="closeModal();showPage('${page}',null)" style="background:var(--g2);color:#fff;border:none;border-radius:12px;padding:10px 24px;font-family:Cairo,sans-serif;font-size:0.9rem;font-weight:900;cursor:pointer;">
+          ${label} — اذهب للمصدر
+        </button></div>`;
+    } else if(isSales) {
+      extraHtml = `<div style="margin-top:16px;text-align:center;">
+        <button onclick="closeModal();showPage('deferred',null)" style="background:#1565C0;color:#fff;border:none;border-radius:12px;padding:10px 24px;font-family:Cairo,sans-serif;font-size:0.9rem;font-weight:900;cursor:pointer;">
+          🛒 مبيعات آجل — اذهب للمصدر
+        </button></div>`;
+    }
   }
-  document.getElementById('modal-body').innerHTML = rows.map(([l,v])=>
-    `<div class="detail-row"><span class="d-lbl">${l}</span><span class="d-val">${v}</span></div>`
-  ).join('');
+  document.getElementById('modal-body').innerHTML =
+    rows.map(([l,v])=>`<div class="detail-row"><span class="d-lbl">${l}</span><span class="d-val">${v}</span></div>`).join('')
+    + extraHtml;
   document.getElementById('detail-overlay').classList.add('open');
 }
 function closeModal() { document.getElementById('detail-overlay').classList.remove('open'); }
@@ -2472,7 +2508,7 @@ async function addVaultTx(){
 async function renderVaultList(){
   vaultSelected.clear();
   updateVaultSelBtn();
-  let q = sb.from('vault').select('*').eq('user_id',currentUser.id).order('date',{ascending:false}).order('created_at',{ascending:false});
+  let q = sb.from('vault').select('*').eq('user_id',currentUser.id).neq('type','taswiya').order('date',{ascending:false}).order('created_at',{ascending:false});
   const from = document.getElementById('vault-from').value;
   const to = document.getElementById('vault-to').value;
   const ftype = document.getElementById('vault-filter-type').value;
@@ -4896,7 +4932,7 @@ async function addTaswiya(){
   // تسوية: تُسجَّل في كشف الحساب بدون أي تأثير على الخزنة
   const {error} = await sb.from('vault').insert({
     user_id: currentUser.id,
-    type: 'in',
+    type: 'taswiya',
     description: 'سداد مبيعات: ' + trader,
     amount,
     date,
