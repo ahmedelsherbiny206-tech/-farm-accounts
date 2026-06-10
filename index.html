@@ -5059,7 +5059,7 @@ async function showAccountStatement(){
       <!-- إجماليات -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
         <div style="background:var(--g5);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:0.7rem;color:var(--muted);">إجمالي المشتريات</div>
+          <div style="font-size:0.7rem;color:var(--muted);">إجمالي المبيعات</div>
           <div style="font-size:0.9rem;font-weight:900;color:var(--g2);">${Number(totalSales).toLocaleString('en-US')} ج</div>
         </div>
         <div style="background:#fdecea;border-radius:10px;padding:10px;text-align:center;">
@@ -5072,8 +5072,8 @@ async function showAccountStatement(){
         </div>
       </div>
 
-      <!-- المشتريات -->
-      <div style="font-size:0.82rem;font-weight:900;color:var(--g2);margin-bottom:6px;">🛒 المشتريات</div>
+      <!-- المبيعات -->
+      <div style="font-size:0.82rem;font-weight:900;color:var(--g2);margin-bottom:6px;">📦 المبيعات</div>
       ${(sales||[]).length ? (sales||[]).map(x=>`
         <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:0.8rem;">
           <div>
@@ -5210,8 +5210,8 @@ async function exportAccountStatementExcel(trader, from, to){
   const ws1 = XLSX.utils.json_to_sheet(salesRows,{header:['م','التاريخ','الوصف','الصنف','المحصول','الكمية','الوحدة','الإجمالي']});
   ws1['!cols']=[{wch:4},{wch:13},{wch:27},{wch:14},{wch:14},{wch:9},{wch:11},{wch:14}];
   xlStyle(ws1, 0, [salesRows.length]);
-  xlPrependTitle(ws1, 'المشتريات - '+trader, 8);
-  XLSX.utils.book_append_sheet(wb, ws1, 'المشتريات');
+  xlPrependTitle(ws1, 'المبيعات - '+trader, 8);
+  XLSX.utils.book_append_sheet(wb, ws1, 'المبيعات');
   const ws2 = XLSX.utils.json_to_sheet(payRows,{header:['م','التاريخ','المبلغ','ملاحظات']});
   ws2['!cols']=[{wch:4},{wch:13},{wch:14},{wch:25}];
   xlStyle(ws2, 0, [payRows.length-2, payRows.length-1]);
