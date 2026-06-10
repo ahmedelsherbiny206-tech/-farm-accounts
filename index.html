@@ -1834,9 +1834,9 @@ async function addIncome() {
   const notes=document.getElementById('inc-notes').value;
   if(!desc||!amt) return showToast('❌ اكمل البيانات');
   if(amt<=0) return showToast('❌ المبلغ لازم يكون أكبر من صفر');
-  const {error}=await sb.from('income').insert({description:desc,category:type,crop:crop||null,amount:amt,date:date,notes:notes,user_id:currentUser.id});
+  const {data:incRow,error}=await sb.from('income').insert({description:desc,category:type,crop:crop||null,amount:amt,date:date,notes:notes,user_id:currentUser.id}).select('id').single();
   if(error) return showToast('❌ خطأ: '+error.message);
-  await sb.from('vault').insert({type:'income_auto',description:'إيراد: '+desc,amount:amt,date:date,notes:notes||'',user_id:currentUser.id});
+  await sb.from('vault').insert({type:'income_auto',description:'إيراد: '+desc,amount:amt,date:date,notes:notes||'',user_id:currentUser.id,ref_id:incRow?.id});
   showToast('✅ تم تسجيل الوارد وإضافته للخزنة');
   logActivity('إضافة','income','وارد: '+desc+' - '+type, amt);
   document.getElementById('inc-desc').value='';
@@ -1918,11 +1918,11 @@ function updateIncTotal(data){
 async function deleteSelectedIncome(){
   if(!incomeSelected.size) return;
   if(!await showConfirm('هتحذف '+incomeSelected.size+' عنصر؟')) return;
-  const {data:selData} = await sb.from('income').select('amount,date').in('id',[...incomeSelected]);
+  const {data:selData} = await sb.from('income').select('id,amount,date').in('id',[...incomeSelected]);
   await sb.from('income').delete().in('id',[...incomeSelected]).eq('user_id',currentUser.id);
-  // Delete from vault
   for(const item of (selData||[])){
-    await sb.from('vault').delete().eq('type','income_auto').eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id);
+    const {data:d}=await sb.from('vault').delete().eq('type','income_auto').eq('ref_id',item.id).eq('user_id',currentUser.id).select('id');
+    if(!d?.length) await sb.from('vault').delete().eq('type','income_auto').eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id).is('ref_id',null);
   }
   showToast('🗑️ تم الحذف');
   renderIncomeList(); renderHome();
@@ -1938,9 +1938,9 @@ async function addExpense() {
   const notes=document.getElementById('exp-notes').value;
   if(!desc||!amt) return showToast('❌ اكمل البيانات');
   if(amt<=0) return showToast('❌ المبلغ لازم يكون أكبر من صفر');
-  const {error}=await sb.from('expenses').insert({description:desc+' - '+cat,amount:amt,category:cat,crop:crop||null,date:date,notes:notes,user_id:currentUser.id});
+  const {data:expRow,error}=await sb.from('expenses').insert({description:desc+' - '+cat,amount:amt,category:cat,crop:crop||null,date:date,notes:notes,user_id:currentUser.id}).select('id').single();
   if(error) return showToast('❌ خطأ: '+error.message);
-  await sb.from('vault').insert({type:'expense_auto',description:'مصروف: '+desc+' - '+cat,amount:amt,date:date,notes:notes||'',user_id:currentUser.id});
+  await sb.from('vault').insert({type:'expense_auto',description:'مصروف: '+desc+' - '+cat,amount:amt,date:date,notes:notes||'',user_id:currentUser.id,ref_id:expRow?.id});
   showToast('✅ تم تسجيل الصادر وخصمه من الخزنة');
   logActivity('إضافة','expenses','صادر: '+desc+' - '+cat, amt);
   document.getElementById('exp-desc').value='';
@@ -2113,10 +2113,9 @@ async function addCapital() {
   const notes=document.getElementById('cap-notes').value;
   if(!amt) return showToast('❌ أدخل المبلغ');
   if(amt<=0) return showToast('❌ المبلغ لازم يكون أكبر من صفر');
-  const {error}=await sb.from('capital').insert({amount:amt,date:date,notes:notes,user_id:currentUser.id});
+  const {data:capRow,error}=await sb.from('capital').insert({amount:amt,date:date,notes:notes,user_id:currentUser.id}).select('id').single();
   if(error) return showToast('❌ خطأ: '+error.message);
-  // Add to vault as receipt
-  await sb.from('vault').insert({type:'capital_auto',description:'رأس مال: '+amt,amount:amt,date:date,notes:notes||'',user_id:currentUser.id});
+  await sb.from('vault').insert({type:'capital_auto',description:'رأس مال: '+amt,amount:amt,date:date,notes:notes||'',user_id:currentUser.id,ref_id:capRow?.id});
   showToast('✅ تم تحديث رأس المال وإضافته للخزنة');
   logActivity('إضافة','capital','رأس مال'+(notes?' ('+notes+')':''), amt);
   document.getElementById('cap-amt').value='';
@@ -2511,12 +2510,16 @@ async function deleteSelectedVault(){
   await sb.from('vault').delete().in('id',[...vaultSelected]).eq('user_id',currentUser.id);
   // Delete from source tables
   for(const item of (selItems||[])) {
+    const rid = item.ref_id;
     if(item.type==='income_auto') {
-      await sb.from('income').delete().eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id);
+      if(rid) await sb.from('income').delete().eq('id',rid).eq('user_id',currentUser.id);
+      else await sb.from('income').delete().eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id);
     } else if(item.type==='expense_auto') {
-      await sb.from('expenses').delete().eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id);
+      if(rid) await sb.from('expenses').delete().eq('id',rid).eq('user_id',currentUser.id);
+      else await sb.from('expenses').delete().eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id);
     } else if(item.type==='capital_auto') {
-      await sb.from('capital').delete().eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id);
+      if(rid) await sb.from('capital').delete().eq('id',rid).eq('user_id',currentUser.id);
+      else await sb.from('capital').delete().eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id);
     }
   }
   showToast('🗑️ تم الحذف من الخزنة والمصدر');
@@ -2529,12 +2532,16 @@ async function delVaultItem(id){
   await sb.from('vault').delete().eq('id',id).eq('user_id',currentUser.id);
   // Delete from source table
   if(item) {
+    const rid = item.ref_id;
     if(item.type==='income_auto') {
-      await sb.from('income').delete().eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id);
+      if(rid) await sb.from('income').delete().eq('id',rid).eq('user_id',currentUser.id);
+      else await sb.from('income').delete().eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id);
     } else if(item.type==='expense_auto') {
-      await sb.from('expenses').delete().eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id);
+      if(rid) await sb.from('expenses').delete().eq('id',rid).eq('user_id',currentUser.id);
+      else await sb.from('expenses').delete().eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id);
     } else if(item.type==='capital_auto') {
-      await sb.from('capital').delete().eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id);
+      if(rid) await sb.from('capital').delete().eq('id',rid).eq('user_id',currentUser.id);
+      else await sb.from('capital').delete().eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id);
     }
   }
   showToast('🗑️ تم الحذف من الخزنة والمصدر');
@@ -3097,7 +3104,7 @@ async function saveEdit(table, id, type) {
   const notes = document.getElementById('edit-notes')?.value||'';
 
   // جيب البيانات القديمة قبل التعديل
-  const {data:oldData} = await sb.from(table).select('amount,date').eq('id',id).eq('user_id',currentUser.id);
+  const {data:oldData} = await sb.from(table).select('id,amount,date').eq('id',id).eq('user_id',currentUser.id);
   const oldAmt = oldData?.[0]?.amount;
   const oldDate = oldData?.[0]?.date;
 
@@ -3116,12 +3123,15 @@ async function saveEdit(table, id, type) {
   if(oldAmt !== undefined){
     const vaultType = type==='income'?'income_auto': type==='expense'?'expense_auto': type==='capital'?'capital_auto':null;
     if(vaultType){
-      await sb.from('vault')
-        .update({amount:amt, date})
-        .eq('type', vaultType)
-        .eq('amount', oldAmt)
-        .eq('date', oldDate)
-        .eq('user_id', currentUser.id);
+      const oldId = oldData?.[0]?.id;
+      let updated = {rowCount:0};
+      if(oldId){
+        const {data:ud}=await sb.from('vault').update({amount:amt,date}).eq('type',vaultType).eq('ref_id',oldId).eq('user_id',currentUser.id).select('id');
+        updated.rowCount=ud?.length||0;
+      }
+      if(!updated.rowCount){
+        await sb.from('vault').update({amount:amt,date}).eq('type',vaultType).eq('amount',oldAmt).eq('date',oldDate).eq('user_id',currentUser.id);
+      }
     }
   }
 
