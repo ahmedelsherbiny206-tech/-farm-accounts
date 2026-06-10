@@ -2559,9 +2559,9 @@ async function quickAdd() {
   if(!desc||!amt) return showToast('❌ اكمل البيانات');
   const table=type==='income'?'income':'expenses';
   const vaultType=type==='income'?'income_auto':'expense_auto';
-  const {error:qe}=await sb.from(table).insert({description:desc,amount:amt,date:today(),user_id:currentUser.id});
+  const {data:qRow,error:qe}=await sb.from(table).insert({description:desc,amount:amt,date:today(),user_id:currentUser.id}).select('id').single();
   if(qe) return showToast('❌ خطأ: '+qe.message);
-  const {error:qve}=await sb.from('vault').insert({type:vaultType,description:(type==='income'?'إيراد: ':'مصروف: ')+desc,amount:amt,date:today(),user_id:currentUser.id});
+  const {error:qve}=await sb.from('vault').insert({type:vaultType,description:(type==='income'?'إيراد: ':'مصروف: ')+desc,amount:amt,date:today(),user_id:currentUser.id,ref_id:qRow?.id});
   if(qve) console.error('vault sync:',qve.message);
   showToast('✅ تم التسجيل');
   logActivity('إضافة سريعة', type==='income'?'income':'expenses', (type==='income'?'إضافة سريعة وارد: ':'إضافة سريعة صادر: ')+desc, amt);
@@ -4865,11 +4865,13 @@ async function deleteDeferredSale(id, isPaid){
 
     // لو البيعة مسددة، احذف من الخزنة أيضاً
     if(isPaid){
-      const vDesc = 'تسديد بيعة آجل: '+(sale.description||'');
       // جديد: ref_id
-      await sb.from('vault').delete().eq('user_id',currentUser.id).eq('ref_id', sale.id);
-      // قديم: بدون ref_id + وصف + مبلغ
-      await sb.from('vault').delete().eq('user_id',currentUser.id).eq('type','in').eq('amount',sale.total).ilike('description', vDesc+'%').is('ref_id',null);
+      const {data:vd} = await sb.from('vault').delete().eq('user_id',currentUser.id).eq('ref_id', sale.id).select('id');
+      // قديم: بدون ref_id + description التاجر + المبلغ
+      if(!vd?.length){
+        const vDesc = 'سداد مبيعات: '+(sale.trader||'');
+        await sb.from('vault').delete().eq('user_id',currentUser.id).eq('category','سداد_مبيعات').eq('amount',sale.total).ilike('description', vDesc+'%').is('ref_id',null);
+      }
     }
   }
 
@@ -4920,10 +4922,16 @@ async function saveDsEdit(id){
   const total = qty*price;
   const {error} = await sb.from('deferred_sales').update({description:desc,crop,quantity:qty,unit,price,total,trader,date,notes}).eq('id',id).eq('user_id',currentUser.id);
   if(error) return showToast('❌ خطأ: '+error.message);
+  // تحديث سجل الإيراد المرتبط
+  const incDesc = 'بيع آجل: '+desc+(trader?' - '+trader:'');
+  const incNotes = 'بيعة آجل - '+qty+' '+unit+' × '+price+' ج';
+  const {data:iu} = await sb.from('income').update({description:incDesc,amount:total,date,crop:crop||null,notes:incNotes}).eq('ref_id',id).eq('user_id',currentUser.id).select('id');
+  if(!iu?.length) await sb.from('income').update({description:incDesc,amount:total,date,crop:crop||null}).eq('category','مبيعات آجل').eq('amount',qty*price).eq('date',date).eq('user_id',currentUser.id).is('ref_id',null);
   logActivity('تعديل','deferred_sales','تعديل بيعة آجل: '+desc,total);
   showToast('✅ تم التعديل');
   closeModal();
   renderDeferredSales();
+  renderHome();
 }
 
 // إدارة الوحدات
@@ -5208,7 +5216,7 @@ function updateSpDeleteBtn(){
 }
 
 async function deleteSpPayment(id){
-  if(!await showConfirm('⚠️ هتحذف هذا السداد من الخزنة. متأكد؟','🗑️')) return;
+  if(!await showConfirm('⚠️ هتحذف هذا السداد من الخزنة. متأكد؟','⚠️')) return;
   await sb.from('vault').delete().eq('id',id).eq('user_id',currentUser.id);
   showToast('🗑️ تم الحذف');
   onSpTraderChange();
