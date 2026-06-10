@@ -2330,9 +2330,10 @@ function showDetail(type, item) {
   let extraHtml = '';
   if(type==='income'||type==='expense') {
     rows = [
-      ['الوصف', item.desc],
+      ['الوصف', item.description||item.desc||'-'],
       ['المبلغ', fmt(item.amount)],
       ['التاريخ', fmtDate(item.date)],
+      ['التصنيف', item.category||'-'],
       ['ملاحظات', item.notes||'-'],
     ];
   } else if(type==='ajal') {
@@ -2608,13 +2609,16 @@ async function addVaultTx(){
   const notes = document.getElementById('vault-notes').value;
   if(!desc||!amt) return showToast('❌ اكمل البيانات');
   
-  // If capital, also add to capital table
+  // If capital, also add to capital table and capture ref_id
+  let capRefId = null;
   if(type==='capital_auto') {
-    await sb.from('capital').insert({amount:amt,date,notes,user_id:currentUser.id});
+    const {data:capRow,error:ce}=await sb.from('capital').insert({amount:amt,date,notes,user_id:currentUser.id}).select('id').single();
+    if(ce) return showToast('❌ خطأ: '+ce.message);
+    capRefId = capRow?.id;
   }
   // opening balance saved in vault table only
-  
-  const {error} = await sb.from('vault').insert({type,description:desc,amount:amt,date,notes,user_id:currentUser.id});
+
+  const {error} = await sb.from('vault').insert({type,description:desc,amount:amt,date,notes,user_id:currentUser.id,ref_id:capRefId});
   if(error) return showToast('❌ خطأ: '+error.message);
 
   // تسجيل في السجل
