@@ -2573,7 +2573,7 @@ function xlStyle(ws, headerRowIndex, totalRows, numCols, opts = {}) {
           patternType: 'solid'
         },
         alignment: {
-          horizontal: isNum ? 'center' : 'right',
+          horizontal: 'center',
           vertical: 'center',
           readingOrder: 2,
           wrapText: false
@@ -2588,6 +2588,25 @@ function xlStyle(ws, headerRowIndex, totalRows, numCols, opts = {}) {
   for(let R = 0; R <= maxR; R++) {
     ws['!rows'][R] = {hpt: R === headerRowIndex || (opts.titleRow !== undefined && R === opts.titleRow) ? 22 : 18};
   }
+}
+
+function xlPrependTitle(ws, title, numCols) {
+  const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+  for(let R = range.e.r; R >= range.s.r; R--) {
+    for(let C = range.s.c; C <= range.e.c; C++) {
+      const from = XLSX.utils.encode_cell({r:R, c:C});
+      const to   = XLSX.utils.encode_cell({r:R+1, c:C});
+      if(ws[from]) { ws[to] = ws[from]; delete ws[from]; }
+    }
+  }
+  if(ws['!rows']) ws['!rows'] = [{hpt:26}, ...ws['!rows']];
+  else ws['!rows'] = [{hpt:26}];
+  if(ws['!merges']) ws['!merges'] = ws['!merges'].map(m=>({s:{r:m.s.r+1,c:m.s.c},e:{r:m.e.r+1,c:m.e.c}}));
+  ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:range.e.r+1, c:Math.max(range.e.c, numCols-1)}});
+  if(!ws['!merges']) ws['!merges'] = [];
+  ws['!merges'].unshift({s:{r:0,c:0}, e:{r:0,c:numCols-1}});
+  const border = {top:{style:'thin',color:{rgb:'B0C4DE'}},bottom:{style:'thin',color:{rgb:'B0C4DE'}},left:{style:'thin',color:{rgb:'B0C4DE'}},right:{style:'thin',color:{rgb:'B0C4DE'}}};
+  ws['A1'] = {v:title, t:'s', s:{font:{name:'Calibri',sz:14,bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'1F4E79'},patternType:'solid'},alignment:{horizontal:'center',vertical:'center'},border}};
 }
 
 async function exportToExcel(type) {
@@ -2641,6 +2660,7 @@ async function exportToExcel(type) {
   const ws = XLSX.utils.json_to_sheet(data, {header: headers});
   ws['!cols'] = [{wch:32},{wch:16},{wch:14},{wch:14},{wch:28}];
   xlStyle(ws, 0, [data.length]);
+  xlPrependTitle(ws, type==='income'?'الإيرادات':'المصاريف', 5);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, type==='income'?'الإيرادات':'المصاريف');
   XLSX.writeFile(wb, filename);
@@ -2685,11 +2705,13 @@ async function exportAjalToExcel(){
   const wsRec = XLSX.utils.json_to_sheet(recRows, {header: headers});
   wsRec['!cols'] = colW;
   xlStyle(wsRec, 0, [recRows.length-2, recRows.length-1]);
+  xlPrependTitle(wsRec, 'ديون لي', 6);
   XLSX.utils.book_append_sheet(wb, wsRec, 'ديون لي');
 
   const wsPay = XLSX.utils.json_to_sheet(payRows, {header: headers});
   wsPay['!cols'] = colW;
   xlStyle(wsPay, 0, [payRows.length-2, payRows.length-1]);
+  xlPrependTitle(wsPay, 'ديون علي', 6);
   XLSX.utils.book_append_sheet(wb, wsPay, 'ديون علي');
 
   XLSX.writeFile(wb, 'الآجل_النقدي.xlsx');
@@ -2731,6 +2753,7 @@ async function exportDeferredToExcel(){
   const ws = XLSX.utils.json_to_sheet(data, {header: headers});
   ws['!cols'] = [{wch:27},{wch:14},{wch:9},{wch:11},{wch:11},{wch:13},{wch:16},{wch:13},{wch:13},{wch:22}];
   xlStyle(ws, 0, [data.length]);
+  xlPrependTitle(ws, 'مبيعات آجل', 10);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'مبيعات آجل');
   XLSX.writeFile(wb, 'مبيعات_آجل.xlsx');
@@ -2771,6 +2794,7 @@ async function exportReportToExcel() {
   const wsInc = XLSX.utils.aoa_to_sheet(incRows);
   wsInc['!cols'] = [{wch:5},{wch:32},{wch:16},{wch:16},{wch:14},{wch:14},{wch:28}];
   xlStyle(wsInc, 0, [incRows.length-1, incRows.length-2]);
+  xlPrependTitle(wsInc, 'الإيرادات', 7);
   XLSX.utils.book_append_sheet(wb, wsInc, 'الإيرادات');
 
   // ===== Sheet 2: المصاريف =====
@@ -2788,6 +2812,7 @@ async function exportReportToExcel() {
   const wsExp = XLSX.utils.aoa_to_sheet(expRows);
   wsExp['!cols'] = [{wch:5},{wch:32},{wch:16},{wch:16},{wch:14},{wch:14},{wch:28}];
   xlStyle(wsExp, 0, [expRows.length-1, expRows.length-2]);
+  xlPrependTitle(wsExp, 'المصاريف', 7);
   XLSX.utils.book_append_sheet(wb, wsExp, 'المصاريف');
 
   // ===== Sheet 3: الآجل =====
@@ -2800,6 +2825,7 @@ async function exportReportToExcel() {
   const wsAjal = XLSX.utils.aoa_to_sheet(ajalRows);
   wsAjal['!cols'] = [{wch:5},{wch:22},{wch:10},{wch:14},{wch:25},{wch:16},{wch:12}];
   xlStyle(wsAjal, 0, []);
+  xlPrependTitle(wsAjal, 'الآجل النقدي', 7);
   XLSX.utils.book_append_sheet(wb, wsAjal, 'الآجل');
 
   // ===== Sheet 4: ملخص =====
@@ -4259,6 +4285,7 @@ async function exportSeasonToExcel(seasonId){
   const wsInc=XLSX.utils.aoa_to_sheet(incRows);
   wsInc['!cols']=[{wch:5},{wch:32},{wch:16},{wch:14},{wch:14},{wch:25}];
   xlStyle(wsInc, 0, [incRows.length-1]);
+  xlPrependTitle(wsInc, 'إيرادات الموسم - '+season.name, 6);
   XLSX.utils.book_append_sheet(wb, wsInc, 'الإيرادات');
 
   // Sheet 3: المصاريف
@@ -4269,6 +4296,7 @@ async function exportSeasonToExcel(seasonId){
   const wsExp=XLSX.utils.aoa_to_sheet(expRows);
   wsExp['!cols']=[{wch:5},{wch:32},{wch:16},{wch:14},{wch:14},{wch:25}];
   xlStyle(wsExp, 0, [expRows.length-1]);
+  xlPrependTitle(wsExp, 'مصاريف الموسم - '+season.name, 6);
   XLSX.utils.book_append_sheet(wb, wsExp, 'المصاريف');
 
   // Sheet 4: المصاريف حسب التصنيف
@@ -4283,6 +4311,7 @@ async function exportSeasonToExcel(seasonId){
   const wsCat=XLSX.utils.aoa_to_sheet(catRows);
   wsCat['!cols']=[{wch:27},{wch:16},{wch:12}];
   xlStyle(wsCat, 0, [catRows.length-1]);
+  xlPrependTitle(wsCat, 'المصاريف حسب التصنيف - '+season.name, 3);
   XLSX.utils.book_append_sheet(wb, wsCat, 'المصاريف حسب التصنيف');
 
   wb.SheetNames=['ملخص الموسم','الإيرادات','المصاريف','المصاريف حسب التصنيف'];
@@ -5102,10 +5131,12 @@ async function exportAccountStatementExcel(trader, from, to){
   const ws1 = XLSX.utils.json_to_sheet(salesRows,{header:['م','التاريخ','الوصف','الصنف','المحصول','الكمية','الوحدة','الإجمالي']});
   ws1['!cols']=[{wch:4},{wch:13},{wch:27},{wch:14},{wch:14},{wch:9},{wch:11},{wch:14}];
   xlStyle(ws1, 0, [salesRows.length]);
+  xlPrependTitle(ws1, 'المشتريات - '+trader, 8);
   XLSX.utils.book_append_sheet(wb, ws1, 'المشتريات');
   const ws2 = XLSX.utils.json_to_sheet(payRows,{header:['م','التاريخ','المبلغ','ملاحظات']});
   ws2['!cols']=[{wch:4},{wch:13},{wch:14},{wch:25}];
   xlStyle(ws2, 0, [payRows.length-2, payRows.length-1]);
+  xlPrependTitle(ws2, 'السدادات - '+trader, 4);
   XLSX.utils.book_append_sheet(wb, ws2, 'السدادات');
   XLSX.writeFile(wb, `كشف_حساب_${trader}.xlsx`);
   showToast('✅ تم التصدير!');
@@ -5132,6 +5163,7 @@ async function exportDetailedStatementExcel(trader, from, to){
     const ws = XLSX.utils.json_to_sheet(rows,{header:['م','التاريخ','الكمية','السعر','الإجمالي','ملاحظات']});
     ws['!cols']=[{wch:4},{wch:13},{wch:10},{wch:12},{wch:14},{wch:22}];
     xlStyle(ws, 0, [rows.length]);
+    xlPrependTitle(ws, (g.variety||'بدون صنف')+' - '+trader, 6);
     XLSX.utils.book_append_sheet(wb, ws, sheetName);
   });
 
