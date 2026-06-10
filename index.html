@@ -2116,7 +2116,6 @@ async function addCapital() {
   const {error}=await sb.from('capital').insert({amount:amt,date:date,notes:notes,user_id:currentUser.id});
   if(error) return showToast('❌ خطأ: '+error.message);
   // Add to vault as receipt
-  const {data:capInserted} = await sb.from('capital').select('id').eq('amount',amt).eq('date',date).order('created_at',{ascending:false}).limit(1);
   await sb.from('vault').insert({type:'capital_auto',description:'رأس مال: '+amt,amount:amt,date:date,notes:notes||'',user_id:currentUser.id});
   showToast('✅ تم تحديث رأس المال وإضافته للخزنة');
   logActivity('إضافة','capital','رأس مال'+(notes?' ('+notes+')':''), amt);
@@ -2382,9 +2381,6 @@ async function getVaultOpeningBalance(){
   return 0; // opening balance is now stored in vault table as type='opening'
 }
 
-async function setVaultBalance(){
-  return; // no longer used
-}
 
 async function renderVaultSummary(){
   const opening = await getVaultOpeningBalance();
@@ -2528,7 +2524,7 @@ async function deleteSelectedVault(){
 }
 async function delVaultItem(id){
   if(!await showConfirm('هتحذف الحركة دي؟')) return;
-  const {data:vItem} = await sb.from('vault').select('*').eq('id',id);
+  const {data:vItem} = await sb.from('vault').select('*').eq('id',id).eq('user_id',currentUser.id);
   const item = vItem?.[0];
   await sb.from('vault').delete().eq('id',id).eq('user_id',currentUser.id);
   // Delete from source table
