@@ -1566,6 +1566,17 @@ async function logActivity(action, table_name, description, amount=null){
 
 // ===== UTILS =====
 function today() { return new Date().toISOString().split('T')[0]; }
+
+// Global error safety net
+window.addEventListener('unhandledrejection', e => {
+  console.error('unhandled rejection:', e.reason);
+  showToast('❌ خطأ غير متوقع، حاول تاني');
+});
+async function sbRun(fn) {
+  const r = await fn();
+  if(r?.error) { console.error('sb error:', r.error.message); showToast('❌ خطأ: '+r.error.message); return null; }
+  return r;
+}
 function toWesternNum(v){ return String(v||'').replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)); }
 function parseNum(v){ return parseFloat(toWesternNum(v))||0; }
 
@@ -1836,7 +1847,8 @@ async function addIncome() {
   if(amt<=0) return showToast('❌ المبلغ لازم يكون أكبر من صفر');
   const {data:incRow,error}=await sb.from('income').insert({description:desc,category:type,crop:crop||null,amount:amt,date:date,notes:notes,user_id:currentUser.id}).select('id').single();
   if(error) return showToast('❌ خطأ: '+error.message);
-  await sb.from('vault').insert({type:'income_auto',description:'إيراد: '+desc,amount:amt,date:date,notes:notes||'',user_id:currentUser.id,ref_id:incRow?.id});
+  const {error:ve1}=await sb.from('vault').insert({type:'income_auto',description:'إيراد: '+desc,amount:amt,date:date,notes:notes||'',user_id:currentUser.id,ref_id:incRow?.id});
+  if(ve1) console.error('vault sync error:',ve1.message);
   showToast('✅ تم تسجيل الوارد وإضافته للخزنة');
   logActivity('إضافة','income','وارد: '+desc+' - '+type, amt);
   document.getElementById('inc-desc').value='';
@@ -1919,7 +1931,8 @@ async function deleteSelectedIncome(){
   if(!incomeSelected.size) return;
   if(!await showConfirm('هتحذف '+incomeSelected.size+' عنصر؟')) return;
   const {data:selData} = await sb.from('income').select('id,amount,date').in('id',[...incomeSelected]);
-  await sb.from('income').delete().in('id',[...incomeSelected]).eq('user_id',currentUser.id);
+  const {error:ide}=await sb.from('income').delete().in('id',[...incomeSelected]).eq('user_id',currentUser.id);
+  if(ide) return showToast('❌ خطأ في الحذف: '+ide.message);
   for(const item of (selData||[])){
     const {data:d}=await sb.from('vault').delete().eq('type','income_auto').eq('ref_id',item.id).eq('user_id',currentUser.id).select('id');
     if(!d?.length) await sb.from('vault').delete().eq('type','income_auto').eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id).is('ref_id',null);
@@ -1940,7 +1953,8 @@ async function addExpense() {
   if(amt<=0) return showToast('❌ المبلغ لازم يكون أكبر من صفر');
   const {data:expRow,error}=await sb.from('expenses').insert({description:desc+' - '+cat,amount:amt,category:cat,crop:crop||null,date:date,notes:notes,user_id:currentUser.id}).select('id').single();
   if(error) return showToast('❌ خطأ: '+error.message);
-  await sb.from('vault').insert({type:'expense_auto',description:'مصروف: '+desc+' - '+cat,amount:amt,date:date,notes:notes||'',user_id:currentUser.id,ref_id:expRow?.id});
+  const {error:ve2}=await sb.from('vault').insert({type:'expense_auto',description:'مصروف: '+desc+' - '+cat,amount:amt,date:date,notes:notes||'',user_id:currentUser.id,ref_id:expRow?.id});
+  if(ve2) console.error('vault sync error:',ve2.message);
   showToast('✅ تم تسجيل الصادر وخصمه من الخزنة');
   logActivity('إضافة','expenses','صادر: '+desc+' - '+cat, amt);
   document.getElementById('exp-desc').value='';
@@ -2021,7 +2035,8 @@ async function deleteSelectedExpense(){
   if(!expSelected.size) return;
   if(!await showConfirm('هتحذف '+expSelected.size+' عنصر؟')) return;
   const {data:selData} = await sb.from('expenses').select('amount,date').in('id',[...expSelected]);
-  await sb.from('expenses').delete().in('id',[...expSelected]).eq('user_id',currentUser.id);
+  const {error:ede}=await sb.from('expenses').delete().in('id',[...expSelected]).eq('user_id',currentUser.id);
+  if(ede) return showToast('❌ خطأ في الحذف: '+ede.message);
   // Delete from vault
   for(const item of (selData||[])){
     await sb.from('vault').delete().eq('type','expense_auto').eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id);
@@ -2086,24 +2101,28 @@ async function renderAjalLists() {
 }
 
 async function markPaid(id) {
-  const {data:ajalData} = await sb.from('ajal').select('name,amount,type,reason').eq('id',id).eq('user_id',currentUser.id);
-  const rec = ajalData?.[0];
-  if(!rec) return;
-  await sb.from('ajal').update({paid:true}).eq('id',id).eq('user_id',currentUser.id);
-  const isReceivable = rec.type === 'receivable'; // لي عند غيري → رجّعلي فلوسي → تضاف للخزنة
-  await sb.from('vault').insert({
-    user_id: currentUser.id,
-    type: isReceivable ? 'in' : 'out',
-    description: isReceivable ? 'رجّع سلفة: '+(rec.name||'') : 'رددت سلفة لـ: '+(rec.name||''),
-    amount: rec.amount,
-    date: today(),
-    notes: rec.reason||'',
-    ref_id: id
-  });
-  const ajalType = isReceivable ? 'آجل لك' : 'آجل عليك';
-  logActivity('تسديد','ajal','تسديد '+ajalType+': '+(rec.name||''), rec.amount);
-  showToast(isReceivable ? '✅ استرجعت فلوسك وأضيفت للخزنة' : '✅ ردّيت السلفة وخصمت من الخزنة');
-  renderAjalLists(); renderHome();
+  try {
+    const {data:ajalData} = await sb.from('ajal').select('name,amount,type,reason').eq('id',id).eq('user_id',currentUser.id);
+    const rec = ajalData?.[0];
+    if(!rec) return;
+    const {error:ae} = await sb.from('ajal').update({paid:true}).eq('id',id).eq('user_id',currentUser.id);
+    if(ae) return showToast('❌ خطأ: '+ae.message);
+    const isReceivable = rec.type === 'receivable';
+    const {error:ve} = await sb.from('vault').insert({
+      user_id: currentUser.id,
+      type: isReceivable ? 'in' : 'out',
+      description: isReceivable ? 'رجّع سلفة: '+(rec.name||'') : 'رددت سلفة لـ: '+(rec.name||''),
+      amount: rec.amount,
+      date: today(),
+      notes: rec.reason||'',
+      ref_id: id
+    });
+    if(ve) console.error('vault sync error:',ve.message);
+    const ajalType = isReceivable ? 'آجل لك' : 'آجل عليك';
+    logActivity('تسديد','ajal','تسديد '+ajalType+': '+(rec.name||''), rec.amount);
+    showToast(isReceivable ? '✅ استرجعت فلوسك وأضيفت للخزنة' : '✅ ردّيت السلفة وخصمت من الخزنة');
+    renderAjalLists(); renderHome();
+  } catch(e) { showToast('❌ خطأ: '+e.message); }
 }
 
 // ===== CAPITAL =====
@@ -2115,7 +2134,8 @@ async function addCapital() {
   if(amt<=0) return showToast('❌ المبلغ لازم يكون أكبر من صفر');
   const {data:capRow,error}=await sb.from('capital').insert({amount:amt,date:date,notes:notes,user_id:currentUser.id}).select('id').single();
   if(error) return showToast('❌ خطأ: '+error.message);
-  await sb.from('vault').insert({type:'capital_auto',description:'رأس مال: '+amt,amount:amt,date:date,notes:notes||'',user_id:currentUser.id,ref_id:capRow?.id});
+  const {error:ve3}=await sb.from('vault').insert({type:'capital_auto',description:'رأس مال: '+amt,amount:amt,date:date,notes:notes||'',user_id:currentUser.id,ref_id:capRow?.id});
+  if(ve3) console.error('vault sync error:',ve3.message);
   showToast('✅ تم تحديث رأس المال وإضافته للخزنة');
   logActivity('إضافة','capital','رأس مال'+(notes?' ('+notes+')':''), amt);
   document.getElementById('cap-amt').value='';
@@ -2176,7 +2196,8 @@ async function deleteSelectedCapital(){
   if(!capSelected.size) return;
   if(!await showConfirm('هتحذف '+capSelected.size+' عنصر؟')) return;
   const {data:selData} = await sb.from('capital').select('amount,date').in('id',[...capSelected]);
-  await sb.from('capital').delete().in('id',[...capSelected]).eq('user_id',currentUser.id);
+  const {error:cde}=await sb.from('capital').delete().in('id',[...capSelected]).eq('user_id',currentUser.id);
+  if(cde) return showToast('❌ خطأ في الحذف: '+cde.message);
   for(const item of (selData||[])){
     await sb.from('vault').delete().eq('type','capital_auto').eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id);
   }
@@ -2343,12 +2364,18 @@ async function doRestore(event) {
   try { backup=JSON.parse(text); } catch(e){ return showToast('❌ ملف غير صالح'); }
   if(!await showConfirm(`هتستعيد ${backup.income?.length||0} وارد و${backup.expenses?.length||0} صادر. هيتم إضافة البيانات بدون حذف الموجود. متأكد؟`, '📥')) return;
   showToast('⏳ جاري الاستعادة...');
-  if(backup.income?.length) await sb.from('income').upsert(backup.income.map(x=>({...x,user_id:currentUser.id})));
-  if(backup.expenses?.length) await sb.from('expenses').upsert(backup.expenses.map(x=>({...x,user_id:currentUser.id})));
-  if(backup.ajal?.length) await sb.from('ajal').upsert(backup.ajal.map(x=>({...x,user_id:currentUser.id})));
-  if(backup.capital?.length) await sb.from('capital').upsert(backup.capital.map(x=>({...x,user_id:currentUser.id})));
-  showToast('✅ تم الاستعادة بنجاح!');
-  renderHome();
+  try {
+    const results = await Promise.all([
+      backup.income?.length ? sb.from('income').upsert(backup.income.map(x=>({...x,user_id:currentUser.id}))) : null,
+      backup.expenses?.length ? sb.from('expenses').upsert(backup.expenses.map(x=>({...x,user_id:currentUser.id}))) : null,
+      backup.ajal?.length ? sb.from('ajal').upsert(backup.ajal.map(x=>({...x,user_id:currentUser.id}))) : null,
+      backup.capital?.length ? sb.from('capital').upsert(backup.capital.map(x=>({...x,user_id:currentUser.id}))) : null,
+    ]);
+    const errs = results.filter(r=>r?.error).map(r=>r.error.message);
+    if(errs.length) return showToast('❌ خطأ في الاستعادة: '+errs[0]);
+    showToast('✅ تم الاستعادة بنجاح!');
+    renderHome();
+  } catch(e) { showToast('❌ خطأ في الاستعادة: '+e.message); }
 }
 
 async function quickAdd() {
@@ -2358,8 +2385,10 @@ async function quickAdd() {
   if(!desc||!amt) return showToast('❌ اكمل البيانات');
   const table=type==='income'?'income':'expenses';
   const vaultType=type==='income'?'income_auto':'expense_auto';
-  await sb.from(table).insert({description:desc,amount:amt,date:today(),user_id:currentUser.id});
-  await sb.from('vault').insert({type:vaultType,description:(type==='income'?'إيراد: ':'مصروف: ')+desc,amount:amt,date:today(),user_id:currentUser.id});
+  const {error:qe}=await sb.from(table).insert({description:desc,amount:amt,date:today(),user_id:currentUser.id});
+  if(qe) return showToast('❌ خطأ: '+qe.message);
+  const {error:qve}=await sb.from('vault').insert({type:vaultType,description:(type==='income'?'إيراد: ':'مصروف: ')+desc,amount:amt,date:today(),user_id:currentUser.id});
+  if(qve) console.error('vault sync:',qve.message);
   showToast('✅ تم التسجيل');
   logActivity('إضافة سريعة', type==='income'?'income':'expenses', (type==='income'?'إضافة سريعة وارد: ':'إضافة سريعة صادر: ')+desc, amt);
   document.getElementById('q-desc').value='';
@@ -2507,7 +2536,8 @@ async function deleteSelectedVault(){
   if(!vaultSelected.size) return;
   if(!await showConfirm('هتحذف '+vaultSelected.size+' حركة؟')) return;
   const {data:selItems} = await sb.from('vault').select('*').in('id',[...vaultSelected]);
-  await sb.from('vault').delete().in('id',[...vaultSelected]).eq('user_id',currentUser.id);
+  const {error:vde}=await sb.from('vault').delete().in('id',[...vaultSelected]).eq('user_id',currentUser.id);
+  if(vde) return showToast('❌ خطأ في الحذف: '+vde.message);
   // Delete from source tables
   for(const item of (selItems||[])) {
     const rid = item.ref_id;
@@ -4618,15 +4648,19 @@ async function renderDeferredSales(){
 // تسديد بيعة
 async function payDeferredSale(id){
   if(!await showConfirm('تأكيد تسديد البيعة وإضافتها للخزنة؟','✅')) return;
-  const {data} = await sb.from('deferred_sales').select('*').eq('id',id).eq('user_id',currentUser.id);
-  if(!data?.length) return showToast('❌ مش لاقي البيعة');
-  const sale = data[0];
-  await sb.from('vault').insert({user_id:currentUser.id,type:'in',description:'سداد مبيعات: '+(sale.trader||''),amount:sale.total,date:today(),notes:'تسديد بيعة: '+(sale.description||''),category:'سداد_مبيعات',ref_id:sale.id});
-  await sb.from('deferred_sales').update({paid:true,paid_at:new Date().toISOString()}).eq('id',id).eq('user_id',currentUser.id);
-  logActivity('تسديد','deferred_sales','تسديد بيعة آجل: '+(sale.description||''),sale.total);
-  showToast('✅ تم التسديد وإضافته للخزنة');
-  renderDeferredSales();
-  renderHome();
+  try {
+    const {data} = await sb.from('deferred_sales').select('*').eq('id',id).eq('user_id',currentUser.id);
+    if(!data?.length) return showToast('❌ مش لاقي البيعة');
+    const sale = data[0];
+    const {error:ve} = await sb.from('vault').insert({user_id:currentUser.id,type:'in',description:'سداد مبيعات: '+(sale.trader||''),amount:sale.total,date:today(),notes:'تسديد بيعة: '+(sale.description||''),category:'سداد_مبيعات',ref_id:sale.id});
+    if(ve) return showToast('❌ خطأ في الخزنة: '+ve.message);
+    const {error:de} = await sb.from('deferred_sales').update({paid:true,paid_at:new Date().toISOString()}).eq('id',id).eq('user_id',currentUser.id);
+    if(de) return showToast('❌ خطأ في التحديث: '+de.message);
+    logActivity('تسديد','deferred_sales','تسديد بيعة آجل: '+(sale.description||''),sale.total);
+    showToast('✅ تم التسديد وإضافته للخزنة');
+    renderDeferredSales();
+    renderHome();
+  } catch(e) { showToast('❌ خطأ: '+e.message); }
 }
 
 // حذف بيعة
