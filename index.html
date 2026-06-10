@@ -5151,24 +5151,22 @@ async function showDetailedStatement(){
       </div>
 
       <!-- المبيعات تفصيلي حسب الصنف -->
-      <div style="font-size:0.82rem;font-weight:900;color:var(--g2);margin-bottom:8px;">🛒 المبيعات حسب الصنف</div>
-      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:6px;">إجمالي الوحدات: ${Number(totalQty).toLocaleString('en-US')}</div>
+      <div style="font-size:0.82rem;font-weight:900;color:var(--g2);margin-bottom:6px;">📦 المبيعات حسب الصنف</div>
 
       ${Object.values(groups).map(g=>`
-        <div style="background:var(--g5);border-radius:12px;padding:12px;margin-bottom:10px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <div style="font-size:0.85rem;font-weight:900;color:var(--g2);">
-              ${g.variety||'بدون صنف'} · ${g.unit||'—'}${g.crop?' · '+g.crop:''}
-            </div>
-            <div style="text-align:left;">
-              <div style="font-size:0.72rem;color:var(--muted);">${Number(g.qty).toLocaleString('en-US')} وحدة</div>
-              <div style="font-size:0.88rem;font-weight:900;color:var(--g2);">${Number(g.total).toLocaleString('en-US')} ج</div>
-            </div>
+        <div style="margin-bottom:4px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:2px solid var(--g3);">
+            <span style="font-size:0.8rem;font-weight:900;color:var(--g2);">${g.variety||'بدون صنف'} · ${g.unit||'—'}${g.crop?' · '+g.crop:''}</span>
+            <span style="font-size:0.78rem;font-weight:900;color:var(--g2);">${Number(g.qty).toLocaleString('en-US')} وحدة · ${Number(g.total).toLocaleString('en-US')} ج</span>
           </div>
           ${g.rows.map(x=>`
-            <div style="display:flex;justify-content:space-between;font-size:0.75rem;padding:5px 0;border-top:1px solid var(--border);">
-              <span style="color:var(--muted);">${fmtDate(x.date)} · ${x.quantity} ${x.unit||''} × ${Number(x.price||0).toLocaleString('en-US')} ج</span>
-              <span style="font-weight:800;">${Number(x.total||0).toLocaleString('en-US')} ج</span>
+            <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:0.8rem;">
+              <div>
+                <span style="color:var(--muted);">${fmtDate(x.date)}</span>
+                <span style="margin:0 6px;">·</span>
+                <span>${x.quantity} ${x.unit||''} × ${Number(x.price||0).toLocaleString('en-US')} ج</span>
+              </div>
+              <span style="font-weight:900;color:var(--text);">${Number(x.total||0).toLocaleString('en-US')} ج</span>
             </div>`).join('')}
         </div>`).join('')}
 
