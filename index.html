@@ -2548,7 +2548,7 @@ async function renderVaultList(){
         <div class="i-amt" style="color:${x.type==='out'||x.type==='expense_auto'?'var(--red)':'var(--g2)'}">
           ${x.type==='out'||x.type==='expense_auto'?'-':'+'} ${fmt(x.amount)}
         </div>
-        ${(x.type==='in'||x.type==='out') && !x.category?`
+        ${((x.type==='in'||x.type==='out') && !x.category) || x.type==='capital_auto'?`
           <button class="btn-sm" style="background:var(--blue-p);color:var(--blue);" onclick="event.stopPropagation();editVaultItem(${JSON.stringify(x).replace(/"/g,'&quot;')})">✏️</button>
           <button class="del-btn" onclick="event.stopPropagation();delVaultItem('${x.id}')">✕</button>
         `:''}
@@ -3336,11 +3336,11 @@ function editVaultItem(item) {
     <div class="edit-modal-row"><label>المبلغ</label><input type="text" inputmode="decimal" id="vedit-amt" value="${item.amount}"></div>
     <div class="edit-modal-row"><label>التاريخ</label><input type="date" id="vedit-date" value="${item.date}"></div>
     <div class="edit-modal-row"><label>ملاحظات</label><textarea id="vedit-notes">${s(item.notes||'')||''}</textarea></div>
-    <button class="btn btn-g" style="margin-top:12px;" onclick="saveVaultEdit('${item.id}')">💾 حفظ التعديل</button>`;
+    <button class="btn btn-g" style="margin-top:12px;" onclick="saveVaultEdit('${item.id}','${item.type}','${item.ref_id||''}')">💾 حفظ التعديل</button>`;
   document.getElementById('detail-overlay').classList.add('open');
 }
 
-async function saveVaultEdit(id) {
+async function saveVaultEdit(id, type, refId) {
   const desc = document.getElementById('vedit-desc')?.value.trim();
   const amt = parseNum(document.getElementById('vedit-amt')?.value);
   const date = document.getElementById('vedit-date')?.value;
@@ -3349,6 +3349,10 @@ async function saveVaultEdit(id) {
   if(amt<=0) return showToast('❌ المبلغ لازم يكون أكبر من صفر');
   const {error} = await sb.from('vault').update({description:desc, amount:amt, date, notes}).eq('id',id).eq('user_id',currentUser.id);
   if(error) return showToast('❌ خطأ: '+error.message);
+  if(type==='capital_auto') {
+    if(refId) await sb.from('capital').update({amount:amt, date, notes}).eq('id',refId).eq('user_id',currentUser.id);
+    else await sb.from('capital').update({amount:amt, date, notes}).eq('amount',amt).eq('user_id',currentUser.id);
+  }
   showToast('✅ تم التعديل');
   logActivity('تعديل','vault','تعديل حركة خزنة: '+desc, amt);
   closeModal();
