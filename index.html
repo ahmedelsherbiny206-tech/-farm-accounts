@@ -895,6 +895,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       <div style="display:flex;justify-content:flex-start;gap:8px;margin:14px 0 -4px;padding:0 2px;">
         <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="exportDeferredToExcel()">📊 تصدير Excel</button>
         <button class="btn-sm" style="background:var(--g3);color:#fff;border:none;" onclick="showPage('sales-payment',document.getElementById('bnav-sales-payment'))">💵 سداد مبيعات</button>
+        <button class="btn-sm" style="background:#1a6fa8;color:#fff;border:none;" onclick="showPage('account-statement',document.getElementById('bnav-account-statement'))">📋 كشف حساب</button>
       </div>
 
       <div class="card">
@@ -995,7 +996,6 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
     <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px;padding:0 2px;flex-wrap:wrap;">
       <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="showPage('deferred',document.getElementById('bnav-deferred'))">← رجوع</button>
       <span style="font-size:0.95rem;font-weight:900;color:var(--g2);flex:1;">💵 سداد مبيعات</span>
-      <button class="btn-sm" style="background:#1a6fa8;color:#fff;border:none;" onclick="showPage('account-statement',document.getElementById('bnav-account-statement'))">📋 كشف حساب</button>
     </div>
 
     <div class="card">
@@ -1056,7 +1056,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
   <!-- صفحة كشف الحساب -->
   <div class="page" id="page-account-statement">
     <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px;padding:0 2px;">
-      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="showPage('sales-payment',document.getElementById('bnav-sales-payment'))">← رجوع</button>
+      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="showPage('deferred',document.getElementById('bnav-deferred'))">← رجوع</button>
       <span style="font-size:0.95rem;font-weight:900;color:#1a6fa8;">📋 كشف حساب</span>
     </div>
 
