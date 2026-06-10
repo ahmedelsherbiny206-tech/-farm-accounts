@@ -5088,7 +5088,10 @@ async function showDetailedStatement(){
   const {trader, from, to} = v;
   showToast('⏳ جاري التحميل...');
 
-  const {data:sales} = await sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).gte('date',from).lte('date',to).order('date',{ascending:true});
+  const [{data:sales},{data:payments}] = await Promise.all([
+    sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).gte('date',from).lte('date',to).order('date',{ascending:true}),
+    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',['سداد_مبيعات','تسوية_مبيعات']).like('description','سداد مبيعات: '+trader).gte('date',from).lte('date',to).order('date',{ascending:true})
+  ]);
 
   // تجميع حسب (صنف + وحدة + محصول)
   const groups = {};
@@ -5100,8 +5103,10 @@ async function showDetailedStatement(){
     groups[key].rows.push(x);
   });
 
-  const totalAll = (sales||[]).reduce((s,x)=>s+Number(x.total||0),0);
-  const totalQty = (sales||[]).reduce((s,x)=>s+Number(x.quantity||0),0);
+  const totalAll      = (sales||[]).reduce((s,x)=>s+Number(x.total||0),0);
+  const totalQty      = (sales||[]).reduce((s,x)=>s+Number(x.quantity||0),0);
+  const totalPayments = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const balance       = totalAll - totalPayments;
 
   const el = document.getElementById('as-result');
   el.innerHTML = `
@@ -5113,16 +5118,25 @@ async function showDetailedStatement(){
       <div class="card-title">📊 ${trader}</div>
       <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px;">${fmtDate(from)} → ${fmtDate(to)}</div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+      <!-- إجماليات -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
         <div style="background:var(--g5);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:0.7rem;color:var(--muted);">إجمالي الفلوس</div>
-          <div style="font-size:0.9rem;font-weight:900;color:var(--g2);">${Number(totalAll).toLocaleString('en-US')} ج</div>
+          <div style="font-size:0.7rem;color:var(--muted);">إجمالي المبيعات</div>
+          <div style="font-size:0.88rem;font-weight:900;color:var(--g2);">${Number(totalAll).toLocaleString('en-US')} ج</div>
         </div>
-        <div style="background:var(--g5);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:0.7rem;color:var(--muted);">إجمالي الوحدات</div>
-          <div style="font-size:0.9rem;font-weight:900;color:var(--g2);">${Number(totalQty).toLocaleString('en-US')}</div>
+        <div style="background:#fdecea;border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--muted);">إجمالي السدادات</div>
+          <div style="font-size:0.88rem;font-weight:900;color:var(--g2);">${Number(totalPayments).toLocaleString('en-US')} ج</div>
+        </div>
+        <div style="background:${balance>0?'#fff3cd':'#d4edda'};border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--muted);">الرصيد</div>
+          <div style="font-size:0.88rem;font-weight:900;color:${balance>0?'var(--red)':'var(--g2)'};">${Number(balance).toLocaleString('en-US')} ج</div>
         </div>
       </div>
+
+      <!-- المبيعات تفصيلي حسب الصنف -->
+      <div style="font-size:0.82rem;font-weight:900;color:var(--g2);margin-bottom:8px;">🛒 المبيعات حسب الصنف</div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:6px;">إجمالي الوحدات: ${Number(totalQty).toLocaleString('en-US')}</div>
 
       ${Object.values(groups).map(g=>`
         <div style="background:var(--g5);border-radius:12px;padding:12px;margin-bottom:10px;">
@@ -5143,6 +5157,19 @@ async function showDetailedStatement(){
         </div>`).join('')}
 
       ${!Object.keys(groups).length ? '<div class="empty">لا يوجد مبيعات في هذه الفترة</div>' : ''}
+
+      <!-- السدادات والتسويات -->
+      <div style="font-size:0.82rem;font-weight:900;color:var(--g2);margin:12px 0 6px;">💵 السدادات والتسويات</div>
+      ${(payments||[]).length ? (payments||[]).map(x=>{
+        const isTaswiya = x.category==='تسوية_مبيعات';
+        return `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:0.8rem;">
+          <div>
+            <span style="color:var(--muted);">${fmtDate(x.date)}</span>
+            <span style="margin:0 5px;background:${isTaswiya?'#E3F2FD':'#E8F5E9'};color:${isTaswiya?'#1565C0':'#2E7D32'};border-radius:6px;padding:1px 6px;font-size:0.7rem;font-weight:900;">${isTaswiya?'تسوية':'سداد'}</span>
+            ${x.notes?`<span style="color:var(--muted);">${s(x.notes)}</span>`:''}
+          </div>
+          <span style="font-weight:900;color:${isTaswiya?'#1565C0':'var(--g2)'};">+${Number(x.amount||0).toLocaleString('en-US')} ج</span>
+        </div>`;}).join('') : '<div style="color:var(--muted);font-size:0.8rem;">لا يوجد سدادات</div>'}
     </div>`;
 }
 
