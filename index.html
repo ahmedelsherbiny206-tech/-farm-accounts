@@ -5207,7 +5207,10 @@ async function exportAccountStatementExcel(trader, from, to){
 
 async function exportDetailedStatementExcel(trader, from, to){
   showToast('⏳ جاري التصدير...');
-  const {data:sales} = await sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).gte('date',from).lte('date',to).order('date',{ascending:true});
+  const [{data:sales},{data:payments}] = await Promise.all([
+    sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).gte('date',from).lte('date',to).order('date',{ascending:true}),
+    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',['سداد_مبيعات','تسوية_مبيعات']).like('description','سداد مبيعات: '+trader).gte('date',from).lte('date',to).order('date',{ascending:true})
+  ]);
 
   const groups = {};
   (sales||[]).forEach(x=>{
@@ -5217,6 +5220,8 @@ async function exportDetailedStatementExcel(trader, from, to){
   });
 
   const wb = XLSX.utils.book_new();
+
+  // شيت لكل صنف
   Object.values(groups).forEach(g=>{
     const sheetName = [g.variety||'بدون صنف', g.unit||'—'].join('-').slice(0,31);
     const rows = g.rows.map((x,i)=>({'م':i+1,'التاريخ':x.date,'الكمية':x.quantity||0,'السعر':x.price||0,'الإجمالي':Number(x.total||0),'ملاحظات':x.notes||''}));
@@ -5231,6 +5236,20 @@ async function exportDetailedStatementExcel(trader, from, to){
   });
 
   if(!Object.keys(groups).length) return showToast('❌ لا يوجد بيانات');
+
+  // شيت السدادات والتسويات
+  const totalSales    = (sales||[]).reduce((s,x)=>s+Number(x.total||0),0);
+  const totalPayments = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const payRows = (payments||[]).map((x,i)=>({'م':i+1,'التاريخ':x.date,'النوع':x.category==='تسوية_مبيعات'?'تسوية':'سداد','المبلغ':Number(x.amount||0),'ملاحظات':x.notes||''}));
+  payRows.push({'م':'','التاريخ':'إجمالي السدادات','النوع':'','المبلغ':totalPayments,'ملاحظات':''});
+  payRows.push({'م':'','التاريخ':'إجمالي المبيعات','النوع':'','المبلغ':totalSales,'ملاحظات':''});
+  payRows.push({'م':'','التاريخ':'الرصيد المتبقي','النوع':'','المبلغ':totalSales-totalPayments,'ملاحظات':''});
+  const wsPay = XLSX.utils.json_to_sheet(payRows,{header:['م','التاريخ','النوع','المبلغ','ملاحظات']});
+  wsPay['!cols']=[{wch:4},{wch:13},{wch:10},{wch:14},{wch:25}];
+  xlStyle(wsPay, 0, [payRows.length-3, payRows.length-2, payRows.length-1]);
+  xlPrependTitle(wsPay, 'السدادات والتسويات - '+trader, 5);
+  XLSX.utils.book_append_sheet(wb, wsPay, 'السدادات والتسويات');
+
   XLSX.writeFile(wb, `كشف_تفصيلي_${trader}.xlsx`);
   showToast('✅ تم التصدير!');
 }
