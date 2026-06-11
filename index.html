@@ -739,6 +739,11 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
         <div style="font-size:0.75rem;font-weight:800;color:var(--g2);margin-top:3px;">مبيعات آجل</div>
       </div>
 
+      <div class="card" onclick="showPage('deferred-purchases',document.getElementById('bnav-deferred-purchases'))" style="cursor:pointer;text-align:center;padding:12px;">
+        <div style="font-size:1.6rem;">🛍️</div>
+        <div style="font-size:0.75rem;font-weight:800;color:#6a1b9a;margin-top:3px;">مشتريات آجل</div>
+      </div>
+
     </div>
     <!-- Recent transactions -->
     <div class="card">
@@ -904,7 +909,6 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
         <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="exportDeferredToExcel()">📊 تصدير Excel</button>
         <button class="btn-sm" style="background:var(--g3);color:#fff;border:none;" onclick="showPage('sales-payment',document.getElementById('bnav-sales-payment'))">💵 سداد مبيعات</button>
         <button class="btn-sm" style="background:#1a6fa8;color:#fff;border:none;" onclick="showPage('account-statement',document.getElementById('bnav-account-statement'))">📋 كشف حساب</button>
-        <button class="btn-sm" style="background:#6a1b9a;color:#fff;border:none;" onclick="showPage('deferred-purchases',document.getElementById('bnav-deferred-purchases'))">🛍️ مشتريات آجل</button>
       </div>
 
       <div class="card">
