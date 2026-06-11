@@ -681,6 +681,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
     <button class="bnav" id="bnav-deferred" style="display:none;"></button>
     <button class="bnav" id="bnav-sales-payment" style="display:none;"></button>
     <button class="bnav" id="bnav-account-statement" style="display:none;"></button>
+    <button class="bnav" id="bnav-deferred-purchases" style="display:none;"></button>
   </div>
 
   <!-- HOME -->
@@ -899,10 +900,11 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 
   <!-- مبيعات آجل - صفحة مستقلة -->
   <div class="page" id="page-deferred">
-      <div style="display:flex;justify-content:flex-start;gap:8px;margin:14px 0 -4px;padding:0 2px;">
+      <div style="display:flex;justify-content:flex-start;gap:8px;margin:14px 0 -4px;padding:0 2px;flex-wrap:wrap;">
         <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="exportDeferredToExcel()">📊 تصدير Excel</button>
         <button class="btn-sm" style="background:var(--g3);color:#fff;border:none;" onclick="showPage('sales-payment',document.getElementById('bnav-sales-payment'))">💵 سداد مبيعات</button>
         <button class="btn-sm" style="background:#1a6fa8;color:#fff;border:none;" onclick="showPage('account-statement',document.getElementById('bnav-account-statement'))">📋 كشف حساب</button>
+        <button class="btn-sm" style="background:#6a1b9a;color:#fff;border:none;" onclick="showPage('deferred-purchases',document.getElementById('bnav-deferred-purchases'))">🛍️ مشتريات آجل</button>
       </div>
 
       <div class="card">
@@ -997,6 +999,69 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       <div id="ds-list"><div class="loading">⏳</div></div>
 
   </div><!-- end page-deferred -->
+
+  <!-- مشتريات آجل -->
+  <div class="page" id="page-deferred-purchases">
+    <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px;padding:0 2px;flex-wrap:wrap;">
+      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="showPage('deferred',document.getElementById('bnav-deferred'))">← رجوع</button>
+      <span style="font-size:0.95rem;font-weight:900;color:#6a1b9a;flex:1;">🛍️ مشتريات آجل</span>
+      <button class="btn-sm" style="background:#6a1b9a;color:#fff;border:none;" onclick="exportDpToExcel()">📊 Excel</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🛍️ فاتورة مشتريات جديدة</div>
+
+      <div class="form-row"><label>الوصف</label>
+        <input id="dp-desc" placeholder="وصف الفاتورة..."></div>
+
+      <div class="form-row"><label>التاجر
+        <button onclick="openDpTraderManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">👤 إدارة</button>
+      </label>
+        <select id="dp-trader"><option value="">-- اختار التاجر --</option></select>
+      </div>
+
+      <!-- المنتجات -->
+      <div style="margin:10px 0 6px;font-weight:900;font-size:0.88rem;color:var(--text);">📦 المنتجات</div>
+      <div id="dp-items-list"></div>
+      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);margin-bottom:10px;" onclick="addDpItem()">➕ إضافة منتج</button>
+
+      <div class="form-row"><label>الإجمالي</label>
+        <div style="background:var(--g5);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-weight:900;color:#6a1b9a;font-size:1rem;" id="dp-total-display">0 ج</div>
+      </div>
+
+      <div class="form-row"><label>التاريخ</label>
+        <input type="date" id="dp-date" autocomplete="off"></div>
+
+      <div class="form-row"><label>ملاحظات</label>
+        <textarea id="dp-notes" placeholder="أي تفاصيل..."></textarea></div>
+
+      <button class="btn btn-g" style="background:#6a1b9a;" onclick="addDeferredPurchase()">➕ تسجيل الفاتورة</button>
+    </div>
+
+    <!-- فلاتر -->
+    <div class="date-filter">
+      <label>من:</label><input type="date" id="dp-from" autocomplete="off" onchange="renderDeferredPurchases()">
+      <label>إلى:</label><input type="date" id="dp-to" autocomplete="off" onchange="renderDeferredPurchases()">
+      <button class="clear-btn" onclick="clearDpFilter()">الكل</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+      <select id="dp-filter-trader" onchange="renderDeferredPurchases()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
+        <option value="">كل التجار</option>
+      </select>
+      <select id="dp-filter-status" onchange="renderDeferredPurchases()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
+        <option value="">الكل</option>
+        <option value="unpaid">غير مسددة</option>
+        <option value="paid">مسددة</option>
+      </select>
+    </div>
+
+    <div id="dp-summary-bar" style="display:none;background:var(--card);border-radius:10px;padding:8px 14px;margin-bottom:8px;font-size:0.8rem;font-weight:800;color:var(--text);display:flex;gap:16px;flex-wrap:wrap;">
+      <span>إجمالي: <span id="dp-total-val" style="color:#6a1b9a;">0 ج</span></span>
+      <span>متبقي: <span id="dp-unpaid-val" style="color:var(--red);">0 ج</span></span>
+    </div>
+
+    <div id="dp-list"><div class="loading">⏳</div></div>
+  </div><!-- end page-deferred-purchases -->
 
   <!-- صفحة سداد المبيعات -->
   <div class="page" id="page-sales-payment">
@@ -1759,7 +1824,7 @@ function showPage(name, btn) {
   document.getElementById('page-'+name).classList.add('active');
   if(btn) btn.classList.add('active');
   else {
-    const map = {home:'bnav-home',income:'bnav-income',expense:'bnav-expense',vault:'bnav-vault',ajal:'bnav-ajal',log:'bnav-log',analytics:'bnav-analytics',search:'bnav-search',seasons:'bnav-seasons','season-detail':'bnav-seasons',deferred:'bnav-deferred','sales-payment':'bnav-sales-payment','account-statement':'bnav-account-statement'};
+    const map = {home:'bnav-home',income:'bnav-income',expense:'bnav-expense',vault:'bnav-vault',ajal:'bnav-ajal',log:'bnav-log',analytics:'bnav-analytics',search:'bnav-search',seasons:'bnav-seasons','season-detail':'bnav-seasons',deferred:'bnav-deferred','sales-payment':'bnav-sales-payment','account-statement':'bnav-account-statement','deferred-purchases':'bnav-deferred-purchases'};
     if(map[name]) document.getElementById(map[name]).classList.add('active');
     // else: no nav button to highlight
   }
@@ -1770,6 +1835,7 @@ function showPage(name, btn) {
     ajal: [],
     deferred: ['ds-from','ds-to'],
     'sales-payment': ['sp-from','sp-to'],
+    'deferred-purchases': ['dp-from','dp-to'],
     capital: ['cap-from','cap-to'],
     vault: ['vault-from','vault-to'],
     report: ['rep-from','rep-to'],
@@ -1781,6 +1847,7 @@ function showPage(name, btn) {
   if(name==='expense') renderExpenseList();
   if(name==='ajal') renderAjalLists();
   if(name==='deferred') initDeferredSalesPage();
+  if(name==='deferred-purchases') initDeferredPurchasesPage();
   if(name==='sales-payment') initSalesPaymentPage();
   if(name==='account-statement') initAccountStatementPage();
   setTimeout(setDateInputs, 100);
@@ -4082,6 +4149,322 @@ async function doSearch(){
     const color=tColor[x._table]||'var(--muted)';
     return `<div class="item"><div class="i-info"><div class="i-title">${s(desc)}</div><div class="i-sub">${fmtDate(x.date)} · <span style="color:${color};font-weight:800;">${tLabel[x._table]||''}</span>${x.crop?' 🌾 '+s(x.crop):''}</div></div><div class="i-actions"><div class="i-amt" style="color:${color}">${x.amount?fmt(x.amount):''}</div></div></div>`;
   }).join('');
+}
+
+// ===== DEFERRED PURCHASES =====
+const DP_TRADERS_KEY = 'dp_traders';
+
+async function getDpTraders() {
+  const {data} = await sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','dp_traders').maybeSingle();
+  return data?.categories || [];
+}
+async function saveDpTraders(list) {
+  await sb.from('user_categories').upsert({user_id:currentUser.id,type:'dp_traders',categories:list},{onConflict:'user_id,type'});
+}
+
+let _dpItems = []; // مصفوفة المنتجات الحالية في الفورم
+
+function addDpItem() {
+  _dpItems.push({name:'', qty:1, price:0});
+  renderDpItemsForm();
+}
+function removeDpItem(i) {
+  _dpItems.splice(i,1);
+  renderDpItemsForm();
+  calcDpTotal();
+}
+function renderDpItemsForm() {
+  const el = document.getElementById('dp-items-list');
+  if(!el) return;
+  if(!_dpItems.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;margin-bottom:8px;">لا يوجد منتجات — اضغط "إضافة منتج"</div>';
+    return;
+  }
+  el.innerHTML = _dpItems.map((item,i)=>`
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:6px;margin-bottom:8px;align-items:center;">
+      <input placeholder="اسم المنتج" value="${s(item.name)}" oninput="_dpItems[${i}].name=this.value"
+        style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
+      <input type="text" inputmode="decimal" placeholder="الكمية" value="${item.qty||''}" oninput="_dpItems[${i}].qty=parseNum(this.value);calcDpTotal()"
+        style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
+      <input type="text" inputmode="decimal" placeholder="السعر" value="${item.price||''}" oninput="_dpItems[${i}].price=parseNum(this.value);calcDpTotal()"
+        style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
+      <button onclick="removeDpItem(${i})" style="background:var(--red-p,#ffebee);color:var(--red);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:0.85rem;">✕</button>
+    </div>
+    <div style="font-size:0.75rem;color:var(--muted);margin:-4px 0 6px;text-align:left;">إجمالي: ${fmt((item.qty||0)*(item.price||0))} ج</div>
+  `).join('');
+}
+function calcDpTotal() {
+  const total = _dpItems.reduce((s,x)=>s+(x.qty||0)*(x.price||0),0);
+  const el = document.getElementById('dp-total-display');
+  if(el) el.textContent = Number(total).toLocaleString('en-US') + ' ج';
+}
+
+async function initDeferredPurchasesPage() {
+  _dpItems = [];
+  renderDpItemsForm();
+  calcDpTotal();
+  const traders = await getDpTraders();
+  const sel = document.getElementById('dp-trader');
+  if(sel) sel.innerHTML = '<option value="">-- اختار التاجر --</option>'+traders.map(t=>`<option>${s(t)}</option>`).join('');
+  const fSel = document.getElementById('dp-filter-trader');
+  if(fSel) fSel.innerHTML = '<option value="">كل التجار</option>'+traders.map(t=>`<option>${s(t)}</option>`).join('');
+  const dpDate = document.getElementById('dp-date');
+  if(dpDate && !dpDate.value) dpDate.value = today();
+  renderDeferredPurchases();
+}
+
+async function addDeferredPurchase() {
+  const desc = document.getElementById('dp-desc').value.trim();
+  const trader = document.getElementById('dp-trader').value;
+  const date = document.getElementById('dp-date').value;
+  const notes = document.getElementById('dp-notes').value;
+  if(!date) return showToast('❌ اختار التاريخ');
+  if(!_dpItems.length) return showToast('❌ أضف منتج واحد على الأقل');
+  const validItems = _dpItems.filter(x=>x.name.trim() && x.qty>0 && x.price>0);
+  if(!validItems.length) return showToast('❌ تأكد من إدخال اسم وكمية وسعر لكل منتج');
+  const total = validItems.reduce((s,x)=>s+x.qty*x.price, 0);
+  const {error} = await sb.from('deferred_purchases').insert({
+    user_id: currentUser.id,
+    description: desc||null,
+    items: validItems,
+    trader: trader||null,
+    total,
+    date,
+    notes: notes||null,
+    paid: false
+  });
+  if(error) return showToast('❌ خطأ: '+error.message);
+  // تسجيل في المصاريف
+  const expDesc = 'مشتريات آجل'+(trader?' - '+trader:'')+(desc?' - '+desc:'');
+  await sb.from('expenses').insert({user_id:currentUser.id,description:expDesc,amount:total,category:'مشتريات آجل',date,notes:notes||null});
+  logActivity('إضافة','deferred_purchases','فاتورة مشتريات آجل'+(trader?' - '+trader:''), total);
+  showToast('✅ تم تسجيل الفاتورة');
+  _dpItems = [];
+  renderDpItemsForm();
+  calcDpTotal();
+  document.getElementById('dp-desc').value='';
+  document.getElementById('dp-notes').value='';
+  document.getElementById('dp-date').value=today();
+  renderDeferredPurchases();
+  renderHome();
+}
+
+function clearDpFilter() {
+  document.getElementById('dp-from').value='';
+  document.getElementById('dp-to').value='';
+  document.getElementById('dp-filter-trader').value='';
+  document.getElementById('dp-filter-status').value='';
+  renderDeferredPurchases();
+}
+
+async function renderDeferredPurchases() {
+  const el = document.getElementById('dp-list');
+  if(!el) return;
+  el.innerHTML = '<div class="loading">⏳</div>';
+  let q = sb.from('deferred_purchases').select('*').eq('user_id',currentUser.id).order('date',{ascending:false});
+  const from = document.getElementById('dp-from')?.value;
+  const to = document.getElementById('dp-to')?.value;
+  const fTrader = document.getElementById('dp-filter-trader')?.value;
+  const fStatus = document.getElementById('dp-filter-status')?.value;
+  if(from) q=q.gte('date',from);
+  if(to) q=q.lte('date',to);
+  if(fTrader) q=q.eq('trader',fTrader);
+  if(fStatus==='paid') q=q.eq('paid',true);
+  if(fStatus==='unpaid') q=q.eq('paid',false);
+  const {data,error} = await q;
+  if(error||!data?.length){el.innerHTML='<div class="empty">لا يوجد مشتريات 📭</div>';
+    document.getElementById('dp-summary-bar').style.display='none'; return;}
+  const totalAll = data.reduce((s,x)=>s+Number(x.total||0),0);
+  const unpaidAll = data.filter(x=>!x.paid).reduce((s,x)=>s+Number(x.total||0),0);
+  const bar = document.getElementById('dp-summary-bar');
+  if(bar){bar.style.display='flex';document.getElementById('dp-total-val').textContent=fmt(totalAll)+' ج';document.getElementById('dp-unpaid-val').textContent=fmt(unpaidAll)+' ج';}
+  el.innerHTML = data.map(x=>{
+    const items = x.items||[];
+    const itemsHtml = items.map(it=>`<div style="font-size:0.72rem;color:var(--muted);">• ${s(it.name)} — ${it.qty} × ${fmt(it.price)} = ${fmt(it.qty*it.price)} ج</div>`).join('');
+    return `<div class="item ${x.paid?'':'exp'}" id="dp-item-${x.id}" style="flex-direction:column;align-items:stretch;gap:6px;padding:12px 14px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div style="flex:1;">
+          <div class="i-desc">${x.description?s(x.description):(x.trader?'فاتورة - '+s(x.trader):'فاتورة مشتريات')}</div>
+          <div class="i-sub">${fmtDate(x.date)}${x.trader?' · 👤 '+s(x.trader):''}
+            <span class="badge ${x.paid?'badge-paid':'badge-pend'}" style="margin-right:4px;">${x.paid?'✅ مسددة':'⏳ معلقة'}</span>
+          </div>
+        </div>
+        <div style="text-align:left;">
+          <div class="i-amt" style="color:#6a1b9a;">${fmt(x.total)} ج</div>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:6px;">${itemsHtml}</div>
+      ${x.notes?`<div style="font-size:0.72rem;color:var(--muted);">📝 ${s(x.notes)}</div>`:''}
+      <div style="display:flex;gap:6px;margin-top:4px;">
+        ${!x.paid?`<button class="btn-sm btn-g" onclick="payDeferredPurchase('${x.id}')">✅ سُدِّدت</button>`:''}
+        <button class="btn-sm" style="background:var(--blue-p);color:var(--blue);border:none;" onclick="editDeferredPurchase('${x.id}')">✏️ تعديل</button>
+        <button class="btn-sm btn-r" onclick="deleteDeferredPurchase('${x.id}','${x.paid}')">🗑️ حذف</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function payDeferredPurchase(id) {
+  if(!await showConfirm('تأكيد تسديد الفاتورة وخصمها من الخزنة؟','✅')) return;
+  try {
+    const {data} = await sb.from('deferred_purchases').select('*').eq('id',id).eq('user_id',currentUser.id);
+    if(!data?.length) return showToast('❌ مش لاقي الفاتورة');
+    const pur = data[0];
+    const {error:ve} = await sb.from('vault').insert({user_id:currentUser.id,type:'out',description:'سداد مشتريات آجل'+(pur.trader?' - '+pur.trader:''),amount:pur.total,date:today(),notes:pur.description||'',category:'مشتريات_آجل',ref_id:pur.id});
+    if(ve) return showToast('❌ خطأ في الخزنة: '+ve.message);
+    const {error:ue} = await sb.from('deferred_purchases').update({paid:true,paid_at:new Date().toISOString()}).eq('id',id).eq('user_id',currentUser.id);
+    if(ue) return showToast('❌ خطأ: '+ue.message);
+    logActivity('تسديد','deferred_purchases','تسديد مشتريات آجل'+(pur.trader?' - '+pur.trader:''),pur.total);
+    showToast('✅ تم التسديد وخصم من الخزنة');
+    renderDeferredPurchases(); renderHome();
+  } catch(e){ showToast('❌ خطأ: '+e.message); }
+}
+
+async function deleteDeferredPurchase(id, isPaid) {
+  const msg = isPaid==='true' ? '⚠️ الفاتورة مسددة - سيتم حذفها من المصاريف والخزنة أيضاً. متأكد؟' : '🗑️ سيتم حذف الفاتورة من المصاريف. متأكد؟';
+  if(!await showConfirm(msg, isPaid==='true'?'⚠️':'🗑️')) return;
+  const {data:purData} = await sb.from('deferred_purchases').select('*').eq('id',id).eq('user_id',currentUser.id).limit(1);
+  const pur = purData?.[0];
+  await sb.from('deferred_purchases').delete().eq('id',id).eq('user_id',currentUser.id);
+  if(pur) {
+    await sb.from('expenses').delete().eq('user_id',currentUser.id).eq('category','مشتريات آجل').eq('amount',pur.total).eq('date',pur.date);
+    if(isPaid==='true') {
+      const {data:vd} = await sb.from('vault').delete().eq('user_id',currentUser.id).eq('ref_id',id).select('id');
+      if(!vd?.length) await sb.from('vault').delete().eq('user_id',currentUser.id).eq('category','مشتريات_آجل').eq('amount',pur.total);
+    }
+  }
+  logActivity('حذف','deferred_purchases','حذف فاتورة مشتريات آجل'+(pur?.trader?' - '+pur.trader:''));
+  showToast('🗑️ تم الحذف');
+  renderDeferredPurchases(); renderHome();
+}
+
+async function editDeferredPurchase(id) {
+  const {data} = await sb.from('deferred_purchases').select('*').eq('id',id).eq('user_id',currentUser.id);
+  if(!data?.length) return;
+  const x = data[0];
+  const traders = await getDpTraders();
+  document.getElementById('modal-title').textContent='✏️ تعديل الفاتورة';
+  let editItems = JSON.parse(JSON.stringify(x.items||[]));
+  const renderEditItems = () => {
+    const c = document.getElementById('dp-edit-items');
+    if(!c) return;
+    c.innerHTML = editItems.map((it,i)=>`
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:6px;margin-bottom:8px;align-items:center;">
+        <input placeholder="اسم المنتج" value="${s(it.name)}" oninput="window._dpEditItems[${i}].name=this.value;dpEditCalcTotal()"
+          style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
+        <input type="text" inputmode="decimal" placeholder="الكمية" value="${it.qty||''}" oninput="window._dpEditItems[${i}].qty=parseNum(this.value);dpEditCalcTotal()"
+          style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
+        <input type="text" inputmode="decimal" placeholder="السعر" value="${it.price||''}" oninput="window._dpEditItems[${i}].price=parseNum(this.value);dpEditCalcTotal()"
+          style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
+        <button onclick="window._dpEditItems.splice(${i},1);dpEditRerender()" style="background:var(--red-p,#ffebee);color:var(--red);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;">✕</button>
+      </div>
+      <div style="font-size:0.75rem;color:var(--muted);margin:-4px 0 6px;text-align:left;">إجمالي: ${fmt((it.qty||0)*(it.price||0))} ج</div>
+    `).join('');
+  };
+  window._dpEditItems = editItems;
+  window.dpEditRerender = () => { window._dpEditItems=window._dpEditItems; renderEditItems(); dpEditCalcTotal(); };
+  window.dpEditCalcTotal = () => {
+    const t = (window._dpEditItems||[]).reduce((s,x)=>s+(x.qty||0)*(x.price||0),0);
+    const el=document.getElementById('dp-edit-total'); if(el) el.textContent=fmt(t)+' ج';
+  };
+  document.getElementById('modal-body').innerHTML=`
+    <div class="edit-modal-row"><label>الوصف</label><input id="dpe-desc" value="${s(x.description||'')}"></div>
+    <div class="edit-modal-row"><label>التاجر</label>
+      <select id="dpe-trader"><option value="">-- اختار --</option>${traders.map(t=>`<option ${x.trader===t?'selected':''}>${s(t)}</option>`).join('')}</select>
+    </div>
+    <div style="margin:10px 0 6px;font-weight:900;font-size:0.88rem;">📦 المنتجات</div>
+    <div id="dp-edit-items"></div>
+    <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);margin-bottom:10px;" onclick="window._dpEditItems.push({name:'',qty:1,price:0});dpEditRerender()">➕ إضافة منتج</button>
+    <div class="edit-modal-row"><label>الإجمالي</label><div style="font-weight:900;color:#6a1b9a;" id="dp-edit-total">0 ج</div></div>
+    <div class="edit-modal-row"><label>التاريخ</label><input type="date" id="dpe-date" value="${x.date||''}"></div>
+    <div class="edit-modal-row"><label>ملاحظات</label><textarea id="dpe-notes">${s(x.notes||'')}</textarea></div>
+    <button class="btn btn-g" style="background:#6a1b9a;margin-top:12px;" onclick="saveDpEdit('${id}')">💾 حفظ</button>`;
+  document.getElementById('detail-overlay').classList.add('open');
+  renderEditItems();
+  window.dpEditCalcTotal();
+}
+
+async function saveDpEdit(id) {
+  const desc = document.getElementById('dpe-desc')?.value.trim();
+  const trader = document.getElementById('dpe-trader')?.value||null;
+  const date = document.getElementById('dpe-date')?.value;
+  const notes = document.getElementById('dpe-notes')?.value||'';
+  const items = (window._dpEditItems||[]).filter(x=>x.name.trim()&&x.qty>0&&x.price>0);
+  if(!items.length) return showToast('❌ أضف منتج واحد على الأقل');
+  if(!date) return showToast('❌ اختار التاريخ');
+  const total = items.reduce((s,x)=>s+x.qty*x.price,0);
+  const {error} = await sb.from('deferred_purchases').update({description:desc||null,items,trader,total,date,notes:notes||null}).eq('id',id).eq('user_id',currentUser.id);
+  if(error) return showToast('❌ خطأ: '+error.message);
+  // تحديث سجل المصروف المرتبط
+  const expDesc = 'مشتريات آجل'+(trader?' - '+trader:'')+(desc?' - '+desc:'');
+  await sb.from('expenses').update({description:expDesc,amount:total,date}).eq('category','مشتريات آجل').eq('user_id',currentUser.id).eq('amount',total).eq('date',date);
+  showToast('✅ تم التعديل');
+  closeModal();
+  renderDeferredPurchases();
+}
+
+async function openDpTraderManager() {
+  const traders = await getDpTraders();
+  document.getElementById('modal-title').textContent='👤 إدارة تجار المشتريات';
+  const render = (list) => `
+    <div id="dp-traders-list">${list.map((t,i)=>`
+      <div class="cat-item"><span>${s(t)}</span>
+        <button class="btn-sm btn-r" onclick="deleteDpTrader(${i})">🗑️</button>
+      </div>`).join('')}</div>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <input id="new-dp-trader" placeholder="اسم تاجر جديد" style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.88rem;">
+      <button class="btn-sm btn-g" onclick="addDpTrader()" style="padding:10px 16px;">➕</button>
+    </div>`;
+  document.getElementById('modal-body').innerHTML = render(traders);
+  window._dpTradersEdit = [...traders];
+  document.getElementById('detail-overlay').classList.add('open');
+}
+window.addDpTrader = async function() {
+  const input = document.getElementById('new-dp-trader');
+  const name = input?.value.trim();
+  if(!name) return showToast('❌ اكتب الاسم');
+  if(window._dpTradersEdit.includes(name)) return showToast('❌ موجود بالفعل');
+  window._dpTradersEdit.push(name);
+  await saveDpTraders(window._dpTradersEdit);
+  input.value='';
+  document.getElementById('dp-traders-list').outerHTML = `<div id="dp-traders-list">${window._dpTradersEdit.map((t,i)=>`<div class="cat-item"><span>${s(t)}</span><button class="btn-sm btn-r" onclick="deleteDpTrader(${i})">🗑️</button></div>`).join('')}</div>`;
+  showToast('✅ تمت الإضافة');
+  initDeferredPurchasesPage();
+};
+window.deleteDpTrader = async function(i) {
+  window._dpTradersEdit.splice(i,1);
+  await saveDpTraders(window._dpTradersEdit);
+  document.getElementById('dp-traders-list').outerHTML = `<div id="dp-traders-list">${window._dpTradersEdit.map((t,j)=>`<div class="cat-item"><span>${s(t)}</span><button class="btn-sm btn-r" onclick="deleteDpTrader(${j})">🗑️</button></div>`).join('')}</div>`;
+  initDeferredPurchasesPage();
+};
+
+async function exportDpToExcel() {
+  const {data} = await sb.from('deferred_purchases').select('*').eq('user_id',currentUser.id).order('date',{ascending:false});
+  if(!data?.length) return showToast('❌ لا يوجد بيانات');
+  const rows = [];
+  (data||[]).forEach(x=>{
+    (x.items||[]).forEach((it,idx)=>{
+      rows.push({
+        'التاريخ': x.date,
+        'الوصف': x.description||'',
+        'التاجر': x.trader||'',
+        'المنتج': it.name,
+        'الكمية': it.qty,
+        'السعر': it.price,
+        'إجمالي المنتج': it.qty*it.price,
+        'إجمالي الفاتورة': idx===0?x.total:'',
+        'الحالة': x.paid?'مسددة':'معلقة',
+        'ملاحظات': x.notes||''
+      });
+    });
+  });
+  const headers = ['التاريخ','الوصف','التاجر','المنتج','الكمية','السعر','إجمالي المنتج','إجمالي الفاتورة','الحالة','ملاحظات'];
+  const ws = XLSX.utils.json_to_sheet(rows, {header:headers});
+  xlStyle(ws, 0, []);
+  xlPrependTitle(ws, 'مشتريات آجل', headers.length);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'مشتريات آجل');
+  XLSX.writeFile(wb, 'مشتريات-آجل-'+today()+'.xlsx');
 }
 
 // ===== SEASONS =====
