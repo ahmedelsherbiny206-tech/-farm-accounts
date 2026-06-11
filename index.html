@@ -814,9 +814,6 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       <span style="font-size:0.8rem;font-weight:700;color:var(--g2);">إجمالي المحدد / المعروض</span>
       <span style="font-size:0.9rem;font-weight:900;color:var(--g2);" id="inc-total-val">0 ج</span>
     </div>
-    <div style="position:relative;margin-bottom:8px;">
-      <input type="text" placeholder="🔍 بحث سريع..." oninput="quickFilter('income-list',this.value)" style="width:100%;padding:8px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.85rem;box-sizing:border-box;">
-    </div>
     <div id="income-list"><div class="loading">⏳ جاري التحميل...</div></div>
   </div>
 
@@ -876,9 +873,6 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       <span style="font-size:0.8rem;font-weight:700;color:var(--red);">إجمالي المعروض</span>
       <span style="font-size:0.9rem;font-weight:900;color:var(--red);" id="exp-total-val">0 ج</span>
     </div>
-    <div style="position:relative;margin-bottom:8px;">
-      <input type="text" placeholder="🔍 بحث سريع..." oninput="quickFilter('expense-list',this.value)" style="width:100%;padding:8px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.85rem;box-sizing:border-box;">
-    </div>
     <div id="expense-list"><div class="loading">⏳ جاري التحميل...</div></div>
   </div>
 
@@ -903,9 +897,6 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       <div class="form-row"><label>السبب</label><input type="text" id="aj-reason" placeholder="مثال: بيع محصول..."></div>
       <div class="form-row"><label>تاريخ الاستحقاق</label><input type="date" id="aj-due"></div>
       <button class="btn btn-gold" onclick="addAjal()">➕ إضافة</button>
-    </div>
-    <div style="position:relative;margin-bottom:8px;">
-      <input type="text" placeholder="🔍 بحث سريع..." oninput="quickFilter('ajal-rec-list',this.value);quickFilter('ajal-pay-list',this.value)" style="width:100%;padding:8px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.85rem;box-sizing:border-box;">
     </div>
     <div style="font-size:0.82rem;font-weight:800;color:var(--muted);margin-bottom:8px;padding-right:4px;">ديون لي 💰</div>
     <div id="ajal-rec-list"><div class="loading">⏳</div></div>
@@ -1014,9 +1005,6 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
           <div style="font-size:0.75rem;font-weight:700;color:var(--muted);">إجمالي الوحدات</div>
           <div style="font-size:1rem;font-weight:900;color:var(--g2);" id="ds-units-shown">0</div>
         </div>
-      </div>
-      <div style="position:relative;margin-bottom:8px;">
-        <input type="text" placeholder="🔍 بحث سريع..." oninput="quickFilter('ds-list',this.value)" style="width:100%;padding:8px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.85rem;box-sizing:border-box;">
       </div>
       <div id="ds-list"><div class="loading">⏳</div></div>
 
@@ -1232,9 +1220,6 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
     <div id="vault-total-bar" style="background:var(--g5);border-radius:10px;padding:8px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
       <span style="font-size:0.8rem;font-weight:700;color:var(--g2);">إجمالي المعروض</span>
       <span style="font-size:0.9rem;font-weight:900;color:var(--g2);" id="vault-total-val">0 ج</span>
-    </div>
-    <div style="position:relative;margin-bottom:8px;">
-      <input type="text" placeholder="🔍 بحث سريع..." oninput="quickFilter('vault-list',this.value)" style="width:100%;padding:8px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.85rem;box-sizing:border-box;">
     </div>
     <div id="vault-list"><div class="loading">⏳ جاري التحميل...</div></div>
   </div>
