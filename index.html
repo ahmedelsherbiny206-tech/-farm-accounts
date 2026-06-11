@@ -4238,8 +4238,8 @@ function calcDpTotal() {
 }
 
 async function initDeferredPurchasesPage() {
-  _dpItems = [];
   [_dpProducts, _dpUnits] = await Promise.all([getDpProducts(), getDpUnits()]);
+  _dpItems = [{name:'', qty:'', unit:_dpUnits[0]||'', price:0}];
   renderDpItemsForm();
   calcDpTotal();
   const traders = await getDpTraders();
