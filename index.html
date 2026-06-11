@@ -961,6 +961,20 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
           <div class="form-row"><label>ملاحظات</label>
             <textarea id="ds-notes" placeholder="أي تفاصيل..."></textarea></div>
 
+          <!-- نوع الدفع -->
+          <div style="margin:10px 0 6px;font-size:0.8rem;font-weight:900;color:var(--text);">💳 نوع الدفع</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">
+            <button id="ds-pay-ajal-btn" onclick="setDsPayType('ajal',this)"
+              style="padding:9px 4px;border-radius:10px;border:2px solid var(--g3);background:var(--g3);color:#fff;font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">⏳ آجل</button>
+            <button id="ds-pay-full-btn" onclick="setDsPayType('full',this)"
+              style="padding:9px 4px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">✅ سداد</button>
+            <button id="ds-pay-partial-btn" onclick="setDsPayType('partial',this)"
+              style="padding:9px 4px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">💵 جزئي</button>
+          </div>
+          <div id="ds-pay-partial-box" style="display:none;">
+            <div class="form-row"><label>المبلغ المسدَّد الآن</label>
+              <input type="text" inputmode="decimal" id="ds-partial-amount" placeholder="0"></div>
+          </div>
           <button class="btn btn-g" onclick="addDeferredSale()">➕ تسجيل البيعة</button>
         </div>
 
@@ -996,6 +1010,20 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
           <div class="form-row"><label>ملاحظات</label>
             <textarea id="ds-prod-notes" placeholder="أي تفاصيل..."></textarea></div>
 
+          <!-- نوع الدفع -->
+          <div style="margin:10px 0 6px;font-size:0.8rem;font-weight:900;color:var(--text);">💳 نوع الدفع</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">
+            <button id="dsp-pay-ajal-btn" onclick="setDspPayType('ajal',this)"
+              style="padding:9px 4px;border-radius:10px;border:2px solid var(--g3);background:var(--g3);color:#fff;font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">⏳ آجل</button>
+            <button id="dsp-pay-full-btn" onclick="setDspPayType('full',this)"
+              style="padding:9px 4px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">✅ سداد</button>
+            <button id="dsp-pay-partial-btn" onclick="setDspPayType('partial',this)"
+              style="padding:9px 4px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">💵 جزئي</button>
+          </div>
+          <div id="dsp-pay-partial-box" style="display:none;">
+            <div class="form-row"><label>المبلغ المسدَّد الآن</label>
+              <input type="text" inputmode="decimal" id="dsp-partial-amount" placeholder="0"></div>
+          </div>
           <button class="btn btn-g" onclick="addDeferredSaleProd()">➕ تسجيل البيعة</button>
         </div>
       </div>
@@ -1088,6 +1116,20 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       <div class="form-row"><label>ملاحظات</label>
         <textarea id="dp-notes" placeholder="أي تفاصيل..."></textarea></div>
 
+      <!-- نوع الدفع -->
+      <div style="margin:10px 0 6px;font-size:0.8rem;font-weight:900;color:var(--text);">💳 نوع الدفع</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">
+        <button id="dp-pay-ajal-btn" onclick="setDpPayType('ajal',this)"
+          style="padding:9px 4px;border-radius:10px;border:2px solid #6a1b9a;background:#6a1b9a;color:#fff;font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">⏳ آجل</button>
+        <button id="dp-pay-full-btn" onclick="setDpPayType('full',this)"
+          style="padding:9px 4px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">✅ سداد</button>
+        <button id="dp-pay-partial-btn" onclick="setDpPayType('partial',this)"
+          style="padding:9px 4px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">💵 جزئي</button>
+      </div>
+      <div id="dp-pay-partial-box" style="display:none;">
+        <div class="form-row"><label>المبلغ المدفوع الآن</label>
+          <input type="text" inputmode="decimal" id="dp-partial-amount" placeholder="0"></div>
+      </div>
       <button class="btn btn-g" style="background:#6a1b9a;" onclick="addDeferredPurchase()">➕ تسجيل الفاتورة</button>
     </div>
 
@@ -4419,28 +4461,45 @@ async function addDeferredPurchase() {
   const validItems = _dpItems.filter(x=>x.name.trim() && x.qty>0 && x.price>0);
   if(!validItems.length) return showToast('❌ تأكد من إدخال اسم وكمية وسعر لكل منتج');
   const total = validItems.reduce((s,x)=>s+x.qty*x.price, 0);
-  const {error} = await sb.from('deferred_purchases').insert({
+
+  let partialAmt = 0;
+  if(_dpPayType==='partial'){
+    partialAmt = parseNum(document.getElementById('dp-partial-amount')?.value);
+    if(!partialAmt||partialAmt<=0) return showToast('❌ اكتب المبلغ المدفوع');
+    if(partialAmt>total) return showToast('❌ المبلغ أكبر من الإجمالي');
+  }
+
+  const isPaidNow = _dpPayType==='full';
+  const {data:dpRow, error} = await sb.from('deferred_purchases').insert({
     user_id: currentUser.id,
-    description: desc||null,
-    items: validItems,
-    trader: trader||null,
-    total,
-    date,
-    notes: notes||null,
-    paid: false
-  });
+    description: desc||null, items: validItems,
+    trader: trader||null, total, date, notes: notes||null,
+    paid: isPaidNow, paid_at: isPaidNow ? new Date().toISOString() : null
+  }).select('id');
   if(error) return showToast('❌ خطأ: '+error.message);
-  // تسجيل في المصاريف
+  const purchaseId = dpRow?.[0]?.id;
+
   const expDesc = 'مشتريات آجل'+(trader?' - '+trader:'')+(desc?' - '+desc:'');
   await sb.from('expenses').insert({user_id:currentUser.id,description:expDesc,amount:total,category:'مشتريات آجل',date,notes:notes||null});
+
+  if(_dpPayType==='full'||_dpPayType==='partial'){
+    const vAmount = _dpPayType==='full' ? total : partialAmt;
+    await sb.from('vault').insert({
+      user_id:currentUser.id, type:'out',
+      description:'سداد مشتريات: '+(trader||desc||''),
+      amount:vAmount, date, category:'سداد_مشتريات', ref_id:purchaseId
+    });
+  }
+
   logActivity('إضافة','deferred_purchases','فاتورة مشتريات آجل'+(trader?' - '+trader:''), total);
-  showToast('✅ تم تسجيل الفاتورة');
+  showToast(_dpPayType==='full'?'✅ تم التسجيل والسداد':_dpPayType==='partial'?'✅ تم التسجيل وسداد جزئي':'✅ تم تسجيل الفاتورة');
   _dpItems = [];
   renderDpItemsForm();
   calcDpTotal();
   document.getElementById('dp-desc').value='';
   document.getElementById('dp-notes').value='';
   document.getElementById('dp-date').value=today();
+  if(document.getElementById('dp-partial-amount')) document.getElementById('dp-partial-amount').value='';
   renderDeferredPurchases();
   renderHome();
 }
@@ -5207,6 +5266,26 @@ async function saveTraders(t){
 // تهيئة صفحة المبيعات
 // ===== DS SALE TYPE TOGGLE =====
 let _dsSaleType = 'crop';
+let _dsPayType  = 'ajal';
+let _dspPayType = 'ajal';
+let _dpPayType  = 'ajal';
+
+function setDsPayType(type, btn){
+  _dsPayType = type;
+  ['ajal','full','partial'].forEach(t=>{ const b=document.getElementById('ds-pay-'+t+'-btn'); if(b){b.style.background=t===type?'var(--g3)':'var(--bg)';b.style.color=t===type?'#fff':'var(--text)';b.style.border='2px solid '+(t===type?'var(--g3)':'var(--border)');} });
+  const box=document.getElementById('ds-pay-partial-box'); if(box) box.style.display=type==='partial'?'':'none';
+}
+function setDspPayType(type, btn){
+  _dspPayType = type;
+  ['ajal','full','partial'].forEach(t=>{ const b=document.getElementById('dsp-pay-'+t+'-btn'); if(b){b.style.background=t===type?'var(--g3)':'var(--bg)';b.style.color=t===type?'#fff':'var(--text)';b.style.border='2px solid '+(t===type?'var(--g3)':'var(--border)');} });
+  const box=document.getElementById('dsp-pay-partial-box'); if(box) box.style.display=type==='partial'?'':'none';
+}
+function setDpPayType(type, btn){
+  _dpPayType = type;
+  ['ajal','full','partial'].forEach(t=>{ const b=document.getElementById('dp-pay-'+t+'-btn'); if(b){b.style.background=t===type?'#6a1b9a':'var(--bg)';b.style.color=t===type?'#fff':'var(--text)';b.style.border='2px solid '+(t===type?'#6a1b9a':'var(--border)');} });
+  const box=document.getElementById('dp-pay-partial-box'); if(box) box.style.display=type==='partial'?'':'none';
+}
+
 let _dsCropItems = [];
 let _dsCropCrops = [];
 let _dsCropUnits = [];
@@ -5327,33 +5406,53 @@ async function addDeferredSaleProd() {
   const validItems = _dsProdItems.filter(x=>x.name.trim()&&x.qty>0&&x.price>0);
   if(!validItems.length) return showToast('❌ تأكد من إدخال اسم وكمية وسعر لكل منتج');
   const total = validItems.reduce((s,x)=>s+x.qty*x.price, 0);
+
+  let partialAmt = 0;
+  if(_dspPayType==='partial'){
+    partialAmt = parseNum(document.getElementById('dsp-partial-amount')?.value);
+    if(!partialAmt||partialAmt<=0) return showToast('❌ اكتب المبلغ المسدَّد');
+    if(partialAmt>total) return showToast('❌ المبلغ أكبر من الإجمالي');
+  }
+
+  const isPaidNow = _dspPayType==='full';
   const {data:dsRow, error} = await sb.from('deferred_sales').insert({
     user_id: currentUser.id,
     description: desc || (trader?'بيع منتجات - '+trader:'بيع منتجات'),
-    sale_type: 'product',
-    items: validItems,
-    trader, total, date,
-    notes: notes||null,
-    paid: false,
+    sale_type: 'product', items: validItems,
+    trader, total, date, notes: notes||null,
+    paid: isPaidNow, paid_at: isPaidNow ? new Date().toISOString() : null,
     crop: null, quantity: 0, unit: '', price: 0
   }).select('id');
   if(error) return showToast('❌ خطأ: '+error.message);
   const saleId = dsRow?.[0]?.id;
+
   await sb.from('income').insert({
     user_id: currentUser.id,
     description: 'بيع آجل منتجات'+(trader?' - '+trader:'')+(desc?' - '+desc:''),
     category: 'مبيعات آجل', crop: null, amount: total, date,
     notes: notes||null, ref_id: saleId
   });
+
+  if(_dspPayType==='full'||_dspPayType==='partial'){
+    const vAmount = _dspPayType==='full' ? total : partialAmt;
+    await sb.from('vault').insert({
+      user_id:currentUser.id, type:'in',
+      description:'سداد مبيعات منتج: '+(trader||desc||''),
+      amount:vAmount, date, category:'سداد_مبيعات_منتج', ref_id:saleId
+    });
+  }
+
   logActivity('إضافة','deferred_sales','بيعة آجل منتجات'+(trader?' - '+trader:''), total);
-  showToast('✅ تم تسجيل البيعة');
+  showToast(_dspPayType==='full'?'✅ تم التسجيل والسداد':_dspPayType==='partial'?'✅ تم التسجيل وسداد جزئي':'✅ تم تسجيل البيعة');
   _dsProdItems = [{name:'', qty:'', unit:_dsProdUnits[0]||'', price:0}];
   renderDsProdItemsForm();
   calcDsProdTotal();
   document.getElementById('ds-prod-desc').value='';
   document.getElementById('ds-prod-notes').value='';
   document.getElementById('ds-prod-date').value=today();
+  if(document.getElementById('dsp-partial-amount')) document.getElementById('dsp-partial-amount').value='';
   renderDeferredSales();
+  renderHome();
 }
 
 async function openDsProductManager() {
@@ -5516,39 +5615,56 @@ async function addDeferredSale(){
   if(!validItems.length) return showToast('❌ أضف محصول واحد على الأقل');
 
   const total = validItems.reduce((s,x)=>s+(x.qty||0)*(x.price||0),0);
-  // للتوافق مع الكود القديم نحفظ أول محصول في حقل crop
   const firstCrop = validItems[0]?.name||null;
 
+  let partialAmt = 0;
+  if(_dsPayType==='partial'){
+    partialAmt = parseNum(document.getElementById('ds-partial-amount')?.value);
+    if(!partialAmt||partialAmt<=0) return showToast('❌ اكتب المبلغ المسدَّد');
+    if(partialAmt>total) return showToast('❌ المبلغ أكبر من الإجمالي');
+  }
+
+  const isPaidNow = _dsPayType==='full';
   const {data:dsData, error} = await sb.from('deferred_sales').insert({
     user_id:currentUser.id,
     description:desc, crop:firstCrop, items:validItems, total,
-    variety, trader, date, notes, paid:false, sale_type:'crop'
+    variety, trader, date, notes, paid:isPaidNow,
+    paid_at: isPaidNow ? new Date().toISOString() : null,
+    sale_type:'crop'
   }).select('id');
   if(error) return showToast('❌ خطأ: '+error.message);
-
   const saleId = dsData?.[0]?.id || null;
 
   const itemsNote = validItems.map(x=>`${x.name} ${x.qty} ${x.unit} × ${x.price} ج`).join(' | ');
   await sb.from('income').insert({
     user_id:currentUser.id,
     description:'بيع آجل: '+desc+(trader?' - '+trader:''),
-    category:'مبيعات آجل',
-    crop:firstCrop||null,
-    amount:total, date,
-    notes:'بيعة آجل - '+itemsNote,
-    ref_id: saleId
+    category:'مبيعات آجل', crop:firstCrop||null,
+    amount:total, date, notes:'بيعة آجل - '+itemsNote, ref_id:saleId
   });
 
+  // vault entry for full or partial payment
+  if(_dsPayType==='full'||_dsPayType==='partial'){
+    const vAmount = _dsPayType==='full' ? total : partialAmt;
+    await sb.from('vault').insert({
+      user_id:currentUser.id, type:'in',
+      description:'سداد مبيعات: '+(trader||desc),
+      amount:vAmount, date, category:'سداد_مبيعات', ref_id:saleId
+    });
+  }
+
   logActivity('إضافة','deferred_sales','بيعة آجل: '+desc, total);
-  showToast('✅ تم تسجيل البيعة');
+  showToast(_dsPayType==='full'?'✅ تم التسجيل والسداد':_dsPayType==='partial'?'✅ تم التسجيل وسداد جزئي':'✅ تم تسجيل البيعة');
 
   document.getElementById('ds-desc').value='';
   document.getElementById('ds-notes').value='';
   document.getElementById('ds-total-display').textContent='0 ج';
   document.getElementById('ds-date').value=today();
+  if(document.getElementById('ds-partial-amount')) document.getElementById('ds-partial-amount').value='';
   _dsCropItems = [{name:'', qty:'', unit:_dsCropUnits[0]||'كيلو', price:0}];
   renderDsCropItemsForm();
   renderDeferredSales();
+  renderHome();
 }
 
 // عرض المبيعات
