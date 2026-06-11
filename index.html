@@ -6388,7 +6388,7 @@ async function showAccountStatement(){
   const isProd = _asSaleType === 'product';
   const saleType = isProd ? 'product' : 'crop';
 
-  // جلب كل ما قبل الفترة (الرصيد الافتتاحي) + حركات الفترة
+  // جلب كل ما قبل الفترة (الرصيد المرحل) + حركات الفترة
   const [
     {data:preSales}, {data:prePayments},
     {data:sales},    {data:payments}
@@ -6432,11 +6432,11 @@ async function showAccountStatement(){
       <!-- ملخص تراكمي -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
         <div style="background:${openingBalance>0?'#fff3cd':'#d4edda'};border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:0.7rem;color:var(--muted);">الرصيد الافتتاحي</div>
+          <div style="font-size:0.7rem;color:var(--muted);">الرصيد المرحل</div>
           <div style="font-size:0.88rem;font-weight:900;color:${openingBalance>0?'var(--red)':'var(--g2)'};">${Number(openingBalance).toLocaleString('en-US')} ج</div>
         </div>
         <div style="background:${closingBalance>0?'#fff3cd':'#d4edda'};border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:0.7rem;color:var(--muted);">الرصيد الختامي</div>
+          <div style="font-size:0.7rem;color:var(--muted);">الرصيد النهائي</div>
           <div style="font-size:0.88rem;font-weight:900;color:${closingBalance>0?'var(--red)':'var(--g2)'};">${Number(closingBalance).toLocaleString('en-US')} ج</div>
         </div>
       </div>
@@ -6522,11 +6522,11 @@ async function showDetailedStatement(){
       <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px;">${fmtDate(from)} → ${fmtDate(to)}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
         <div style="background:${openingBalanceD>0?'#fff3cd':'#d4edda'};border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:0.7rem;color:var(--muted);">الرصيد الافتتاحي</div>
+          <div style="font-size:0.7rem;color:var(--muted);">الرصيد المرحل</div>
           <div style="font-size:0.88rem;font-weight:900;color:${openingBalanceD>0?'var(--red)':'var(--g2)'};">${Number(openingBalanceD).toLocaleString('en-US')} ج</div>
         </div>
         <div style="background:${closingBalanceD>0?'#fff3cd':'#d4edda'};border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:0.7rem;color:var(--muted);">الرصيد الختامي</div>
+          <div style="font-size:0.7rem;color:var(--muted);">الرصيد النهائي</div>
           <div style="font-size:0.88rem;font-weight:900;color:${closingBalanceD>0?'var(--red)':'var(--g2)'};">${Number(closingBalanceD).toLocaleString('en-US')} ج</div>
         </div>
       </div>
@@ -6648,8 +6648,8 @@ async function exportAccountStatementExcel(trader, from, to){
   const payRows = (payments||[]).map((x,i)=>({'م':i+1,'التاريخ':x.date,'النوع':x.category.includes('تسوية')?'تسوية':'سداد','المبلغ':Number(x.amount||0),'ملاحظات':x.notes||''}));
   payRows.push({'م':'','التاريخ':'إجمالي سدادات الفترة','النوع':'','المبلغ':totalPayments,'ملاحظات':''});
   payRows.push({'م':'','التاريخ':'إجمالي مبيعات الفترة','النوع':'','المبلغ':totalSales,'ملاحظات':''});
-  payRows.push({'م':'','التاريخ':'الرصيد الافتتاحي','النوع':'','المبلغ':openingXl,'ملاحظات':''});
-  payRows.push({'م':'','التاريخ':'الرصيد الختامي','النوع':'','المبلغ':closingXl,'ملاحظات':''});
+  payRows.push({'م':'','التاريخ':'الرصيد المرحل','النوع':'','المبلغ':openingXl,'ملاحظات':''});
+  payRows.push({'م':'','التاريخ':'الرصيد النهائي','النوع':'','المبلغ':closingXl,'ملاحظات':''});
   const ws2 = XLSX.utils.json_to_sheet(payRows,{header:['م','التاريخ','النوع','المبلغ','ملاحظات']});
   ws2['!cols']=[{wch:4},{wch:20},{wch:9},{wch:14},{wch:25}];
   xlStyle(ws2, 0, [payRows.length-4,payRows.length-3,payRows.length-2,payRows.length-1]);
@@ -6728,8 +6728,8 @@ async function exportDetailedStatementExcel(trader, from, to){
   const payRows = (payments||[]).map((x,i)=>({'م':i+1,'التاريخ':x.date,'النوع':x.category.includes('تسوية')?'تسوية':'سداد','المبلغ':Number(x.amount||0),'ملاحظات':x.notes||''}));
   payRows.push({'م':'','التاريخ':'إجمالي سدادات الفترة','النوع':'','المبلغ':totalPayments,'ملاحظات':''});
   payRows.push({'م':'','التاريخ':'إجمالي مبيعات الفترة','النوع':'','المبلغ':totalSales,'ملاحظات':''});
-  payRows.push({'م':'','التاريخ':'الرصيد الافتتاحي','النوع':'','المبلغ':openingDXl,'ملاحظات':''});
-  payRows.push({'م':'','التاريخ':'الرصيد الختامي','النوع':'','المبلغ':closingDXl,'ملاحظات':''});
+  payRows.push({'م':'','التاريخ':'الرصيد المرحل','النوع':'','المبلغ':openingDXl,'ملاحظات':''});
+  payRows.push({'م':'','التاريخ':'الرصيد النهائي','النوع':'','المبلغ':closingDXl,'ملاحظات':''});
   const wsPay = XLSX.utils.json_to_sheet(payRows,{header:['م','التاريخ','النوع','المبلغ','ملاحظات']});
   wsPay['!cols']=[{wch:4},{wch:20},{wch:10},{wch:14},{wch:25}];
   xlStyle(wsPay, 0, [payRows.length-4,payRows.length-3,payRows.length-2,payRows.length-1]);
@@ -6804,11 +6804,11 @@ async function showDpAccountStatement(){
       <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px;">${fmtDate(from)} → ${fmtDate(to)}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
         <div style="background:${openingBal>0?'#fff3cd':'#d4edda'};border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:0.7rem;color:var(--muted);">الرصيد الافتتاحي</div>
+          <div style="font-size:0.7rem;color:var(--muted);">الرصيد المرحل</div>
           <div style="font-size:0.88rem;font-weight:900;color:${openingBal>0?'var(--red)':'var(--g2)'};">${Number(openingBal).toLocaleString('en-US')} ج</div>
         </div>
         <div style="background:${closingBal>0?'#fff3cd':'#d4edda'};border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:0.7rem;color:var(--muted);">الرصيد الختامي</div>
+          <div style="font-size:0.7rem;color:var(--muted);">الرصيد النهائي</div>
           <div style="font-size:0.88rem;font-weight:900;color:${closingBal>0?'var(--red)':'var(--g2)'};">${Number(closingBal).toLocaleString('en-US')} ج</div>
         </div>
       </div>
@@ -6890,8 +6890,8 @@ async function exportDpAccountStatementExcel(trader, from, to){
 
   const payRows = (payments||[]).map((x,i)=>({'م':i+1,'التاريخ':x.date,'النوع':x.category.includes('تسوية')?'تسوية':'سداد','المبلغ':Number(x.amount||0),'ملاحظات':x.notes||''}));
   payRows.push({'م':'','التاريخ':'إجمالي مدفوعات الفترة','النوع':'','المبلغ':totalPay,'ملاحظات':''});
-  payRows.push({'م':'','التاريخ':'الرصيد الافتتاحي','النوع':'','المبلغ':openingXl,'ملاحظات':''});
-  payRows.push({'م':'','التاريخ':'الرصيد الختامي','النوع':'','المبلغ':closingXl,'ملاحظات':''});
+  payRows.push({'م':'','التاريخ':'الرصيد المرحل','النوع':'','المبلغ':openingXl,'ملاحظات':''});
+  payRows.push({'م':'','التاريخ':'الرصيد النهائي','النوع':'','المبلغ':closingXl,'ملاحظات':''});
   const ws2 = XLSX.utils.json_to_sheet(payRows,{header:['م','التاريخ','النوع','المبلغ','ملاحظات']});
   ws2['!cols']=[{wch:4},{wch:22},{wch:9},{wch:14},{wch:25}];
   xlStyle(ws2, 0, [payRows.length-3,payRows.length-2,payRows.length-1]);
