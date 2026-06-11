@@ -3036,43 +3036,87 @@ async function exportAjalToExcel(){
 
 async function exportDeferredToExcel(){
   showToast('⏳ جاري التصدير...');
-  let q = sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).order('date',{ascending:false});
+  const isProduct = _dsSaleType === 'product';
+  let q = sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('sale_type', isProduct?'product':'crop').order('date',{ascending:false});
   const from = document.getElementById('ds-from')?.value;
   const to   = document.getElementById('ds-to')?.value;
-  const crop = document.getElementById('ds-filter-crop')?.value;
-  const trader = document.getElementById('ds-filter-trader')?.value;
-  const unit = document.getElementById('ds-filter-unit')?.value;
   if(from) q=q.gte('date',from);
   if(to)   q=q.lte('date',to);
-  if(crop) q=q.eq('crop',crop);
-  if(trader) q=q.eq('trader',trader);
-  if(unit) q=q.eq('unit',unit);
+  if(isProduct){
+    const trader = document.getElementById('ds-filter-prod-trader')?.value;
+    if(trader) q=q.eq('trader',trader);
+  } else {
+    const crop   = document.getElementById('ds-filter-crop')?.value;
+    const trader = document.getElementById('ds-filter-trader')?.value;
+    if(crop)   q=q.eq('crop',crop);
+    if(trader) q=q.eq('trader',trader);
+  }
   if(_dsFilter==='paid')   q=q.eq('paid',true);
   if(_dsFilter==='unpaid') q=q.eq('paid',false);
   const {data:rows,error} = await q;
   if(error) return showToast('❌ خطأ في التصدير');
-  const headers = ['الوصف','المحصول','الكمية','الوحدة','السعر','الإجمالي','التاجر','التاريخ','الحالة','ملاحظات'];
-  const data = (rows||[]).map(x=>({
-    'الوصف': x.description||'',
-    'المحصول': x.crop||'',
-    'الكمية': x.quantity||0,
-    'الوحدة': x.unit||'',
-    'السعر': x.price||0,
-    'الإجمالي': x.total||0,
-    'التاجر': x.trader||'',
-    'التاريخ': x.date||'',
-    'الحالة': x.paid?'مسددة':'غير مسددة',
-    'ملاحظات': x.notes||''
-  }));
-  const total = (rows||[]).reduce((s,x)=>s+Number(x.total||0),0);
-  data.push({'الوصف':'الإجمالي','المحصول':'','الكمية':'','الوحدة':'','السعر':'','الإجمالي':total,'التاجر':'','التاريخ':'','الحالة':'','ملاحظات':''});
-  const ws = XLSX.utils.json_to_sheet(data, {header: headers});
-  ws['!cols'] = [{wch:27},{wch:14},{wch:9},{wch:11},{wch:11},{wch:13},{wch:16},{wch:13},{wch:13},{wch:22}];
-  xlStyle(ws, 0, [data.length]);
-  xlPrependTitle(ws, 'مبيعات آجل', 10);
+
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'مبيعات آجل');
-  XLSX.writeFile(wb, 'مبيعات_آجل.xlsx');
+  const grandTotal = (rows||[]).reduce((s,x)=>s+Number(x.total||0),0);
+
+  if(isProduct){
+    // كل فاتورة: سطر رئيسي + سطر لكل منتج
+    const headers = ['الوصف','المنتج','الكمية','الوحدة','السعر','الإجمالي','التاجر','التاريخ','الحالة','ملاحظات'];
+    const data = [];
+    (rows||[]).forEach(x=>{
+      (x.items||[]).forEach((it,idx)=>{
+        data.push({
+          'الوصف': idx===0 ? (x.description||'') : '',
+          'المنتج': it.name||'',
+          'الكمية': it.qty||0,
+          'الوحدة': it.unit||'',
+          'السعر': it.price||0,
+          'الإجمالي': idx===0 ? Number(x.total||0) : '',
+          'التاجر': idx===0 ? (x.trader||'') : '',
+          'التاريخ': idx===0 ? (x.date||'') : '',
+          'الحالة': idx===0 ? (x.paid?'مسددة':'غير مسددة') : '',
+          'ملاحظات': idx===0 ? (x.notes||'') : ''
+        });
+      });
+      if(!(x.items||[]).length) data.push({'الوصف':x.description||'','المنتج':'','الكمية':'','الوحدة':'','السعر':'','الإجمالي':Number(x.total||0),'التاجر':x.trader||'','التاريخ':x.date||'','الحالة':x.paid?'مسددة':'غير مسددة','ملاحظات':x.notes||''});
+    });
+    data.push({'الوصف':'الإجمالي','المنتج':'','الكمية':'','الوحدة':'','السعر':'','الإجمالي':grandTotal,'التاجر':'','التاريخ':'','الحالة':'','ملاحظات':''});
+    const ws = XLSX.utils.json_to_sheet(data, {header: headers});
+    ws['!cols'] = [{wch:24},{wch:16},{wch:9},{wch:9},{wch:11},{wch:13},{wch:16},{wch:13},{wch:13},{wch:22}];
+    xlStyle(ws, 0, [data.length]);
+    xlPrependTitle(ws, 'مبيعات منتجات آجل', 10);
+    XLSX.utils.book_append_sheet(wb, ws, 'مبيعات منتجات');
+    XLSX.writeFile(wb, 'مبيعات_منتجات_آجل.xlsx');
+  } else {
+    // كل فاتورة: سطر لكل محصول في items
+    const headers = ['الوصف','المحصول','الكمية','الوحدة','السعر','الإجمالي','التاجر','الصنف','التاريخ','الحالة','ملاحظات'];
+    const data = [];
+    (rows||[]).forEach(x=>{
+      const items = (x.items||[]).length ? x.items : [{name:x.crop||'',qty:x.quantity||0,unit:x.unit||'',price:x.price||0}];
+      items.forEach((it,idx)=>{
+        data.push({
+          'الوصف': idx===0 ? (x.description||'') : '',
+          'المحصول': it.name||'',
+          'الكمية': it.qty||0,
+          'الوحدة': it.unit||'',
+          'السعر': it.price||0,
+          'الإجمالي': idx===0 ? Number(x.total||0) : '',
+          'التاجر': idx===0 ? (x.trader||'') : '',
+          'الصنف': idx===0 ? (x.variety||'') : '',
+          'التاريخ': idx===0 ? (x.date||'') : '',
+          'الحالة': idx===0 ? (x.paid?'مسددة':'غير مسددة') : '',
+          'ملاحظات': idx===0 ? (x.notes||'') : ''
+        });
+      });
+    });
+    data.push({'الوصف':'الإجمالي','المحصول':'','الكمية':'','الوحدة':'','السعر':'','الإجمالي':grandTotal,'التاجر':'','الصنف':'','التاريخ':'','الحالة':'','ملاحظات':''});
+    const ws = XLSX.utils.json_to_sheet(data, {header: headers});
+    ws['!cols'] = [{wch:24},{wch:14},{wch:9},{wch:9},{wch:11},{wch:13},{wch:16},{wch:12},{wch:13},{wch:13},{wch:22}];
+    xlStyle(ws, 0, [data.length]);
+    xlPrependTitle(ws, 'مبيعات محاصيل آجل', 11);
+    XLSX.utils.book_append_sheet(wb, ws, 'مبيعات محاصيل');
+    XLSX.writeFile(wb, 'مبيعات_محاصيل_آجل.xlsx');
+  }
   showToast('✅ تم التصدير!');
 }
 
@@ -5855,10 +5899,18 @@ async function deleteTrader(i){
 }
 
 // ===== سداد المبيعات =====
+let _spSaleType = 'crop';
+function _spVaultDesc(trader){ return _spSaleType==='product' ? 'سداد مبيعات منتج: '+trader : 'سداد مبيعات: '+trader; }
+function _spCategories(){ return _spSaleType==='product' ? ['سداد_مبيعات_منتج','تسوية_مبيعات_منتج'] : ['سداد_مبيعات','تسوية_مبيعات']; }
+
 async function initSalesPaymentPage(){
-  const traders = await getTraders();
+  _spSaleType = _dsSaleType;
+  const traders = _spSaleType==='product' ? await getDsProdTraders() : await getTraders();
   const sel = document.getElementById('sp-trader');
-  if(sel) sel.innerHTML = '<option value="">-- اختار التاجر --</option>' + traders.map(t=>`<option>${t}</option>`).join('');
+  if(sel) sel.innerHTML = '<option value="">-- اختار التاجر --</option>' + traders.map(t=>`<option>${s(t)}</option>`).join('');
+  // شارة النوع
+  const titleEl = document.querySelector('#page-sales-payment span[style*="font-weight:900"]');
+  if(titleEl) titleEl.textContent = _spSaleType==='product' ? '💵 سداد مبيعات منتجات' : '💵 سداد مبيعات محاصيل';
   document.getElementById('sp-debt-box').style.display = 'none';
   document.getElementById('sp-history-section').style.display = 'none';
   document.getElementById('sp-list').innerHTML = '<div class="empty">اختار تاجر أولاً</div>';
@@ -5872,10 +5924,9 @@ async function onSpTraderChange(){
     document.getElementById('sp-history-section').style.display = 'none';
     return;
   }
-  // احسب المديونية = إجمالي كل المبيعات - إجمالي كل المدفوعات والتسويات
   const [{data: salesData}, {data: paidData}] = await Promise.all([
-    sb.from('deferred_sales').select('total').eq('user_id',currentUser.id).eq('trader',trader),
-    sb.from('vault').select('amount').eq('user_id',currentUser.id).in('category',['سداد_مبيعات','تسوية_مبيعات']).like('description','سداد مبيعات: '+trader)
+    sb.from('deferred_sales').select('total').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',_spSaleType==='product'?'product':'crop'),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).in('category',_spCategories()).like('description',_spVaultDesc(trader))
   ]);
   const totalSales = (salesData||[]).reduce((s,x)=>s+Number(x.total||0),0);
   const totalPaid  = (paidData||[]).reduce((s,x)=>s+Number(x.amount||0),0);
@@ -5905,15 +5956,14 @@ async function addTaswiya(){
     if(!ok) return;
   }
 
-  // تسوية: تُسجَّل في كشف الحساب بدون أي تأثير على الخزنة
   const {error} = await sb.from('vault').insert({
     user_id: currentUser.id,
     type: 'taswiya',
-    description: 'سداد مبيعات: ' + trader,
+    description: _spVaultDesc(trader),
     amount,
     date,
     notes: (notes ? notes + ' - ' : '') + 'تسوية',
-    category: 'تسوية_مبيعات'
+    category: _spCategories()[1]
   });
   if(error) return showToast('❌ خطأ: ' + error.message);
 
@@ -5945,11 +5995,11 @@ async function addSalesPayment(){
   const {error} = await sb.from('vault').insert({
     user_id: currentUser.id,
     type: 'in',
-    description: 'سداد مبيعات: ' + trader,
+    description: _spVaultDesc(trader),
     amount,
     date,
     notes: notes || '',
-    category: 'سداد_مبيعات'
+    category: _spCategories()[0]
   });
   if(error) return showToast('❌ خطأ: ' + error.message);
 
@@ -5983,8 +6033,8 @@ async function renderSalesPayments(){
 
   let q = sb.from('vault').select('*')
     .eq('user_id', currentUser.id)
-    .in('category',['سداد_مبيعات','تسوية_مبيعات'])
-    .like('description', 'سداد مبيعات: ' + trader)
+    .in('category', _spCategories())
+    .like('description', _spVaultDesc(trader))
     .order('date', {ascending: false});
 
   if(from) q = q.gte('date', from);
@@ -6075,10 +6125,18 @@ async function saveSpPayment(id){
 }
 
 // ===== كشف الحساب =====
+let _asSaleType = 'crop';
+function _asVaultDesc(trader){ return _asSaleType==='product' ? 'سداد مبيعات منتج: '+trader : 'سداد مبيعات: '+trader; }
+function _asCategories(){ return _asSaleType==='product' ? ['سداد_مبيعات_منتج','تسوية_مبيعات_منتج'] : ['سداد_مبيعات','تسوية_مبيعات']; }
+
 async function initAccountStatementPage(){
-  const traders = await getTraders();
+  _asSaleType = _dsSaleType;
+  const traders = _asSaleType==='product' ? await getDsProdTraders() : await getTraders();
   const sel = document.getElementById('as-trader');
-  if(sel) sel.innerHTML = '<option value="">-- اختار التاجر --</option>' + traders.map(t=>`<option>${t}</option>`).join('');
+  if(sel) sel.innerHTML = '<option value="">-- اختار التاجر --</option>' + traders.map(t=>`<option>${s(t)}</option>`).join('');
+  // شارة النوع
+  const titleEl = document.querySelector('#page-account-statement span[style*="font-weight:900"]');
+  if(titleEl) titleEl.textContent = _asSaleType==='product' ? '📋 كشف حساب منتجات' : '📋 كشف حساب محاصيل';
   document.getElementById('as-result').innerHTML = '';
   setTimeout(setDateInputs, 100);
 }
@@ -6097,14 +6155,29 @@ async function showAccountStatement(){
   const {trader, from, to} = v;
   showToast('⏳ جاري التحميل...');
 
+  const isProd = _asSaleType === 'product';
   const [{data:sales},{data:payments}] = await Promise.all([
-    sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).gte('date',from).lte('date',to).order('date',{ascending:true}),
-    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',['سداد_مبيعات','تسوية_مبيعات']).like('description','سداد مبيعات: '+trader).gte('date',from).lte('date',to).order('date',{ascending:true})
+    sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',isProd?'product':'crop').gte('date',from).lte('date',to).order('date',{ascending:true}),
+    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).gte('date',from).lte('date',to).order('date',{ascending:true})
   ]);
 
   const totalSales    = (sales||[]).reduce((s,x)=>s+Number(x.total||0),0);
   const totalPayments = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
   const balance       = totalSales - totalPayments;
+
+  const salesRowsHtml = (sales||[]).length ? (sales||[]).map(x=>{
+    const itemsHtml = (x.items||[]).map(it=>`<div style="font-size:0.72rem;color:var(--muted);padding-right:10px;">• ${s(it.name)} ${it.qty} ${s(it.unit||'')} × ${fmt(it.price)} ج</div>`).join('');
+    return `<div style="padding:7px 0;border-bottom:1px solid var(--border);font-size:0.8rem;">
+      <div style="display:flex;justify-content:space-between;">
+        <div>
+          <span style="color:var(--muted);">${fmtDate(x.date)}</span>
+          <span style="margin:0 6px;">·</span>
+          <span>${s(x.description||'')}${!isProd&&x.variety?' - '+s(x.variety):''}${!isProd&&x.crop?' ('+s(x.crop)+')':''}</span>
+        </div>
+        <span style="font-weight:900;color:var(--text);">${Number(x.total||0).toLocaleString('en-US')} ج</span>
+      </div>
+      ${itemsHtml}</div>`;}).join('')
+    : '<div style="color:var(--muted);font-size:0.8rem;">لا يوجد مبيعات</div>';
 
   const el = document.getElementById('as-result');
   el.innerHTML = `
@@ -6112,11 +6185,9 @@ async function showAccountStatement(){
       <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="exportAccountStatementExcel('${trader}','${from}','${to}')">📊 تصدير Excel</button>
     </div>
     <div class="card" id="as-summary-card">
-      <div style="background:#1a6fa8;color:#fff;border-radius:10px;padding:8px 14px;margin-bottom:10px;font-size:0.82rem;font-weight:900;text-align:center;">📋 كشف حساب إجمالي</div>
+      <div style="background:#1a6fa8;color:#fff;border-radius:10px;padding:8px 14px;margin-bottom:10px;font-size:0.82rem;font-weight:900;text-align:center;">📋 كشف حساب ${isProd?'منتجات':'محاصيل'} إجمالي</div>
       <div class="card-title">📋 ${trader}</div>
       <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px;">${fmtDate(from)} → ${fmtDate(to)}</div>
-
-      <!-- إجماليات -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
         <div style="background:var(--g5);border-radius:10px;padding:10px;text-align:center;">
           <div style="font-size:0.7rem;color:var(--muted);">إجمالي المبيعات</div>
@@ -6131,23 +6202,11 @@ async function showAccountStatement(){
           <div style="font-size:0.9rem;font-weight:900;color:${balance>0?'var(--red)':'var(--g2)'};">${Number(balance).toLocaleString('en-US')} ج</div>
         </div>
       </div>
-
-      <!-- المبيعات -->
-      <div style="font-size:0.82rem;font-weight:900;color:var(--g2);margin-bottom:6px;">📦 المبيعات</div>
-      ${(sales||[]).length ? (sales||[]).map(x=>`
-        <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:0.8rem;">
-          <div>
-            <span style="color:var(--muted);">${fmtDate(x.date)}</span>
-            <span style="margin:0 6px;">·</span>
-            <span>${s(x.description||'')}${x.variety?' - '+s(x.variety):''}${x.crop?' ('+s(x.crop)+')':''}</span>
-          </div>
-          <span style="font-weight:900;color:var(--text);">${Number(x.total||0).toLocaleString('en-US')} ج</span>
-        </div>`).join('') : '<div style="color:var(--muted);font-size:0.8rem;">لا يوجد مشتريات</div>'}
-
-      <!-- السدادات والتسويات -->
+      <div style="font-size:0.82rem;font-weight:900;color:var(--g2);margin-bottom:6px;">${isProd?'📦 فواتير المنتجات':'🌾 المبيعات'}</div>
+      ${salesRowsHtml}
       <div style="font-size:0.82rem;font-weight:900;color:var(--g2);margin:12px 0 6px;">💵 السدادات والتسويات</div>
       ${(payments||[]).length ? (payments||[]).map(x=>{
-        const isTaswiya = x.category==='تسوية_مبيعات';
+        const isTaswiya = x.category==='تسوية_مبيعات'||x.category==='تسوية_مبيعات_منتج';
         return `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:0.8rem;">
           <div>
             <span style="color:var(--muted);">${fmtDate(x.date)}</span>
@@ -6164,25 +6223,40 @@ async function showDetailedStatement(){
   const {trader, from, to} = v;
   showToast('⏳ جاري التحميل...');
 
+  const isDetProd = _asSaleType === 'product';
   const [{data:sales},{data:payments}] = await Promise.all([
-    sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).gte('date',from).lte('date',to).order('date',{ascending:true}),
-    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',['سداد_مبيعات','تسوية_مبيعات']).like('description','سداد مبيعات: '+trader).gte('date',from).lte('date',to).order('date',{ascending:true})
+    sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',isDetProd?'product':'crop').gte('date',from).lte('date',to).order('date',{ascending:true}),
+    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).gte('date',from).lte('date',to).order('date',{ascending:true})
   ]);
 
-  // تجميع حسب (صنف + وحدة + محصول)
-  const groups = {};
-  (sales||[]).forEach(x=>{
-    const key = [x.variety||'—', x.unit||'—', x.crop||'—'].join('||');
-    if(!groups[key]) groups[key] = {variety:x.variety||'', unit:x.unit||'', crop:x.crop||'', qty:0, total:0, rows:[]};
-    groups[key].qty   += Number(x.quantity||0);
-    groups[key].total += Number(x.total||0);
-    groups[key].rows.push(x);
-  });
-
   const totalAll      = (sales||[]).reduce((s,x)=>s+Number(x.total||0),0);
-  const totalQty      = (sales||[]).reduce((s,x)=>s+Number(x.quantity||0),0);
   const totalPayments = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
   const balance       = totalAll - totalPayments;
+
+  // تجميع: للمنتج حسب اسم المنتج، للمحصول حسب صنف+وحدة+محصول
+  const groups = {};
+  if(isDetProd){
+    (sales||[]).forEach(x=>{
+      (x.items||[]).forEach(it=>{
+        const key = it.name||'—';
+        if(!groups[key]) groups[key]={label:it.name||'—', unit:it.unit||'', qty:0, total:0, rows:[]};
+        groups[key].qty   += Number(it.qty||0);
+        groups[key].total += Number(it.qty||0)*Number(it.price||0);
+        groups[key].rows.push({...x, _item:it});
+      });
+    });
+  } else {
+    (sales||[]).forEach(x=>{
+      const items = (x.items||[]).length ? x.items : [{name:x.crop||'—',qty:x.quantity||0,unit:x.unit||'',price:x.price||0}];
+      items.forEach(it=>{
+        const key = [x.variety||'—', it.unit||'—', it.name||'—'].join('||');
+        if(!groups[key]) groups[key]={label:(it.name||'—')+(x.variety?' · '+x.variety:''), unit:it.unit||'', qty:0, total:0, rows:[]};
+        groups[key].qty   += Number(it.qty||0);
+        groups[key].total += Number(it.qty||0)*Number(it.price||0);
+        groups[key].rows.push({...x, _item:it});
+      });
+    });
+  }
 
   const el = document.getElementById('as-result');
   el.innerHTML = `
@@ -6190,11 +6264,9 @@ async function showDetailedStatement(){
       <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="exportDetailedStatementExcel('${trader}','${from}','${to}')">📊 تصدير Excel</button>
     </div>
     <div class="card">
-      <div style="background:var(--g2);color:#fff;border-radius:10px;padding:8px 14px;margin-bottom:10px;font-size:0.82rem;font-weight:900;text-align:center;">📊 كشف تفصيلي حسب الصنف</div>
+      <div style="background:var(--g2);color:#fff;border-radius:10px;padding:8px 14px;margin-bottom:10px;font-size:0.82rem;font-weight:900;text-align:center;">📊 كشف تفصيلي ${isDetProd?'حسب المنتج':'حسب الصنف'}</div>
       <div class="card-title">📊 ${trader}</div>
       <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px;">${fmtDate(from)} → ${fmtDate(to)}</div>
-
-      <!-- إجماليات -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
         <div style="background:var(--g5);border-radius:10px;padding:10px;text-align:center;">
           <div style="font-size:0.7rem;color:var(--muted);">إجمالي المبيعات</div>
@@ -6209,33 +6281,27 @@ async function showDetailedStatement(){
           <div style="font-size:0.88rem;font-weight:900;color:${balance>0?'var(--red)':'var(--g2)'};">${Number(balance).toLocaleString('en-US')} ج</div>
         </div>
       </div>
-
-      <!-- المبيعات تفصيلي حسب الصنف -->
-      <div style="font-size:0.82rem;font-weight:900;color:var(--g2);margin-bottom:6px;">📦 المبيعات حسب الصنف</div>
-
+      <div style="font-size:0.82rem;font-weight:900;color:var(--g2);margin-bottom:6px;">${isDetProd?'📦 تفصيل المنتجات':'🌾 تفصيل المحاصيل'}</div>
       ${Object.values(groups).map(g=>`
         <div style="margin-bottom:4px;">
           <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:2px solid var(--g3);">
-            <span style="font-size:0.8rem;font-weight:900;color:var(--g2);">${g.variety||'بدون صنف'} · ${g.unit||'—'}${g.crop?' · '+g.crop:''}</span>
-            <span style="font-size:0.78rem;font-weight:900;color:var(--g2);">${Number(g.qty).toLocaleString('en-US')} وحدة · ${Number(g.total).toLocaleString('en-US')} ج</span>
+            <span style="font-size:0.8rem;font-weight:900;color:var(--g2);">${s(g.label)} · ${s(g.unit||'—')}</span>
+            <span style="font-size:0.78rem;font-weight:900;color:var(--g2);">${Number(g.qty).toLocaleString('en-US')} · ${Number(g.total).toLocaleString('en-US')} ج</span>
           </div>
           ${g.rows.map(x=>`
             <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:0.8rem;">
               <div>
                 <span style="color:var(--muted);">${fmtDate(x.date)}</span>
                 <span style="margin:0 6px;">·</span>
-                <span>${x.quantity} ${x.unit||''} × ${Number(x.price||0).toLocaleString('en-US')} ج</span>
+                <span>${x._item.qty} ${s(x._item.unit||'')} × ${Number(x._item.price||0).toLocaleString('en-US')} ج</span>
               </div>
-              <span style="font-weight:900;color:var(--text);">${Number(x.total||0).toLocaleString('en-US')} ج</span>
+              <span style="font-weight:900;color:var(--text);">${Number((x._item.qty||0)*(x._item.price||0)).toLocaleString('en-US')} ج</span>
             </div>`).join('')}
         </div>`).join('')}
-
       ${!Object.keys(groups).length ? '<div class="empty">لا يوجد مبيعات في هذه الفترة</div>' : ''}
-
-      <!-- السدادات والتسويات -->
       <div style="font-size:0.82rem;font-weight:900;color:var(--g2);margin:12px 0 6px;">💵 السدادات والتسويات</div>
       ${(payments||[]).length ? (payments||[]).map(x=>{
-        const isTaswiya = x.category==='تسوية_مبيعات';
+        const isTaswiya = x.category==='تسوية_مبيعات'||x.category==='تسوية_مبيعات_منتج';
         return `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:0.8rem;">
           <div>
             <span style="color:var(--muted);">${fmtDate(x.date)}</span>
@@ -6249,31 +6315,57 @@ async function showDetailedStatement(){
 
 async function exportAccountStatementExcel(trader, from, to){
   showToast('⏳ جاري التصدير...');
+  const isXlProd = _asSaleType === 'product';
   const [{data:sales},{data:payments}] = await Promise.all([
-    sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).gte('date',from).lte('date',to).order('date',{ascending:true}),
-    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',['سداد_مبيعات','تسوية_مبيعات']).like('description','سداد مبيعات: '+trader).gte('date',from).lte('date',to).order('date',{ascending:true})
+    sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',isXlProd?'product':'crop').gte('date',from).lte('date',to).order('date',{ascending:true}),
+    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).gte('date',from).lte('date',to).order('date',{ascending:true})
   ]);
 
   const totalSales    = (sales||[]).reduce((s,x)=>s+Number(x.total||0),0);
   const totalPayments = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
-
-  const salesRows = (sales||[]).map((x,i)=>({'م':i+1,'التاريخ':x.date,'الوصف':x.description||'','الصنف':x.variety||'','المحصول':x.crop||'','الكمية':x.quantity||0,'الوحدة':x.unit||'','الإجمالي':Number(x.total||0)}));
-  salesRows.push({'م':'','التاريخ':'','الوصف':'الإجمالي','الصنف':'','المحصول':'','الكمية':'','الوحدة':'','الإجمالي':totalSales});
-
-  const payRows = (payments||[]).map((x,i)=>({'م':i+1,'التاريخ':x.date,'المبلغ':Number(x.amount||0),'ملاحظات':x.notes||''}));
-  payRows.push({'م':'','التاريخ':'الإجمالي','المبلغ':totalPayments,'ملاحظات':''});
-  payRows.push({'م':'','التاريخ':'الرصيد المتبقي','المبلغ':totalSales-totalPayments,'ملاحظات':''});
-
   const wb = XLSX.utils.book_new();
-  const ws1 = XLSX.utils.json_to_sheet(salesRows,{header:['م','التاريخ','الوصف','الصنف','المحصول','الكمية','الوحدة','الإجمالي']});
-  ws1['!cols']=[{wch:4},{wch:13},{wch:27},{wch:14},{wch:14},{wch:9},{wch:11},{wch:14}];
-  xlStyle(ws1, 0, [salesRows.length]);
-  xlPrependTitle(ws1, 'المبيعات - '+trader, 8);
-  XLSX.utils.book_append_sheet(wb, ws1, 'المبيعات');
-  const ws2 = XLSX.utils.json_to_sheet(payRows,{header:['م','التاريخ','المبلغ','ملاحظات']});
-  ws2['!cols']=[{wch:4},{wch:13},{wch:14},{wch:25}];
+
+  if(isXlProd){
+    // شيت المبيعات — سطر لكل منتج داخل الفاتورة
+    const salesRows = [];
+    let rowIdx = 1;
+    (sales||[]).forEach(x=>{
+      (x.items||[]).forEach((it,idx)=>{
+        salesRows.push({'م':idx===0?rowIdx++:'','التاريخ':idx===0?x.date:'','الوصف':idx===0?(x.description||''):'','المنتج':it.name||'','الكمية':it.qty||0,'الوحدة':it.unit||'','السعر':it.price||0,'الإجمالي':idx===0?Number(x.total||0):''});
+      });
+      if(!(x.items||[]).length) salesRows.push({'م':rowIdx++,'التاريخ':x.date,'الوصف':x.description||'','المنتج':'','الكمية':'','الوحدة':'','السعر':'','الإجمالي':Number(x.total||0)});
+    });
+    salesRows.push({'م':'','التاريخ':'','الوصف':'الإجمالي','المنتج':'','الكمية':'','الوحدة':'','السعر':'','الإجمالي':totalSales});
+    const ws1 = XLSX.utils.json_to_sheet(salesRows,{header:['م','التاريخ','الوصف','المنتج','الكمية','الوحدة','السعر','الإجمالي']});
+    ws1['!cols']=[{wch:4},{wch:13},{wch:24},{wch:16},{wch:9},{wch:9},{wch:11},{wch:14}];
+    xlStyle(ws1, 0, [salesRows.length]);
+    xlPrependTitle(ws1, 'مبيعات منتجات - '+trader, 8);
+    XLSX.utils.book_append_sheet(wb, ws1, 'المبيعات');
+  } else {
+    // شيت المبيعات — سطر لكل محصول داخل الفاتورة
+    const salesRows = [];
+    let rowIdx = 1;
+    (sales||[]).forEach(x=>{
+      const items = (x.items||[]).length ? x.items : [{name:x.crop||'',qty:x.quantity||0,unit:x.unit||'',price:x.price||0}];
+      items.forEach((it,idx)=>{
+        salesRows.push({'م':idx===0?rowIdx++:'','التاريخ':idx===0?x.date:'','الوصف':idx===0?(x.description||''):'','المحصول':it.name||'','الكمية':it.qty||0,'الوحدة':it.unit||'','السعر':it.price||0,'الصنف':idx===0?(x.variety||''):'','الإجمالي':idx===0?Number(x.total||0):''});
+      });
+    });
+    salesRows.push({'م':'','التاريخ':'','الوصف':'الإجمالي','المحصول':'','الكمية':'','الوحدة':'','السعر':'','الصنف':'','الإجمالي':totalSales});
+    const ws1 = XLSX.utils.json_to_sheet(salesRows,{header:['م','التاريخ','الوصف','المحصول','الكمية','الوحدة','السعر','الصنف','الإجمالي']});
+    ws1['!cols']=[{wch:4},{wch:13},{wch:24},{wch:14},{wch:9},{wch:9},{wch:11},{wch:12},{wch:14}];
+    xlStyle(ws1, 0, [salesRows.length]);
+    xlPrependTitle(ws1, 'مبيعات محاصيل - '+trader, 9);
+    XLSX.utils.book_append_sheet(wb, ws1, 'المبيعات');
+  }
+
+  const payRows = (payments||[]).map((x,i)=>({'م':i+1,'التاريخ':x.date,'النوع':x.category.includes('تسوية')?'تسوية':'سداد','المبلغ':Number(x.amount||0),'ملاحظات':x.notes||''}));
+  payRows.push({'م':'','التاريخ':'الإجمالي','النوع':'','المبلغ':totalPayments,'ملاحظات':''});
+  payRows.push({'م':'','التاريخ':'الرصيد المتبقي','النوع':'','المبلغ':totalSales-totalPayments,'ملاحظات':''});
+  const ws2 = XLSX.utils.json_to_sheet(payRows,{header:['م','التاريخ','النوع','المبلغ','ملاحظات']});
+  ws2['!cols']=[{wch:4},{wch:13},{wch:9},{wch:14},{wch:25}];
   xlStyle(ws2, 0, [payRows.length-2, payRows.length-1]);
-  xlPrependTitle(ws2, 'السدادات - '+trader, 4);
+  xlPrependTitle(ws2, 'السدادات - '+trader, 5);
   XLSX.utils.book_append_sheet(wb, ws2, 'السدادات');
   XLSX.writeFile(wb, `كشف_حساب_${trader}.xlsx`);
   showToast('✅ تم التصدير!');
@@ -6281,40 +6373,63 @@ async function exportAccountStatementExcel(trader, from, to){
 
 async function exportDetailedStatementExcel(trader, from, to){
   showToast('⏳ جاري التصدير...');
+  const isXlDetProd = _asSaleType === 'product';
   const [{data:sales},{data:payments}] = await Promise.all([
-    sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).gte('date',from).lte('date',to).order('date',{ascending:true}),
-    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',['سداد_مبيعات','تسوية_مبيعات']).like('description','سداد مبيعات: '+trader).gte('date',from).lte('date',to).order('date',{ascending:true})
+    sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',isXlDetProd?'product':'crop').gte('date',from).lte('date',to).order('date',{ascending:true}),
+    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).gte('date',from).lte('date',to).order('date',{ascending:true})
   ]);
 
-  const groups = {};
-  (sales||[]).forEach(x=>{
-    const key = [x.variety||'—',x.unit||'—',x.crop||'—'].join('||');
-    if(!groups[key]) groups[key]={variety:x.variety||'',unit:x.unit||'',crop:x.crop||'',rows:[]};
-    groups[key].rows.push(x);
-  });
-
   const wb = XLSX.utils.book_new();
+  const groups = {};
 
-  // شيت لكل صنف
-  Object.values(groups).forEach(g=>{
-    const sheetName = [g.variety||'بدون صنف', g.unit||'—'].join('-').slice(0,31);
-    const rows = g.rows.map((x,i)=>({'م':i+1,'التاريخ':x.date,'الكمية':x.quantity||0,'السعر':x.price||0,'الإجمالي':Number(x.total||0),'ملاحظات':x.notes||''}));
-    const totQty = g.rows.reduce((s,x)=>s+Number(x.quantity||0),0);
-    const totAmt = g.rows.reduce((s,x)=>s+Number(x.total||0),0);
-    rows.push({'م':'','التاريخ':'الإجمالي','الكمية':totQty,'السعر':'','الإجمالي':totAmt,'ملاحظات':''});
-    const ws = XLSX.utils.json_to_sheet(rows,{header:['م','التاريخ','الكمية','السعر','الإجمالي','ملاحظات']});
-    ws['!cols']=[{wch:4},{wch:13},{wch:10},{wch:12},{wch:14},{wch:22}];
-    xlStyle(ws, 0, [rows.length]);
-    xlPrependTitle(ws, (g.variety||'بدون صنف')+' - '+trader, 6);
-    XLSX.utils.book_append_sheet(wb, ws, sheetName);
-  });
+  if(isXlDetProd){
+    (sales||[]).forEach(x=>{
+      (x.items||[]).forEach(it=>{
+        const key = it.name||'—';
+        if(!groups[key]) groups[key]={label:it.name||'—', unit:it.unit||'', rows:[]};
+        groups[key].rows.push({date:x.date, qty:it.qty||0, unit:it.unit||'', price:it.price||0, total:(it.qty||0)*(it.price||0)});
+      });
+    });
+    Object.values(groups).forEach(g=>{
+      const sheetName = (g.label).slice(0,31);
+      const rows = g.rows.map((r,i)=>({'م':i+1,'التاريخ':r.date,'الكمية':r.qty,'الوحدة':r.unit,'السعر':r.price,'الإجمالي':r.total}));
+      const totQty = g.rows.reduce((s,r)=>s+Number(r.qty||0),0);
+      const totAmt = g.rows.reduce((s,r)=>s+Number(r.total||0),0);
+      rows.push({'م':'','التاريخ':'الإجمالي','الكمية':totQty,'الوحدة':'','السعر':'','الإجمالي':totAmt});
+      const ws = XLSX.utils.json_to_sheet(rows,{header:['م','التاريخ','الكمية','الوحدة','السعر','الإجمالي']});
+      ws['!cols']=[{wch:4},{wch:13},{wch:10},{wch:9},{wch:12},{wch:14}];
+      xlStyle(ws, 0, [rows.length]);
+      xlPrependTitle(ws, g.label+' - '+trader, 6);
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    });
+  } else {
+    (sales||[]).forEach(x=>{
+      const items = (x.items||[]).length ? x.items : [{name:x.crop||'—',qty:x.quantity||0,unit:x.unit||'',price:x.price||0}];
+      items.forEach(it=>{
+        const key = [(x.variety||'بدون صنف'), (it.name||'—'), (it.unit||'—')].join('||');
+        if(!groups[key]) groups[key]={label:(it.name||'—')+(x.variety?' · '+x.variety:''), unit:it.unit||'', rows:[]};
+        groups[key].rows.push({date:x.date, qty:it.qty||0, unit:it.unit||'', price:it.price||0, total:(it.qty||0)*(it.price||0)});
+      });
+    });
+    Object.values(groups).forEach(g=>{
+      const sheetName = g.label.slice(0,31);
+      const rows = g.rows.map((r,i)=>({'م':i+1,'التاريخ':r.date,'الكمية':r.qty,'الوحدة':r.unit,'السعر':r.price,'الإجمالي':r.total}));
+      const totQty = g.rows.reduce((s,r)=>s+Number(r.qty||0),0);
+      const totAmt = g.rows.reduce((s,r)=>s+Number(r.total||0),0);
+      rows.push({'م':'','التاريخ':'الإجمالي','الكمية':totQty,'الوحدة':'','السعر':'','الإجمالي':totAmt});
+      const ws = XLSX.utils.json_to_sheet(rows,{header:['م','التاريخ','الكمية','الوحدة','السعر','الإجمالي']});
+      ws['!cols']=[{wch:4},{wch:13},{wch:10},{wch:9},{wch:12},{wch:14}];
+      xlStyle(ws, 0, [rows.length]);
+      xlPrependTitle(ws, g.label+' - '+trader, 6);
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    });
+  }
 
   if(!Object.keys(groups).length) return showToast('❌ لا يوجد بيانات');
 
-  // شيت السدادات والتسويات
   const totalSales    = (sales||[]).reduce((s,x)=>s+Number(x.total||0),0);
   const totalPayments = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
-  const payRows = (payments||[]).map((x,i)=>({'م':i+1,'التاريخ':x.date,'النوع':x.category==='تسوية_مبيعات'?'تسوية':'سداد','المبلغ':Number(x.amount||0),'ملاحظات':x.notes||''}));
+  const payRows = (payments||[]).map((x,i)=>({'م':i+1,'التاريخ':x.date,'النوع':x.category.includes('تسوية')?'تسوية':'سداد','المبلغ':Number(x.amount||0),'ملاحظات':x.notes||''}));
   payRows.push({'م':'','التاريخ':'إجمالي السدادات','النوع':'','المبلغ':totalPayments,'ملاحظات':''});
   payRows.push({'م':'','التاريخ':'إجمالي المبيعات','النوع':'','المبلغ':totalSales,'ملاحظات':''});
   payRows.push({'م':'','التاريخ':'الرصيد المتبقي','النوع':'','المبلغ':totalSales-totalPayments,'ملاحظات':''});
