@@ -4204,7 +4204,10 @@ function renderDpItemsForm() {
       </select>
       <input type="text" inputmode="decimal" placeholder="الكمية" value="${item.qty||''}" oninput="_dpItems[${i}].qty=parseNum(this.value);calcDpTotal()"
         style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
-      <input type="text" inputmode="decimal" placeholder="السعر" value="${item.price||''}" oninput="_dpItems[${i}].price=parseNum(this.value);calcDpTotal()"
+      <input type="text" inputmode="decimal" placeholder="السعر" value="${item.price||''}"
+        oninput="_dpItems[${i}].price=parseNum(this.value);calcDpTotal()"
+        onblur="if(_dpItems[${i}].name&&_dpItems[${i}].qty>0&&_dpItems[${i}].price>0&&${i}===_dpItems.length-1){_dpItems.push({name:'',qty:1,price:0});renderDpItemsForm();}"
+        onkeydown="if(event.key==='Enter'&&_dpItems[${i}].name&&_dpItems[${i}].qty>0&&_dpItems[${i}].price>0){event.preventDefault();_dpItems.push({name:'',qty:1,price:0});renderDpItemsForm();}"
         style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
       <button onclick="removeDpItem(${i})" style="background:var(--red-p,#ffebee);color:var(--red);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:0.85rem;">✕</button>
     </div>
