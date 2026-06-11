@@ -928,24 +928,21 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
             <input type="text" id="ds-desc" placeholder="مثال: بيع قمح للتاجر أحمد"></div>
 
           <div class="form-row">
-            <label style="display:flex;justify-content:space-between;">المحصول
-              <button onclick="openCropManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">🌾 إدارة</button>
+            <label style="display:flex;justify-content:space-between;">التاجر
+              <button onclick="openTraderManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">👤 إدارة</button>
             </label>
-            <select id="ds-crop"><option value="">-- اختار المحصول --</option></select>
+            <select id="ds-trader"><option value="">-- اختار التاجر --</option></select>
           </div>
 
-          <div class="form-row">
-            <label style="display:flex;justify-content:space-between;">الكمية
-              <button onclick="openUnitManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">⚙️ وحدات</button>
-            </label>
-            <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">
-              <input type="text" inputmode="decimal" id="ds-qty" placeholder="0" oninput="calcDsTotal()">
-              <select id="ds-unit"></select>
+          <div style="margin:10px 0 6px;display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-weight:900;font-size:0.88rem;color:var(--text);">🌾 المحاصيل</span>
+            <div style="display:flex;gap:8px;">
+              <button onclick="openCropManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">🌾 إدارة المحاصيل</button>
+              <button onclick="openUnitManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">⚙️ الوحدات</button>
             </div>
           </div>
-
-          <div class="form-row"><label>السعر (للوحدة)</label>
-            <input type="text" inputmode="decimal" id="ds-price" placeholder="0" oninput="calcDsTotal()"></div>
+          <div id="ds-crop-items-list"></div>
+          <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);margin-bottom:10px;" onclick="addDsCropItem()">➕ إضافة محصول</button>
 
           <div class="form-row"><label>الإجمالي</label>
             <div style="background:var(--g5);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-weight:900;color:var(--g2);font-size:1rem;" id="ds-total-display">0 ج</div>
@@ -956,13 +953,6 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
               <button onclick="openVarietyManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">🌿 إدارة</button>
             </label>
             <select id="ds-variety"><option value="">-- اختار الصنف (اختياري) --</option></select>
-          </div>
-
-          <div class="form-row">
-            <label style="display:flex;justify-content:space-between;">التاجر
-              <button onclick="openTraderManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">👤 إدارة</button>
-            </label>
-            <select id="ds-trader"><option value="">-- اختار التاجر --</option></select>
           </div>
 
           <div class="form-row"><label>التاريخ</label>
@@ -5173,6 +5163,9 @@ async function saveTraders(t){
 // تهيئة صفحة المبيعات
 // ===== DS SALE TYPE TOGGLE =====
 let _dsSaleType = 'crop';
+let _dsCropItems = [];
+let _dsCropCrops = [];
+let _dsCropUnits = [];
 let _dsProdItems = [];
 let _dsProdProducts = [];
 let _dsProdUnits = [];
@@ -5368,12 +5361,8 @@ async function initDeferredSalesPage(){
 
   _dsProdProducts = dsProds;
   _dsProdUnits = dsProdUnitsData?.data?.categories?.length ? dsProdUnitsData.data.categories : [...DP_DEFAULT_UNITS];
-
-  const cropSel = document.getElementById('ds-crop');
-  if(cropSel) cropSel.innerHTML = '<option value="">-- اختار المحصول --</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${c}</option>`).join('');
-
-  const unitSel = document.getElementById('ds-unit');
-  if(unitSel) unitSel.innerHTML = units.map(u=>`<option>${u}</option>`).join('');
+  _dsCropCrops = crops;
+  _dsCropUnits = units;
 
   const traderSel = document.getElementById('ds-trader');
   if(traderSel) traderSel.innerHTML = '<option value="">-- اختار التاجر --</option>'+traders.map(t=>`<option>${t}</option>`).join('');
@@ -5406,6 +5395,8 @@ async function initDeferredSalesPage(){
   const dsProdDate = document.getElementById('ds-prod-date');
   if(dsProdDate && !dsProdDate.value) dsProdDate.value = today();
 
+  _dsCropItems = [{name:'', qty:'', unit:_dsCropUnits[0]||'كيلو', price:0}];
+  renderDsCropItemsForm();
   _dsProdItems = [{name:'', qty:'', unit:_dsProdUnits[0]||'', price:0}];
   renderDsProdItemsForm();
   calcDsProdTotal();
@@ -5423,42 +5414,84 @@ function calcDsTotal(){
 }
 
 // إضافة بيعة
+function addDsCropItem() {
+  _dsCropItems.push({name:'', qty:'', unit:_dsCropUnits[0]||'كيلو', price:0});
+  renderDsCropItemsForm();
+}
+function removeDsCropItem(i) {
+  _dsCropItems.splice(i,1);
+  renderDsCropItemsForm();
+  calcDsCropTotal();
+}
+function renderDsCropItemsForm() {
+  const el = document.getElementById('ds-crop-items-list');
+  if(!el) return;
+  if(!_dsCropItems.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;margin-bottom:8px;">لا يوجد محاصيل — اضغط "إضافة محصول"</div>';
+    return;
+  }
+  el.innerHTML = _dsCropItems.map((item,i)=>`
+    <div style="display:grid;grid-template-columns:2fr 1.2fr 1fr 1.2fr auto;gap:5px;align-items:center;margin-bottom:6px;">
+      <select onchange="_dsCropItems[${i}].name=this.value"
+        style="padding:7px 4px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;color:var(--text);">
+        <option value="">-- محصول --</option>
+        ${_dsCropCrops.filter(c=>c!=='عام 🌍').map(c=>`<option ${item.name===c?'selected':''}>${c}</option>`).join('')}
+      </select>
+      <input type="text" inputmode="decimal" placeholder="الكمية" value="${item.qty||''}"
+        oninput="_dsCropItems[${i}].qty=parseNum(this.value);calcDsCropTotal()"
+        style="padding:7px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;color:var(--text);text-align:center;">
+      <select onchange="_dsCropItems[${i}].unit=this.value"
+        style="padding:7px 2px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;color:var(--text);">
+        ${_dsCropUnits.map(u=>`<option ${item.unit===u?'selected':''}>${u}</option>`).join('')}
+      </select>
+      <input type="text" inputmode="decimal" placeholder="السعر" value="${item.price||''}"
+        oninput="_dsCropItems[${i}].price=parseNum(this.value);calcDsCropTotal()"
+        onblur="if(_dsCropItems[${i}].name&&_dsCropItems[${i}].qty>0&&_dsCropItems[${i}].price>0&&${i}===_dsCropItems.length-1){_dsCropItems.push({name:'',qty:'',unit:_dsCropUnits[0]||'كيلو',price:0});renderDsCropItemsForm();}"
+        onkeydown="if(event.key==='Enter'&&_dsCropItems[${i}].name&&_dsCropItems[${i}].qty>0&&_dsCropItems[${i}].price>0){event.preventDefault();_dsCropItems.push({name:'',qty:'',unit:_dsCropUnits[0]||'كيلو',price:0});renderDsCropItemsForm();}"
+        style="padding:7px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;color:var(--text);text-align:center;">
+      <button onclick="removeDsCropItem(${i})" style="background:none;border:none;color:#e74c3c;font-size:1rem;cursor:pointer;padding:4px;">✕</button>
+    </div>`).join('');
+}
+function calcDsCropTotal() {
+  const total = _dsCropItems.reduce((s,x)=>s+(x.qty||0)*(x.price||0),0);
+  const el = document.getElementById('ds-total-display');
+  if(el) el.textContent = Number(total).toLocaleString('en-US')+' ج';
+}
+
 async function addDeferredSale(){
   const desc = document.getElementById('ds-desc').value.trim();
-  const crop = document.getElementById('ds-crop').value||null;
-  const qty = parseNum(document.getElementById('ds-qty').value);
-  const unit = document.getElementById('ds-unit').value;
-  const price = parseNum(document.getElementById('ds-price').value);
   const variety = document.getElementById('ds-variety')?.value||null;
   const trader = document.getElementById('ds-trader').value||null;
   const date = document.getElementById('ds-date').value;
   const notes = document.getElementById('ds-notes').value;
 
   if(!desc) return showToast('❌ اكتب الوصف');
-  if(!qty||qty<=0) return showToast('❌ اكتب الكمية');
-  if(!price||price<=0) return showToast('❌ اكتب السعر');
   if(!date) return showToast('❌ اختار التاريخ');
 
-  const total = qty * price;
+  const validItems = _dsCropItems.filter(x=>x.name&&x.qty>0&&x.price>0);
+  if(!validItems.length) return showToast('❌ أضف محصول واحد على الأقل');
+
+  const total = validItems.reduce((s,x)=>s+(x.qty||0)*(x.price||0),0);
+  // للتوافق مع الكود القديم نحفظ أول محصول في حقل crop
+  const firstCrop = validItems[0]?.name||null;
 
   const {data:dsData, error} = await sb.from('deferred_sales').insert({
     user_id:currentUser.id,
-    description:desc, crop, quantity:qty, unit, price, total,
-    variety, trader, date, notes, paid:false
+    description:desc, crop:firstCrop, items:validItems, total,
+    variety, trader, date, notes, paid:false, sale_type:'crop'
   }).select('id');
   if(error) return showToast('❌ خطأ: '+error.message);
 
   const saleId = dsData?.[0]?.id || null;
 
-  // تسجيل في income (بدون خزنة) مع ref_id للربط
+  const itemsNote = validItems.map(x=>`${x.name} ${x.qty} ${x.unit} × ${x.price} ج`).join(' | ');
   await sb.from('income').insert({
     user_id:currentUser.id,
     description:'بيع آجل: '+desc+(trader?' - '+trader:''),
     category:'مبيعات آجل',
-    crop:crop||null,
-    amount:total,
-    date,
-    notes:'بيعة آجل - '+qty+' '+unit+' × '+price+' ج',
+    crop:firstCrop||null,
+    amount:total, date,
+    notes:'بيعة آجل - '+itemsNote,
     ref_id: saleId
   });
 
@@ -5466,12 +5499,11 @@ async function addDeferredSale(){
   showToast('✅ تم تسجيل البيعة');
 
   document.getElementById('ds-desc').value='';
-  document.getElementById('ds-qty').value='';
-  document.getElementById('ds-price').value='';
   document.getElementById('ds-notes').value='';
   document.getElementById('ds-total-display').textContent='0 ج';
   document.getElementById('ds-date').value=today();
-
+  _dsCropItems = [{name:'', qty:'', unit:_dsCropUnits[0]||'كيلو', price:0}];
+  renderDsCropItemsForm();
   renderDeferredSales();
 }
 
@@ -5536,14 +5568,15 @@ async function renderDeferredSales(){
   el.innerHTML = data.map(x=>{
     const isPaid = x.paid;
     const isProd = x.sale_type === 'product';
-    const itemsHtml = isProd ? (x.items||[]).map(it=>`<div style="font-size:0.72rem;color:var(--muted);">• ${s(it.name)} — ${it.qty} ${s(it.unit||'')} × ${fmt(it.price)} = ${fmt((it.qty||0)*(it.price||0))} ج</div>`).join('') : '';
+    const hasItems = (x.items||[]).length > 0;
+    const itemsHtml = hasItems ? (x.items||[]).map(it=>`<div style="font-size:0.72rem;color:var(--muted);">• ${s(it.name)} — ${it.qty} ${s(it.unit||'')} × ${fmt(it.price)} = ${fmt((it.qty||0)*(it.price||0))} ج</div>`).join('') : '';
     return `<div class="ds-card ${isPaid?'ds-paid':''}" id="ds-item-${x.id}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div style="flex:1;min-width:0;">
           <div style="font-size:0.88rem;font-weight:900;color:var(--text);">${s(x.description||'')} ${isPaid?'<span style="font-size:0.6rem;background:#d4edda;color:#155724;padding:2px 6px;border-radius:8px;font-weight:800;">✅ مسددة</span>':''}</div>
-          <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">${fmtDate(x.date)}${x.crop?' · 🌾 '+s(x.crop):''}${x.variety?' · 🌿 '+s(x.variety):''}${x.trader?' · 👤 '+s(x.trader):''}</div>
-          ${!isProd?`<div style="font-size:0.7rem;color:var(--muted);">${x.quantity} ${s(x.unit||'')} × ${Number(x.price).toLocaleString('en-US')} ج</div>`:''}
-          ${isProd&&itemsHtml?`<div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;">${itemsHtml}</div>`:''}
+          <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">${fmtDate(x.date)}${x.variety?' · 🌿 '+s(x.variety):''}${x.trader?' · 👤 '+s(x.trader):''}</div>
+          ${hasItems?`<div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;">${itemsHtml}</div>`:''}
+          ${!hasItems&&!isProd?`<div style="font-size:0.7rem;color:var(--muted);">${x.quantity} ${s(x.unit||'')} × ${Number(x.price).toLocaleString('en-US')} ج</div>`:''}
           ${x.notes?`<div style="font-size:0.68rem;color:var(--muted);margin-top:2px;">${s(x.notes)}</div>`:''}
         </div>
         <div class="ds-total-badge">${Number(x.total||0).toLocaleString('en-US')} ج</div>
@@ -5621,46 +5654,93 @@ async function editDeferredSale(id){
   if(!data?.length) return;
   const x = data[0];
   const [crops,units,traders] = await Promise.all([getCrops(),getUnits(),getTraders()]);
+  const isCrop = x.sale_type !== 'product';
+  const existingItems = (x.items||[]).length ? x.items : (x.quantity ? [{name:x.crop||'',qty:x.quantity,unit:x.unit||units[0]||'كيلو',price:x.price||0}] : [{name:'',qty:'',unit:units[0]||'كيلو',price:0}]);
+  window._dseItems = existingItems.map(it=>({...it}));
+
   document.getElementById('modal-title').textContent='✏️ تعديل البيعة';
-  document.getElementById('modal-body').innerHTML=`
-    <div class="edit-modal-row"><label>الوصف</label><input id="dse-desc" value="${s(x.description||'')}"></div>
-    <div class="edit-modal-row"><label>المحصول</label>
-      <select id="dse-crop"><option value="">-- اختار --</option>${crops.filter(c=>c!=='عام 🌍').map(c=>`<option ${x.crop===c?'selected':''}>${c}</option>`).join('')}</select>
-    </div>
-    <div class="edit-modal-row"><label>الكمية</label>
-      <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">
-        <input type="text" inputmode="decimal" id="dse-qty" value="${x.quantity||''}">
-        <select id="dse-unit">${units.map(u=>`<option ${x.unit===u?'selected':''}>${u}</option>`).join('')}</select>
+
+  if(isCrop){
+    document.getElementById('modal-body').innerHTML=`
+      <div class="edit-modal-row"><label>الوصف</label><input id="dse-desc" value="${s(x.description||'')}"></div>
+      <div class="edit-modal-row"><label>التاجر</label>
+        <select id="dse-trader"><option value="">-- اختار --</option>${traders.map(t=>`<option ${x.trader===t?'selected':''}>${t}</option>`).join('')}</select>
       </div>
-    </div>
-    <div class="edit-modal-row"><label>السعر</label><input type="text" inputmode="decimal" id="dse-price" value="${x.price||''}"></div>
-    <div class="edit-modal-row"><label>التاجر</label>
-      <select id="dse-trader"><option value="">-- اختار --</option>${traders.map(t=>`<option ${x.trader===t?'selected':''}>${t}</option>`).join('')}</select>
-    </div>
-    <div class="edit-modal-row"><label>التاريخ</label><input type="date" id="dse-date" value="${x.date||''}"></div>
-    <div class="edit-modal-row"><label>ملاحظات</label><textarea id="dse-notes">${s(x.notes||'')}</textarea></div>
-    <button class="btn btn-g" style="margin-top:12px;" onclick="saveDsEdit('${id}')">💾 حفظ</button>`;
+      <div style="margin:10px 0 4px;font-weight:900;font-size:0.85rem;color:var(--text);">🌾 المحاصيل</div>
+      <div id="dse-items-list"></div>
+      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);margin-bottom:10px;" onclick="addDseItem()">➕ إضافة محصول</button>
+      <div class="edit-modal-row"><label>الإجمالي</label>
+        <div style="background:var(--g5);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-weight:900;color:var(--g2);font-size:1rem;" id="dse-total-display">0 ج</div>
+      </div>
+      <div class="edit-modal-row"><label>التاريخ</label><input type="date" id="dse-date" value="${x.date||''}"></div>
+      <div class="edit-modal-row"><label>ملاحظات</label><textarea id="dse-notes">${s(x.notes||'')}</textarea></div>
+      <button class="btn btn-g" style="margin-top:12px;" onclick="saveDsEdit('${id}')">💾 حفظ</button>`;
+    renderDseItemsForm(crops, units);
+  } else {
+    document.getElementById('modal-body').innerHTML=`
+      <div class="edit-modal-row"><label>الوصف</label><input id="dse-desc" value="${s(x.description||'')}"></div>
+      <div class="edit-modal-row"><label>التاريخ</label><input type="date" id="dse-date" value="${x.date||''}"></div>
+      <div class="edit-modal-row"><label>ملاحظات</label><textarea id="dse-notes">${s(x.notes||'')}</textarea></div>
+      <button class="btn btn-g" style="margin-top:12px;" onclick="saveDsEdit('${id}')">💾 حفظ</button>`;
+  }
   document.getElementById('detail-overlay').classList.add('open');
+}
+
+function addDseItem() {
+  const units = _dsCropUnits.length ? _dsCropUnits : ['كيلو','لتر','جرام','سم'];
+  window._dseItems.push({name:'',qty:'',unit:units[0],price:0});
+  renderDseItemsForm(_dsCropCrops, units);
+}
+function renderDseItemsForm(crops, units) {
+  const el = document.getElementById('dse-items-list');
+  if(!el) return;
+  el.innerHTML = window._dseItems.map((item,i)=>`
+    <div style="display:grid;grid-template-columns:2fr 1.2fr 1fr 1.2fr auto;gap:5px;align-items:center;margin-bottom:6px;">
+      <select onchange="window._dseItems[${i}].name=this.value"
+        style="padding:7px 4px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;color:var(--text);">
+        <option value="">-- محصول --</option>
+        ${(crops||[]).filter(c=>c!=='عام 🌍').map(c=>`<option ${item.name===c?'selected':''}>${c}</option>`).join('')}
+      </select>
+      <input type="text" inputmode="decimal" placeholder="الكمية" value="${item.qty||''}"
+        oninput="window._dseItems[${i}].qty=parseNum(this.value);calcDseTotal()"
+        style="padding:7px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;color:var(--text);text-align:center;">
+      <select onchange="window._dseItems[${i}].unit=this.value"
+        style="padding:7px 2px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;color:var(--text);">
+        ${(units||[]).map(u=>`<option ${item.unit===u?'selected':''}>${u}</option>`).join('')}
+      </select>
+      <input type="text" inputmode="decimal" placeholder="السعر" value="${item.price||''}"
+        oninput="window._dseItems[${i}].price=parseNum(this.value);calcDseTotal()"
+        style="padding:7px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;color:var(--text);text-align:center;">
+      <button onclick="window._dseItems.splice(${i},1);renderDseItemsForm(_dsCropCrops,_dsCropUnits)" style="background:none;border:none;color:#e74c3c;font-size:1rem;cursor:pointer;padding:4px;">✕</button>
+    </div>`).join('');
+  calcDseTotal();
+}
+function calcDseTotal() {
+  const total = (window._dseItems||[]).reduce((s,x)=>s+(x.qty||0)*(x.price||0),0);
+  const el = document.getElementById('dse-total-display');
+  if(el) el.textContent = Number(total).toLocaleString('en-US')+' ج';
 }
 
 async function saveDsEdit(id){
   const desc = document.getElementById('dse-desc')?.value.trim();
-  const crop = document.getElementById('dse-crop')?.value||null;
-  const qty = parseNum(document.getElementById('dse-qty')?.value);
-  const unit = document.getElementById('dse-unit')?.value;
-  const price = parseNum(document.getElementById('dse-price')?.value);
   const trader = document.getElementById('dse-trader')?.value||null;
   const date = document.getElementById('dse-date')?.value;
   const notes = document.getElementById('dse-notes')?.value||'';
-  if(!desc||!qty||!price) return showToast('❌ اكمل البيانات');
-  const total = qty*price;
-  const {error} = await sb.from('deferred_sales').update({description:desc,crop,quantity:qty,unit,price,total,trader,date,notes}).eq('id',id).eq('user_id',currentUser.id);
+  if(!desc) return showToast('❌ اكتب الوصف');
+  if(!date) return showToast('❌ اختار التاريخ');
+
+  const validItems = (window._dseItems||[]).filter(x=>x.name&&x.qty>0&&x.price>0);
+  if(!validItems.length) return showToast('❌ أضف محصول واحد على الأقل');
+  const total = validItems.reduce((s,x)=>s+(x.qty||0)*(x.price||0),0);
+  const firstCrop = validItems[0]?.name||null;
+
+  const {error} = await sb.from('deferred_sales').update({description:desc,crop:firstCrop,items:validItems,total,trader,date,notes}).eq('id',id).eq('user_id',currentUser.id);
   if(error) return showToast('❌ خطأ: '+error.message);
-  // تحديث سجل الإيراد المرتبط
+
   const incDesc = 'بيع آجل: '+desc+(trader?' - '+trader:'');
-  const incNotes = 'بيعة آجل - '+qty+' '+unit+' × '+price+' ج';
-  const {data:iu} = await sb.from('income').update({description:incDesc,amount:total,date,crop:crop||null,notes:incNotes}).eq('ref_id',id).eq('user_id',currentUser.id).select('id');
-  if(!iu?.length) await sb.from('income').update({description:incDesc,amount:total,date,crop:crop||null}).eq('category','مبيعات آجل').eq('amount',qty*price).eq('date',date).eq('user_id',currentUser.id).is('ref_id',null);
+  const itemsNote = validItems.map(x=>`${x.name} ${x.qty} ${x.unit} × ${x.price} ج`).join(' | ');
+  const {data:iu} = await sb.from('income').update({description:incDesc,amount:total,date,crop:firstCrop||null,notes:'بيعة آجل - '+itemsNote}).eq('ref_id',id).eq('user_id',currentUser.id).select('id');
+  if(!iu?.length) await sb.from('income').update({description:incDesc,amount:total,date,crop:firstCrop||null}).eq('category','مبيعات آجل').eq('date',date).eq('user_id',currentUser.id);
   logActivity('تعديل','deferred_sales','تعديل بيعة آجل: '+desc,total);
   showToast('✅ تم التعديل');
   closeModal();
