@@ -1027,7 +1027,10 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       <!-- المنتجات -->
       <div style="margin:10px 0 6px;display:flex;align-items:center;justify-content:space-between;">
         <span style="font-weight:900;font-size:0.88rem;color:var(--text);">📦 المنتجات</span>
-        <button onclick="openDpProductManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">📦 إدارة المنتجات</button>
+        <div style="display:flex;gap:8px;">
+          <button onclick="openDpProductManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">📦 إدارة المنتجات</button>
+          <button onclick="openDpUnitManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">📐 إدارة الوحدات</button>
+        </div>
       </div>
       <div id="dp-items-list"></div>
       <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);margin-bottom:10px;" onclick="addDpItem()">➕ إضافة منتج</button>
@@ -4160,6 +4163,14 @@ async function doSearch(){
 
 // ===== DEFERRED PURCHASES =====
 
+async function getDpUnits() {
+  const {data} = await sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','dp_units').maybeSingle();
+  return data?.categories?.length ? data.categories : [...DP_DEFAULT_UNITS];
+}
+async function saveDpUnits(list) {
+  await sb.from('user_categories').upsert({user_id:currentUser.id,type:'dp_units',categories:list},{onConflict:'user_id,type'});
+}
+
 async function getDpTraders() {
   const {data} = await sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','dp_traders').maybeSingle();
   return data?.categories || [];
@@ -4177,9 +4188,10 @@ async function saveDpProducts(list) {
 
 let _dpItems = [];
 let _dpProducts = [];
+let _dpUnits = [];
 
 function addDpItem() {
-  _dpItems.push({name:'', qty:1, price:0});
+  _dpItems.push({name:'', qty:'', unit:_dpUnits[0]||'', price:0});
   renderDpItemsForm();
 }
 function removeDpItem(i) {
@@ -4194,7 +4206,6 @@ function renderDpItemsForm() {
     el.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;margin-bottom:8px;">لا يوجد منتجات — اضغط "إضافة منتج"</div>';
     return;
   }
-  const opts = _dpProducts.map(p=>`<option>${s(p)}</option>`).join('');
   el.innerHTML = _dpItems.map((item,i)=>`
     <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:6px;margin-bottom:4px;align-items:center;">
       <select onchange="_dpItems[${i}].name=this.value"
@@ -4202,12 +4213,18 @@ function renderDpItemsForm() {
         <option value="">-- اختار منتج --</option>
         ${_dpProducts.map(p=>`<option ${item.name===p?'selected':''}>${s(p)}</option>`).join('')}
       </select>
-      <input type="text" inputmode="decimal" placeholder="الكمية" value="${item.qty||''}" oninput="_dpItems[${i}].qty=parseNum(this.value);calcDpTotal()"
-        style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+        <input type="text" inputmode="decimal" placeholder="الكمية" value="${item.qty||''}" oninput="_dpItems[${i}].qty=parseNum(this.value);calcDpTotal()"
+          style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;min-width:0;">
+        <select onchange="_dpItems[${i}].unit=this.value"
+          style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;min-width:0;">
+          ${_dpUnits.map(u=>`<option ${item.unit===u?'selected':''}>${s(u)}</option>`).join('')}
+        </select>
+      </div>
       <input type="text" inputmode="decimal" placeholder="السعر" value="${item.price||''}"
         oninput="_dpItems[${i}].price=parseNum(this.value);calcDpTotal()"
-        onblur="if(_dpItems[${i}].name&&_dpItems[${i}].qty>0&&_dpItems[${i}].price>0&&${i}===_dpItems.length-1){_dpItems.push({name:'',qty:1,price:0});renderDpItemsForm();}"
-        onkeydown="if(event.key==='Enter'&&_dpItems[${i}].name&&_dpItems[${i}].qty>0&&_dpItems[${i}].price>0){event.preventDefault();_dpItems.push({name:'',qty:1,price:0});renderDpItemsForm();}"
+        onblur="if(_dpItems[${i}].name&&_dpItems[${i}].qty>0&&_dpItems[${i}].price>0&&${i}===_dpItems.length-1){_dpItems.push({name:'',qty:'',unit:_dpUnits[0]||'',price:0});renderDpItemsForm();}"
+        onkeydown="if(event.key==='Enter'&&_dpItems[${i}].name&&_dpItems[${i}].qty>0&&_dpItems[${i}].price>0){event.preventDefault();_dpItems.push({name:'',qty:'',unit:_dpUnits[0]||'',price:0});renderDpItemsForm();}"
         style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
       <button onclick="removeDpItem(${i})" style="background:var(--red-p,#ffebee);color:var(--red);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:0.85rem;">✕</button>
     </div>
@@ -4222,7 +4239,7 @@ function calcDpTotal() {
 
 async function initDeferredPurchasesPage() {
   _dpItems = [];
-  _dpProducts = await getDpProducts();
+  [_dpProducts, _dpUnits] = await Promise.all([getDpProducts(), getDpUnits()]);
   renderDpItemsForm();
   calcDpTotal();
   const traders = await getDpTraders();
@@ -4233,6 +4250,36 @@ async function initDeferredPurchasesPage() {
   const dpDate = document.getElementById('dp-date');
   if(dpDate && !dpDate.value) dpDate.value = today();
   renderDeferredPurchases();
+}
+
+async function openDpUnitManager() {
+  let units = await getDpUnits();
+  document.getElementById('modal-title').textContent='📐 إدارة الوحدات';
+  const refresh = () => { document.getElementById('dp-unit-list').outerHTML = `<div id="dp-unit-list">${units.map((u,j)=>`<div class="cat-item"><span>${s(u)} ${DP_DEFAULT_UNITS.includes(u)?'<span style="font-size:0.6rem;color:var(--muted);">(افتراضي)</span>':''}</span>${DP_DEFAULT_UNITS.includes(u)?'':`<button class="btn-sm btn-r" onclick="window._dpUnitDel(${j})">🗑️</button>`}</div>`).join('')}</div>`; };
+  document.getElementById('modal-body').innerHTML = `
+    <div id="dp-unit-list">${units.map((u,i)=>`<div class="cat-item"><span>${s(u)} ${DP_DEFAULT_UNITS.includes(u)?'<span style="font-size:0.6rem;color:var(--muted);">(افتراضي)</span>':''}</span>${DP_DEFAULT_UNITS.includes(u)?'':`<button class="btn-sm btn-r" onclick="window._dpUnitDel(${i})">🗑️</button>`}</div>`).join('')}</div>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <input id="new-dp-unit" placeholder="وحدة جديدة" style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.88rem;">
+      <button class="btn-sm btn-g" onclick="window._dpUnitAdd()" style="padding:10px 16px;">➕</button>
+    </div>`;
+  window._dpUnitAdd = async () => {
+    const inp = document.getElementById('new-dp-unit');
+    const name = inp?.value.trim();
+    if(!name) return showToast('❌ اكتب الوحدة');
+    if(units.includes(name)) return showToast('❌ موجودة بالفعل');
+    units.push(name);
+    await saveDpUnits(units);
+    _dpUnits = units;
+    inp.value='';
+    refresh();
+  };
+  window._dpUnitDel = async (i) => {
+    units.splice(i,1);
+    await saveDpUnits(units);
+    _dpUnits = units;
+    refresh();
+  };
+  document.getElementById('detail-overlay').classList.add('open');
 }
 
 async function openDpProductManager() {
@@ -4966,6 +5013,7 @@ let _unitsCache = null;
 let _varietiesCache = null;
 let _dsFilter = 'all';
 const DS_DEFAULT_UNITS = ['كرتون','كيلو','أردب','قيراط'];
+const DP_DEFAULT_UNITS = ['كيلو','لتر','جرام','سم'];
 const DS_DEFAULT_VARIETIES = ['صن سيشن','فيستفال','فرتونه'];
 
 // جيب الأصناف
