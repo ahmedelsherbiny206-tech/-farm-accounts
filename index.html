@@ -1058,6 +1058,9 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       <select id="dp-filter-trader" onchange="renderDeferredPurchases()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
         <option value="">كل التجار</option>
       </select>
+      <select id="dp-filter-product" onchange="renderDeferredPurchases()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
+        <option value="">كل المنتجات</option>
+      </select>
       <select id="dp-filter-status" onchange="renderDeferredPurchases()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
         <option value="">الكل</option>
         <option value="unpaid">غير مسددة</option>
@@ -4247,6 +4250,8 @@ async function initDeferredPurchasesPage() {
   if(sel) sel.innerHTML = '<option value="">-- اختار التاجر --</option>'+traders.map(t=>`<option>${s(t)}</option>`).join('');
   const fSel = document.getElementById('dp-filter-trader');
   if(fSel) fSel.innerHTML = '<option value="">كل التجار</option>'+traders.map(t=>`<option>${s(t)}</option>`).join('');
+  const fProd = document.getElementById('dp-filter-product');
+  if(fProd) fProd.innerHTML = '<option value="">كل المنتجات</option>'+_dpProducts.map(p=>`<option>${s(p)}</option>`).join('');
   const dpDate = document.getElementById('dp-date');
   if(dpDate && !dpDate.value) dpDate.value = today();
   renderDeferredPurchases();
@@ -4357,6 +4362,7 @@ function clearDpFilter() {
   document.getElementById('dp-from').value='';
   document.getElementById('dp-to').value='';
   document.getElementById('dp-filter-trader').value='';
+  document.getElementById('dp-filter-product').value='';
   document.getElementById('dp-filter-status').value='';
   renderDeferredPurchases();
 }
@@ -4369,14 +4375,17 @@ async function renderDeferredPurchases() {
   const from = document.getElementById('dp-from')?.value;
   const to = document.getElementById('dp-to')?.value;
   const fTrader = document.getElementById('dp-filter-trader')?.value;
+  const fProduct = document.getElementById('dp-filter-product')?.value;
   const fStatus = document.getElementById('dp-filter-status')?.value;
   if(from) q=q.gte('date',from);
   if(to) q=q.lte('date',to);
   if(fTrader) q=q.eq('trader',fTrader);
   if(fStatus==='paid') q=q.eq('paid',true);
   if(fStatus==='unpaid') q=q.eq('paid',false);
-  const {data,error} = await q;
-  if(error||!data?.length){el.innerHTML='<div class="empty">لا يوجد مشتريات 📭</div>';
+  const {data:rawData,error} = await q;
+  if(error){el.innerHTML='<div class="empty">❌ خطأ</div>'; return;}
+  const data = fProduct ? (rawData||[]).filter(x=>(x.items||[]).some(it=>it.name===fProduct)) : (rawData||[]);
+  if(!data.length){el.innerHTML='<div class="empty">لا يوجد مشتريات 📭</div>';
     document.getElementById('dp-summary-bar').style.display='none'; return;}
   const totalAll = data.reduce((s,x)=>s+Number(x.total||0),0);
   const unpaidAll = data.filter(x=>!x.paid).reduce((s,x)=>s+Number(x.total||0),0);
