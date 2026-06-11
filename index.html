@@ -5677,12 +5677,12 @@ async function addDeferredSale(){
   const saleId = dsData?.[0]?.id || null;
 
   const itemsNote = validItems.map(x=>`${x.name} ${x.qty} ${x.unit} × ${x.price} ج`).join(' | ');
-  await sb.from('income').insert({
+  await sb.from('income').insert(validItems.map(it=>({
     user_id:currentUser.id,
     description:'بيع آجل: '+desc+(trader?' - '+trader:''),
-    category:'مبيعات آجل', crop:firstCrop||null,
-    amount:total, date, notes:'بيعة آجل - '+itemsNote, ref_id:saleId
-  });
+    category:'مبيعات آجل', crop:it.name||null,
+    amount:(it.qty||0)*(it.price||0), date, notes:'بيعة آجل - '+itemsNote, ref_id:saleId
+  })));
 
   // vault entry for full or partial payment
   if(_dsPayType==='full'||_dsPayType==='partial'){
