@@ -981,7 +981,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 
           <div class="form-row">
             <label style="display:flex;justify-content:space-between;">التاجر
-              <button onclick="openTraderManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">👤 إدارة</button>
+              <button onclick="openDsProdTraderManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">👤 إدارة</button>
             </label>
             <select id="ds-prod-trader"><option value="">-- اختار التاجر --</option></select>
           </div>
@@ -1016,18 +1016,22 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
         <label>إلى:</label><input type="date" id="ds-to" onchange="renderDeferredSales()">
         <button class="clear-btn" onclick="clearDsFilter()">الكل</button>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+      <!-- فلاتر المحصول -->
+      <div id="ds-filters-crop" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
         <select id="ds-filter-crop" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
           <option value="">كل المحاصيل</option>
         </select>
         <select id="ds-filter-trader" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
           <option value="">كل التجار</option>
         </select>
-        <select id="ds-filter-unit" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
-          <option value="">كل الوحدات</option>
-        </select>
         <select id="ds-filter-variety" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
           <option value="">كل الأصناف</option>
+        </select>
+      </div>
+      <!-- فلاتر المنتج -->
+      <div id="ds-filters-product" style="display:none;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <select id="ds-filter-prod-trader" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
+          <option value="">كل التجار</option>
         </select>
         <select id="ds-filter-product" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
           <option value="">كل المنتجات</option>
@@ -5177,10 +5181,15 @@ function setDsSaleType(type) {
   _dsSaleType = type;
   document.getElementById('ds-form-crop').style.display    = type==='crop'    ? '' : 'none';
   document.getElementById('ds-form-product').style.display = type==='product' ? '' : 'none';
+  const cropFilters = document.getElementById('ds-filters-crop');
+  const prodFilters = document.getElementById('ds-filters-product');
+  if(cropFilters) cropFilters.style.display = type==='crop' ? 'grid' : 'none';
+  if(prodFilters) prodFilters.style.display = type==='product' ? 'grid' : 'none';
   const cropBtn = document.getElementById('ds-type-crop-btn');
   const prodBtn = document.getElementById('ds-type-prod-btn');
   if(cropBtn){ cropBtn.style.background=type==='crop'?'var(--g3)':'var(--bg)'; cropBtn.style.color=type==='crop'?'#fff':'var(--text)'; cropBtn.style.borderColor=type==='crop'?'var(--g3)':'var(--border)'; }
   if(prodBtn){ prodBtn.style.background=type==='product'?'var(--g3)':'var(--bg)'; prodBtn.style.color=type==='product'?'#fff':'var(--text)'; prodBtn.style.borderColor=type==='product'?'var(--g3)':'var(--border)'; }
+  renderDeferredSales();
 }
 
 async function getDsProducts() {
@@ -5189,6 +5198,39 @@ async function getDsProducts() {
 }
 async function saveDsProducts(list) {
   await sb.from('user_categories').upsert({user_id:currentUser.id,type:'ds_products',categories:list},{onConflict:'user_id,type'});
+}
+async function getDsProdTraders() {
+  const {data} = await sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','ds_prod_traders').maybeSingle();
+  return data?.categories || [];
+}
+async function saveDsProdTraders(list) {
+  await sb.from('user_categories').upsert({user_id:currentUser.id,type:'ds_prod_traders',categories:list},{onConflict:'user_id,type'});
+}
+async function openDsProdTraderManager() {
+  let traders = await getDsProdTraders();
+  document.getElementById('modal-title').textContent='👤 إدارة تجار المنتجات';
+  const refresh = () => { document.getElementById('ds-prod-trader-list').outerHTML=`<div id="ds-prod-trader-list">${traders.map((t,j)=>`<div class="cat-item"><span>${s(t)}</span><button class="btn-sm btn-r" onclick="window._dsProdTrDel(${j})">🗑️</button></div>`).join('')}</div>`; };
+  document.getElementById('modal-body').innerHTML=`
+    <div id="ds-prod-trader-list">${traders.map((t,i)=>`<div class="cat-item"><span>${s(t)}</span><button class="btn-sm btn-r" onclick="window._dsProdTrDel(${i})">🗑️</button></div>`).join('')}</div>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <input id="new-ds-prod-trader" placeholder="اسم تاجر جديد" style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.88rem;">
+      <button class="btn-sm btn-g" onclick="window._dsProdTrAdd()" style="padding:10px 16px;">➕</button>
+    </div>`;
+  window._dsProdTrAdd = async () => {
+    const inp=document.getElementById('new-ds-prod-trader'); const name=inp?.value.trim();
+    if(!name) return showToast('❌ اكتب الاسم');
+    if(traders.includes(name)) return showToast('❌ موجود بالفعل');
+    traders.push(name); await saveDsProdTraders(traders); inp.value=''; refresh();
+    const sel=document.getElementById('ds-prod-trader'); if(sel) sel.innerHTML='<option value="">-- اختار التاجر --</option>'+traders.map(t=>`<option>${s(t)}</option>`).join('');
+    const fSel=document.getElementById('ds-filter-prod-trader'); if(fSel) fSel.innerHTML='<option value="">كل التجار</option>'+traders.map(t=>`<option>${s(t)}</option>`).join('');
+    showToast('✅ تمت الإضافة');
+  };
+  window._dsProdTrDel = async (i) => {
+    traders.splice(i,1); await saveDsProdTraders(traders); refresh();
+    const sel=document.getElementById('ds-prod-trader'); if(sel) sel.innerHTML='<option value="">-- اختار التاجر --</option>'+traders.map(t=>`<option>${s(t)}</option>`).join('');
+    const fSel=document.getElementById('ds-filter-prod-trader'); if(fSel) fSel.innerHTML='<option value="">كل التجار</option>'+traders.map(t=>`<option>${s(t)}</option>`).join('');
+  };
+  document.getElementById('detail-overlay').classList.add('open');
 }
 
 function addDsProdItem() {
@@ -5318,9 +5360,10 @@ async function openDsUnitManager() {
 }
 
 async function initDeferredSalesPage(){
-  const [crops, units, traders, varieties, dsProds, dsProdUnitsData] = await Promise.all([
+  const [crops, units, traders, varieties, dsProds, dsProdUnitsData, dsProdTraders] = await Promise.all([
     getCrops(), getUnits(), getTraders(), getVarieties(), getDsProducts(),
-    sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','ds_prod_units').maybeSingle()
+    sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','ds_prod_units').maybeSingle(),
+    getDsProdTraders()
   ]);
 
   _dsProdProducts = dsProds;
@@ -5336,7 +5379,9 @@ async function initDeferredSalesPage(){
   if(traderSel) traderSel.innerHTML = '<option value="">-- اختار التاجر --</option>'+traders.map(t=>`<option>${t}</option>`).join('');
 
   const prodTraderSel = document.getElementById('ds-prod-trader');
-  if(prodTraderSel) prodTraderSel.innerHTML = '<option value="">-- اختار التاجر --</option>'+traders.map(t=>`<option>${t}</option>`).join('');
+  if(prodTraderSel) prodTraderSel.innerHTML = '<option value="">-- اختار التاجر --</option>'+dsProdTraders.map(t=>`<option>${s(t)}</option>`).join('');
+  const fProdTrader = document.getElementById('ds-filter-prod-trader');
+  if(fProdTrader) fProdTrader.innerHTML = '<option value="">كل التجار</option>'+dsProdTraders.map(t=>`<option>${s(t)}</option>`).join('');
 
   const fCrop = document.getElementById('ds-filter-crop');
   if(fCrop) fCrop.innerHTML = '<option value="">كل المحاصيل</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${c}</option>`).join('');
@@ -5440,11 +5485,11 @@ function setDsFilter(f, btn){
 function clearDsFilter(){
   document.getElementById('ds-from').value='';
   document.getElementById('ds-to').value='';
-  document.getElementById('ds-filter-crop').value='';
-  document.getElementById('ds-filter-trader').value='';
-  document.getElementById('ds-filter-unit').value='';
-  document.getElementById('ds-filter-variety').value='';
-  document.getElementById('ds-filter-product').value='';
+  const fc=document.getElementById('ds-filter-crop'); if(fc) fc.value='';
+  const ft=document.getElementById('ds-filter-trader'); if(ft) ft.value='';
+  const fv=document.getElementById('ds-filter-variety'); if(fv) fv.value='';
+  const fpt=document.getElementById('ds-filter-prod-trader'); if(fpt) fpt.value='';
+  const fp=document.getElementById('ds-filter-product'); if(fp) fp.value='';
   renderDeferredSales();
 }
 
@@ -5455,19 +5500,20 @@ async function renderDeferredSales(){
 
   let q = sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).order('date',{ascending:false});
 
+  const isProductMode = _dsSaleType === 'product';
+  q = q.eq('sale_type', isProductMode ? 'product' : 'crop');
+
   const from = document.getElementById('ds-from')?.value;
   const to = document.getElementById('ds-to')?.value;
-  const crop = document.getElementById('ds-filter-crop')?.value;
-  const trader = document.getElementById('ds-filter-trader')?.value;
-  const unit = document.getElementById('ds-filter-unit')?.value;
-  const variety = document.getElementById('ds-filter-variety')?.value;
-  const fProduct = document.getElementById('ds-filter-product')?.value;
+  const crop = !isProductMode ? (document.getElementById('ds-filter-crop')?.value||'') : '';
+  const trader = !isProductMode ? (document.getElementById('ds-filter-trader')?.value||'') : (document.getElementById('ds-filter-prod-trader')?.value||'');
+  const variety = !isProductMode ? (document.getElementById('ds-filter-variety')?.value||'') : '';
+  const fProduct = isProductMode ? (document.getElementById('ds-filter-product')?.value||'') : '';
 
   if(from) q=q.gte('date',from);
   if(to) q=q.lte('date',to);
   if(crop) q=q.eq('crop',crop);
   if(trader) q=q.eq('trader',trader);
-  if(unit) q=q.eq('unit',unit);
   if(variety) q=q.eq('variety',variety);
   if(_dsFilter==='paid') q=q.eq('paid',true);
   if(_dsFilter==='unpaid') q=q.eq('paid',false);
