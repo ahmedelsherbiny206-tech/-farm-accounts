@@ -682,6 +682,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
     <button class="bnav" id="bnav-sales-payment" style="display:none;"></button>
     <button class="bnav" id="bnav-account-statement" style="display:none;"></button>
     <button class="bnav" id="bnav-deferred-purchases" style="display:none;"></button>
+    <button class="bnav" id="bnav-dp-account-statement" style="display:none;"></button>
   </div>
 
   <!-- HOME -->
@@ -1080,6 +1081,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
     <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px;padding:0 2px;flex-wrap:wrap;">
       <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="showPage('deferred',document.getElementById('bnav-deferred'))">← رجوع</button>
       <span style="font-size:0.95rem;font-weight:900;color:#6a1b9a;flex:1;">🛍️ مشتريات آجل</span>
+      <button class="btn-sm" style="background:#6a1b9a;color:#fff;border:none;" onclick="showPage('dp-account-statement',document.getElementById('bnav-dp-account-statement'))">📋 كشف حساب</button>
       <button class="btn-sm" style="background:#6a1b9a;color:#fff;border:none;" onclick="exportDpToExcel()">📊 Excel</button>
     </div>
 
@@ -1160,6 +1162,25 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 
     <div id="dp-list"><div class="loading">⏳</div></div>
   </div><!-- end page-deferred-purchases -->
+
+  <!-- صفحة كشف حساب المشتريات -->
+  <div class="page" id="page-dp-account-statement">
+    <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px;padding:0 2px;">
+      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="showPage('deferred-purchases',document.getElementById('bnav-deferred-purchases'))">← رجوع</button>
+      <span style="font-size:0.95rem;font-weight:900;color:#6a1b9a;flex:1;">📋 كشف حساب مشتريات</span>
+    </div>
+    <div class="card">
+      <div class="card-title">📋 بيانات الكشف</div>
+      <div class="form-row">
+        <label>التاجر</label>
+        <select id="dpas-trader"><option value="">-- اختار التاجر --</option></select>
+      </div>
+      <div class="form-row"><label>من</label><input type="date" id="dpas-from"></div>
+      <div class="form-row"><label>إلى</label><input type="date" id="dpas-to"></div>
+      <button class="btn" style="background:#6a1b9a;color:#fff;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-weight:900;font-size:0.9rem;cursor:pointer;width:100%;margin-top:4px;" onclick="showDpAccountStatement()">📋 عرض كشف الحساب</button>
+    </div>
+    <div id="dpas-result"></div>
+  </div><!-- end page-dp-account-statement -->
 
   <!-- صفحة سداد المبيعات -->
   <div class="page" id="page-sales-payment">
@@ -1922,7 +1943,7 @@ function showPage(name, btn) {
   document.getElementById('page-'+name).classList.add('active');
   if(btn) btn.classList.add('active');
   else {
-    const map = {home:'bnav-home',income:'bnav-income',expense:'bnav-expense',vault:'bnav-vault',ajal:'bnav-ajal',log:'bnav-log',analytics:'bnav-analytics',search:'bnav-search',seasons:'bnav-seasons','season-detail':'bnav-seasons',deferred:'bnav-deferred','sales-payment':'bnav-sales-payment','account-statement':'bnav-account-statement','deferred-purchases':'bnav-deferred-purchases'};
+    const map = {home:'bnav-home',income:'bnav-income',expense:'bnav-expense',vault:'bnav-vault',ajal:'bnav-ajal',log:'bnav-log',analytics:'bnav-analytics',search:'bnav-search',seasons:'bnav-seasons','season-detail':'bnav-seasons',deferred:'bnav-deferred','sales-payment':'bnav-sales-payment','account-statement':'bnav-account-statement','deferred-purchases':'bnav-deferred-purchases','dp-account-statement':'bnav-dp-account-statement'};
     if(map[name]) document.getElementById(map[name]).classList.add('active');
     // else: no nav button to highlight
   }
@@ -1948,6 +1969,7 @@ function showPage(name, btn) {
   if(name==='deferred-purchases') initDeferredPurchasesPage();
   if(name==='sales-payment') initSalesPaymentPage();
   if(name==='account-statement') initAccountStatementPage();
+  if(name==='dp-account-statement') initDpAccountStatementPage();
   setTimeout(setDateInputs, 100);
   if(name==='capital') renderCapitalList();
   if(name==='vault') { renderVaultList(); renderVaultSummary(); }
@@ -6272,28 +6294,38 @@ async function showAccountStatement(){
   showToast('⏳ جاري التحميل...');
 
   const isProd = _asSaleType === 'product';
-  const [{data:sales},{data:payments}] = await Promise.all([
-    sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',isProd?'product':'crop').gte('date',from).lte('date',to).order('date',{ascending:true}),
+  const saleType = isProd ? 'product' : 'crop';
+
+  // جلب كل ما قبل الفترة (الرصيد الافتتاحي) + حركات الفترة
+  const [
+    {data:preSales}, {data:prePayments},
+    {data:sales},    {data:payments}
+  ] = await Promise.all([
+    sb.from('deferred_sales').select('total').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',saleType).lt('date',from),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).lt('date',from),
+    sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',saleType).gte('date',from).lte('date',to).order('date',{ascending:true}),
     sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).gte('date',from).lte('date',to).order('date',{ascending:true})
   ]);
 
-  const totalSales    = (sales||[]).reduce((s,x)=>s+Number(x.total||0),0);
-  const totalPayments = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
-  const balance       = totalSales - totalPayments;
+  const openingBalance = (preSales||[]).reduce((s,x)=>s+Number(x.total||0),0) - (prePayments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const periodSales    = (sales||[]).reduce((s,x)=>s+Number(x.total||0),0);
+  const periodPayments = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const closingBalance = openingBalance + periodSales - periodPayments;
+
+  const paymentTypeBadge = x => {
+    const isTaswiya = x.category==='تسوية_مبيعات'||x.category==='تسوية_مبيعات_منتج';
+    return `<span style="margin:0 5px;background:${isTaswiya?'#E3F2FD':'#E8F5E9'};color:${isTaswiya?'#1565C0':'#2E7D32'};border-radius:6px;padding:1px 6px;font-size:0.7rem;font-weight:900;">${isTaswiya?'تسوية':'سداد'}</span>`;
+  };
 
   const salesRowsHtml = (sales||[]).length ? (sales||[]).map(x=>{
     const itemsHtml = (x.items||[]).map(it=>`<div style="font-size:0.72rem;color:var(--muted);padding-right:10px;">• ${s(it.name)} ${it.qty} ${s(it.unit||'')} × ${fmt(it.price)} ج</div>`).join('');
     return `<div style="padding:7px 0;border-bottom:1px solid var(--border);font-size:0.8rem;">
       <div style="display:flex;justify-content:space-between;">
-        <div>
-          <span style="color:var(--muted);">${fmtDate(x.date)}</span>
-          <span style="margin:0 6px;">·</span>
-          <span>${s(x.description||'')}${!isProd&&x.variety?' - '+s(x.variety):''}${!isProd&&x.crop?' ('+s(x.crop)+')':''}</span>
-        </div>
+        <div><span style="color:var(--muted);">${fmtDate(x.date)}</span><span style="margin:0 6px;">·</span>
+          <span>${s(x.description||'')}${!isProd&&x.variety?' - '+s(x.variety):''}${!isProd&&x.crop?' ('+s(x.crop)+')':''}</span></div>
         <span style="font-weight:900;color:var(--text);">${Number(x.total||0).toLocaleString('en-US')} ج</span>
-      </div>
-      ${itemsHtml}</div>`;}).join('')
-    : '<div style="color:var(--muted);font-size:0.8rem;">لا يوجد مبيعات</div>';
+      </div>${itemsHtml}</div>`;}).join('')
+    : '<div style="color:var(--muted);font-size:0.8rem;padding:6px 0;">لا يوجد مبيعات في هذه الفترة</div>';
 
   const el = document.getElementById('as-result');
   el.innerHTML = `
@@ -6304,33 +6336,37 @@ async function showAccountStatement(){
       <div style="background:#1a6fa8;color:#fff;border-radius:10px;padding:8px 14px;margin-bottom:10px;font-size:0.82rem;font-weight:900;text-align:center;">📋 كشف حساب ${isProd?'منتجات':'محاصيل'} إجمالي</div>
       <div class="card-title">📋 ${trader}</div>
       <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px;">${fmtDate(from)} → ${fmtDate(to)}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
-        <div style="background:var(--g5);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:0.7rem;color:var(--muted);">إجمالي المبيعات</div>
-          <div style="font-size:0.9rem;font-weight:900;color:var(--g2);">${Number(totalSales).toLocaleString('en-US')} ج</div>
+
+      <!-- ملخص تراكمي -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <div style="background:${openingBalance>0?'#fff3cd':'#d4edda'};border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--muted);">الرصيد الافتتاحي</div>
+          <div style="font-size:0.88rem;font-weight:900;color:${openingBalance>0?'var(--red)':'var(--g2)'};">${Number(openingBalance).toLocaleString('en-US')} ج</div>
         </div>
-        <div style="background:#fdecea;border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:0.7rem;color:var(--muted);">إجمالي السدادات</div>
-          <div style="font-size:0.9rem;font-weight:900;color:var(--g2);">${Number(totalPayments).toLocaleString('en-US')} ج</div>
-        </div>
-        <div style="background:${balance>0?'#fff3cd':'#d4edda'};border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:0.7rem;color:var(--muted);">الرصيد المتبقي</div>
-          <div style="font-size:0.9rem;font-weight:900;color:${balance>0?'var(--red)':'var(--g2)'};">${Number(balance).toLocaleString('en-US')} ج</div>
+        <div style="background:${closingBalance>0?'#fff3cd':'#d4edda'};border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--muted);">الرصيد الختامي</div>
+          <div style="font-size:0.88rem;font-weight:900;color:${closingBalance>0?'var(--red)':'var(--g2)'};">${Number(closingBalance).toLocaleString('en-US')} ج</div>
         </div>
       </div>
-      <div style="font-size:0.82rem;font-weight:900;color:var(--g2);margin-bottom:6px;">${isProd?'📦 فواتير المنتجات':'🌾 المبيعات'}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+        <div style="background:var(--g5);border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--muted);">مبيعات الفترة</div>
+          <div style="font-size:0.88rem;font-weight:900;color:var(--g2);">${Number(periodSales).toLocaleString('en-US')} ج</div>
+        </div>
+        <div style="background:#fdecea;border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--muted);">سدادات الفترة</div>
+          <div style="font-size:0.88rem;font-weight:900;color:var(--g2);">${Number(periodPayments).toLocaleString('en-US')} ج</div>
+        </div>
+      </div>
+
+      <div style="font-size:0.82rem;font-weight:900;color:var(--g2);margin-bottom:6px;">${isProd?'📦 فواتير الفترة':'🌾 مبيعات الفترة'}</div>
       ${salesRowsHtml}
-      <div style="font-size:0.82rem;font-weight:900;color:var(--g2);margin:12px 0 6px;">💵 السدادات والتسويات</div>
-      ${(payments||[]).length ? (payments||[]).map(x=>{
-        const isTaswiya = x.category==='تسوية_مبيعات'||x.category==='تسوية_مبيعات_منتج';
-        return `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:0.8rem;">
-          <div>
-            <span style="color:var(--muted);">${fmtDate(x.date)}</span>
-            <span style="margin:0 5px;background:${isTaswiya?'#E3F2FD':'#E8F5E9'};color:${isTaswiya?'#1565C0':'#2E7D32'};border-radius:6px;padding:1px 6px;font-size:0.7rem;font-weight:900;">${isTaswiya?'تسوية':'سداد'}</span>
-            ${x.notes?`<span style="color:var(--muted);">${s(x.notes)}</span>`:''}
-          </div>
-          <span style="font-weight:900;color:${isTaswiya?'#1565C0':'var(--g2)'};">+${Number(x.amount||0).toLocaleString('en-US')} ج</span>
-        </div>`;}).join('') : '<div style="color:var(--muted);font-size:0.8rem;">لا يوجد سدادات</div>'}
+      <div style="font-size:0.82rem;font-weight:900;color:var(--g2);margin:12px 0 6px;">💵 سدادات وتسويات الفترة</div>
+      ${(payments||[]).length ? (payments||[]).map(x=>`
+        <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:0.8rem;">
+          <div><span style="color:var(--muted);">${fmtDate(x.date)}</span>${paymentTypeBadge(x)}${x.notes?`<span style="color:var(--muted);">${s(x.notes)}</span>`:''}</div>
+          <span style="font-weight:900;color:var(--g2);">+${Number(x.amount||0).toLocaleString('en-US')} ج</span>
+        </div>`).join('') : '<div style="color:var(--muted);font-size:0.8rem;padding:6px 0;">لا يوجد سدادات في هذه الفترة</div>'}
     </div>`;
 }
 
@@ -6340,14 +6376,22 @@ async function showDetailedStatement(){
   showToast('⏳ جاري التحميل...');
 
   const isDetProd = _asSaleType === 'product';
-  const [{data:sales},{data:payments}] = await Promise.all([
-    sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',isDetProd?'product':'crop').gte('date',from).lte('date',to).order('date',{ascending:true}),
+  const saleTypeD = isDetProd ? 'product' : 'crop';
+
+  const [
+    {data:preSalesD}, {data:prePaymentsD},
+    {data:sales},     {data:payments}
+  ] = await Promise.all([
+    sb.from('deferred_sales').select('total').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',saleTypeD).lt('date',from),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).lt('date',from),
+    sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',saleTypeD).gte('date',from).lte('date',to).order('date',{ascending:true}),
     sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).gte('date',from).lte('date',to).order('date',{ascending:true})
   ]);
 
-  const totalAll      = (sales||[]).reduce((s,x)=>s+Number(x.total||0),0);
-  const totalPayments = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
-  const balance       = totalAll - totalPayments;
+  const openingBalanceD = (preSalesD||[]).reduce((s,x)=>s+Number(x.total||0),0) - (prePaymentsD||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const totalAll        = (sales||[]).reduce((s,x)=>s+Number(x.total||0),0);
+  const totalPayments   = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const closingBalanceD = openingBalanceD + totalAll - totalPayments;
 
   // تجميع: للمنتج حسب اسم المنتج، للمحصول حسب صنف+وحدة+محصول
   const groups = {};
@@ -6383,18 +6427,24 @@ async function showDetailedStatement(){
       <div style="background:var(--g2);color:#fff;border-radius:10px;padding:8px 14px;margin-bottom:10px;font-size:0.82rem;font-weight:900;text-align:center;">📊 كشف تفصيلي ${isDetProd?'حسب المنتج':'حسب الصنف'}</div>
       <div class="card-title">📊 ${trader}</div>
       <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px;">${fmtDate(from)} → ${fmtDate(to)}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <div style="background:${openingBalanceD>0?'#fff3cd':'#d4edda'};border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--muted);">الرصيد الافتتاحي</div>
+          <div style="font-size:0.88rem;font-weight:900;color:${openingBalanceD>0?'var(--red)':'var(--g2)'};">${Number(openingBalanceD).toLocaleString('en-US')} ج</div>
+        </div>
+        <div style="background:${closingBalanceD>0?'#fff3cd':'#d4edda'};border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--muted);">الرصيد الختامي</div>
+          <div style="font-size:0.88rem;font-weight:900;color:${closingBalanceD>0?'var(--red)':'var(--g2)'};">${Number(closingBalanceD).toLocaleString('en-US')} ج</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
         <div style="background:var(--g5);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:0.7rem;color:var(--muted);">إجمالي المبيعات</div>
+          <div style="font-size:0.7rem;color:var(--muted);">مبيعات الفترة</div>
           <div style="font-size:0.88rem;font-weight:900;color:var(--g2);">${Number(totalAll).toLocaleString('en-US')} ج</div>
         </div>
         <div style="background:#fdecea;border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:0.7rem;color:var(--muted);">إجمالي السدادات</div>
+          <div style="font-size:0.7rem;color:var(--muted);">سدادات الفترة</div>
           <div style="font-size:0.88rem;font-weight:900;color:var(--g2);">${Number(totalPayments).toLocaleString('en-US')} ج</div>
-        </div>
-        <div style="background:${balance>0?'#fff3cd':'#d4edda'};border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:0.7rem;color:var(--muted);">الرصيد</div>
-          <div style="font-size:0.88rem;font-weight:900;color:${balance>0?'var(--red)':'var(--g2)'};">${Number(balance).toLocaleString('en-US')} ج</div>
         </div>
       </div>
       <div style="font-size:0.82rem;font-weight:900;color:var(--g2);margin-bottom:6px;">${isDetProd?'📦 تفصيل المنتجات':'🌾 تفصيل المحاصيل'}</div>
@@ -6432,13 +6482,21 @@ async function showDetailedStatement(){
 async function exportAccountStatementExcel(trader, from, to){
   showToast('⏳ جاري التصدير...');
   const isXlProd = _asSaleType === 'product';
-  const [{data:sales},{data:payments}] = await Promise.all([
-    sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',isXlProd?'product':'crop').gte('date',from).lte('date',to).order('date',{ascending:true}),
+  const saleTypeXl = isXlProd ? 'product' : 'crop';
+  const [
+    {data:preSalesXl}, {data:prePaymentsXl},
+    {data:sales},      {data:payments}
+  ] = await Promise.all([
+    sb.from('deferred_sales').select('total').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',saleTypeXl).lt('date',from),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).lt('date',from),
+    sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',saleTypeXl).gte('date',from).lte('date',to).order('date',{ascending:true}),
     sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).gte('date',from).lte('date',to).order('date',{ascending:true})
   ]);
 
+  const openingXl     = (preSalesXl||[]).reduce((s,x)=>s+Number(x.total||0),0) - (prePaymentsXl||[]).reduce((s,x)=>s+Number(x.amount||0),0);
   const totalSales    = (sales||[]).reduce((s,x)=>s+Number(x.total||0),0);
   const totalPayments = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const closingXl     = openingXl + totalSales - totalPayments;
   const wb = XLSX.utils.book_new();
 
   if(isXlProd){
@@ -6476,11 +6534,13 @@ async function exportAccountStatementExcel(trader, from, to){
   }
 
   const payRows = (payments||[]).map((x,i)=>({'م':i+1,'التاريخ':x.date,'النوع':x.category.includes('تسوية')?'تسوية':'سداد','المبلغ':Number(x.amount||0),'ملاحظات':x.notes||''}));
-  payRows.push({'م':'','التاريخ':'الإجمالي','النوع':'','المبلغ':totalPayments,'ملاحظات':''});
-  payRows.push({'م':'','التاريخ':'الرصيد المتبقي','النوع':'','المبلغ':totalSales-totalPayments,'ملاحظات':''});
+  payRows.push({'م':'','التاريخ':'إجمالي سدادات الفترة','النوع':'','المبلغ':totalPayments,'ملاحظات':''});
+  payRows.push({'م':'','التاريخ':'إجمالي مبيعات الفترة','النوع':'','المبلغ':totalSales,'ملاحظات':''});
+  payRows.push({'م':'','التاريخ':'الرصيد الافتتاحي','النوع':'','المبلغ':openingXl,'ملاحظات':''});
+  payRows.push({'م':'','التاريخ':'الرصيد الختامي','النوع':'','المبلغ':closingXl,'ملاحظات':''});
   const ws2 = XLSX.utils.json_to_sheet(payRows,{header:['م','التاريخ','النوع','المبلغ','ملاحظات']});
-  ws2['!cols']=[{wch:4},{wch:13},{wch:9},{wch:14},{wch:25}];
-  xlStyle(ws2, 0, [payRows.length-2, payRows.length-1]);
+  ws2['!cols']=[{wch:4},{wch:20},{wch:9},{wch:14},{wch:25}];
+  xlStyle(ws2, 0, [payRows.length-4,payRows.length-3,payRows.length-2,payRows.length-1]);
   xlPrependTitle(ws2, 'السدادات - '+trader, 5);
   XLSX.utils.book_append_sheet(wb, ws2, 'السدادات');
   XLSX.writeFile(wb, `كشف_حساب_${trader}.xlsx`);
@@ -6490,10 +6550,17 @@ async function exportAccountStatementExcel(trader, from, to){
 async function exportDetailedStatementExcel(trader, from, to){
   showToast('⏳ جاري التصدير...');
   const isXlDetProd = _asSaleType === 'product';
-  const [{data:sales},{data:payments}] = await Promise.all([
-    sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',isXlDetProd?'product':'crop').gte('date',from).lte('date',to).order('date',{ascending:true}),
+  const saleTypeDXl = isXlDetProd ? 'product' : 'crop';
+  const [
+    {data:preSalesDXl}, {data:prePaymentsDXl},
+    {data:sales},       {data:payments}
+  ] = await Promise.all([
+    sb.from('deferred_sales').select('total').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',saleTypeDXl).lt('date',from),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).lt('date',from),
+    sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',saleTypeDXl).gte('date',from).lte('date',to).order('date',{ascending:true}),
     sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).gte('date',from).lte('date',to).order('date',{ascending:true})
   ]);
+  const openingDXl = (preSalesDXl||[]).reduce((s,x)=>s+Number(x.total||0),0) - (prePaymentsDXl||[]).reduce((s,x)=>s+Number(x.amount||0),0);
 
   const wb = XLSX.utils.book_new();
   const groups = {};
@@ -6545,17 +6612,150 @@ async function exportDetailedStatementExcel(trader, from, to){
 
   const totalSales    = (sales||[]).reduce((s,x)=>s+Number(x.total||0),0);
   const totalPayments = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const closingDXl    = openingDXl + totalSales - totalPayments;
   const payRows = (payments||[]).map((x,i)=>({'م':i+1,'التاريخ':x.date,'النوع':x.category.includes('تسوية')?'تسوية':'سداد','المبلغ':Number(x.amount||0),'ملاحظات':x.notes||''}));
-  payRows.push({'م':'','التاريخ':'إجمالي السدادات','النوع':'','المبلغ':totalPayments,'ملاحظات':''});
-  payRows.push({'م':'','التاريخ':'إجمالي المبيعات','النوع':'','المبلغ':totalSales,'ملاحظات':''});
-  payRows.push({'م':'','التاريخ':'الرصيد المتبقي','النوع':'','المبلغ':totalSales-totalPayments,'ملاحظات':''});
+  payRows.push({'م':'','التاريخ':'إجمالي سدادات الفترة','النوع':'','المبلغ':totalPayments,'ملاحظات':''});
+  payRows.push({'م':'','التاريخ':'إجمالي مبيعات الفترة','النوع':'','المبلغ':totalSales,'ملاحظات':''});
+  payRows.push({'م':'','التاريخ':'الرصيد الافتتاحي','النوع':'','المبلغ':openingDXl,'ملاحظات':''});
+  payRows.push({'م':'','التاريخ':'الرصيد الختامي','النوع':'','المبلغ':closingDXl,'ملاحظات':''});
   const wsPay = XLSX.utils.json_to_sheet(payRows,{header:['م','التاريخ','النوع','المبلغ','ملاحظات']});
-  wsPay['!cols']=[{wch:4},{wch:13},{wch:10},{wch:14},{wch:25}];
-  xlStyle(wsPay, 0, [payRows.length-3, payRows.length-2, payRows.length-1]);
+  wsPay['!cols']=[{wch:4},{wch:20},{wch:10},{wch:14},{wch:25}];
+  xlStyle(wsPay, 0, [payRows.length-4,payRows.length-3,payRows.length-2,payRows.length-1]);
   xlPrependTitle(wsPay, 'السدادات والتسويات - '+trader, 5);
   XLSX.utils.book_append_sheet(wb, wsPay, 'السدادات والتسويات');
 
   XLSX.writeFile(wb, `كشف_تفصيلي_${trader}.xlsx`);
+  showToast('✅ تم التصدير!');
+}
+
+// ===== كشف حساب المشتريات =====
+async function initDpAccountStatementPage(){
+  const traders = await getDpTraders();
+  const sel = document.getElementById('dpas-trader');
+  if(sel) sel.innerHTML = '<option value="">-- اختار التاجر --</option>' + traders.map(t=>`<option>${s(t)}</option>`).join('');
+  document.getElementById('dpas-result').innerHTML = '';
+  setTimeout(setDateInputs, 100);
+}
+
+async function showDpAccountStatement(){
+  const trader = document.getElementById('dpas-trader').value;
+  const from   = document.getElementById('dpas-from').value;
+  const to     = document.getElementById('dpas-to').value;
+  if(!trader) return showToast('❌ اختار التاجر');
+  if(!from||!to) return showToast('❌ حدد الفترة الزمنية');
+  showToast('⏳ جاري التحميل...');
+
+  const [
+    {data:prePurch},  {data:prePay},
+    {data:purchases}, {data:payments}
+  ] = await Promise.all([
+    sb.from('deferred_purchases').select('total').eq('user_id',currentUser.id).eq('trader',trader).lt('date',from),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).in('category',['سداد_مشتريات','تسوية_مشتريات']).like('description','سداد مشتريات: '+trader).lt('date',from),
+    sb.from('deferred_purchases').select('*').eq('user_id',currentUser.id).eq('trader',trader).gte('date',from).lte('date',to).order('date',{ascending:true}),
+    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',['سداد_مشتريات','تسوية_مشتريات']).like('description','سداد مشتريات: '+trader).gte('date',from).lte('date',to).order('date',{ascending:true})
+  ]);
+
+  const openingBal  = (prePurch||[]).reduce((s,x)=>s+Number(x.total||0),0) - (prePay||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const periodPurch = (purchases||[]).reduce((s,x)=>s+Number(x.total||0),0);
+  const periodPay   = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const closingBal  = openingBal + periodPurch - periodPay;
+
+  const purchRowsHtml = (purchases||[]).length ? (purchases||[]).map(x=>{
+    const itemsHtml = (x.items||[]).map(it=>`<div style="font-size:0.72rem;color:var(--muted);padding-right:10px;">• ${s(it.name)} ${it.qty} ${s(it.unit||'')} × ${fmt(it.price)} ج</div>`).join('');
+    return `<div style="padding:7px 0;border-bottom:1px solid var(--border);font-size:0.8rem;">
+      <div style="display:flex;justify-content:space-between;">
+        <div><span style="color:var(--muted);">${fmtDate(x.date)}</span><span style="margin:0 6px;">·</span>
+          <span>${s(x.description||'')}</span></div>
+        <span style="font-weight:900;color:var(--text);">${Number(x.total||0).toLocaleString('en-US')} ج</span>
+      </div>${itemsHtml}</div>`;}).join('')
+    : '<div style="color:var(--muted);font-size:0.8rem;padding:6px 0;">لا يوجد مشتريات في هذه الفترة</div>';
+
+  const el = document.getElementById('dpas-result');
+  el.innerHTML = `
+    <div style="display:flex;justify-content:flex-start;margin:10px 0 4px;">
+      <button class="btn-sm" style="background:var(--g5);color:#6a1b9a;border:1.5px solid #6a1b9a;" onclick="exportDpAccountStatementExcel('${trader}','${from}','${to}')">📊 تصدير Excel</button>
+    </div>
+    <div class="card">
+      <div style="background:#6a1b9a;color:#fff;border-radius:10px;padding:8px 14px;margin-bottom:10px;font-size:0.82rem;font-weight:900;text-align:center;">📋 كشف حساب مشتريات إجمالي</div>
+      <div class="card-title">📋 ${trader}</div>
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px;">${fmtDate(from)} → ${fmtDate(to)}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <div style="background:${openingBal>0?'#fff3cd':'#d4edda'};border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--muted);">الرصيد الافتتاحي</div>
+          <div style="font-size:0.88rem;font-weight:900;color:${openingBal>0?'var(--red)':'var(--g2)'};">${Number(openingBal).toLocaleString('en-US')} ج</div>
+        </div>
+        <div style="background:${closingBal>0?'#fff3cd':'#d4edda'};border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--muted);">الرصيد الختامي</div>
+          <div style="font-size:0.88rem;font-weight:900;color:${closingBal>0?'var(--red)':'var(--g2)'};">${Number(closingBal).toLocaleString('en-US')} ج</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+        <div style="background:#fdecea;border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--muted);">مشتريات الفترة</div>
+          <div style="font-size:0.88rem;font-weight:900;color:var(--text);">${Number(periodPurch).toLocaleString('en-US')} ج</div>
+        </div>
+        <div style="background:var(--g5);border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--muted);">مدفوعات الفترة</div>
+          <div style="font-size:0.88rem;font-weight:900;color:var(--g2);">${Number(periodPay).toLocaleString('en-US')} ج</div>
+        </div>
+      </div>
+      <div style="font-size:0.82rem;font-weight:900;color:#6a1b9a;margin-bottom:6px;">🛍️ فواتير الفترة</div>
+      ${purchRowsHtml}
+      <div style="font-size:0.82rem;font-weight:900;color:#6a1b9a;margin:12px 0 6px;">💵 المدفوعات والتسويات</div>
+      ${(payments||[]).length ? (payments||[]).map(x=>{
+        const isTaswiya = x.category==='تسوية_مشتريات';
+        return `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:0.8rem;">
+          <div><span style="color:var(--muted);">${fmtDate(x.date)}</span>
+            <span style="margin:0 5px;background:${isTaswiya?'#E3F2FD':'#E8F5E9'};color:${isTaswiya?'#1565C0':'#2E7D32'};border-radius:6px;padding:1px 6px;font-size:0.7rem;font-weight:900;">${isTaswiya?'تسوية':'سداد'}</span>
+            ${x.notes?`<span style="color:var(--muted);">${s(x.notes)}</span>`:''}</div>
+          <span style="font-weight:900;color:var(--g2);">+${Number(x.amount||0).toLocaleString('en-US')} ج</span>
+        </div>`;}).join('') : '<div style="color:var(--muted);font-size:0.8rem;padding:6px 0;">لا يوجد مدفوعات في هذه الفترة</div>'}
+    </div>`;
+}
+
+async function exportDpAccountStatementExcel(trader, from, to){
+  showToast('⏳ جاري التصدير...');
+  const [
+    {data:prePurch},  {data:prePay},
+    {data:purchases}, {data:payments}
+  ] = await Promise.all([
+    sb.from('deferred_purchases').select('total').eq('user_id',currentUser.id).eq('trader',trader).lt('date',from),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).in('category',['سداد_مشتريات','تسوية_مشتريات']).like('description','سداد مشتريات: '+trader).lt('date',from),
+    sb.from('deferred_purchases').select('*').eq('user_id',currentUser.id).eq('trader',trader).gte('date',from).lte('date',to).order('date',{ascending:true}),
+    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',['سداد_مشتريات','تسوية_مشتريات']).like('description','سداد مشتريات: '+trader).gte('date',from).lte('date',to).order('date',{ascending:true})
+  ]);
+
+  const openingXl  = (prePurch||[]).reduce((s,x)=>s+Number(x.total||0),0) - (prePay||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const totalPurch = (purchases||[]).reduce((s,x)=>s+Number(x.total||0),0);
+  const totalPay   = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const closingXl  = openingXl + totalPurch - totalPay;
+
+  const wb = XLSX.utils.book_new();
+  const purchRows = [];
+  let ri = 1;
+  (purchases||[]).forEach(x=>{
+    (x.items||[]).forEach((it,idx)=>{
+      purchRows.push({'م':idx===0?ri++:'','التاريخ':idx===0?x.date:'','الوصف':idx===0?(x.description||''):'','المنتج':it.name||'','الكمية':it.qty||0,'الوحدة':it.unit||'','السعر':it.price||0,'الإجمالي':idx===0?Number(x.total||0):''});
+    });
+    if(!(x.items||[]).length) purchRows.push({'م':ri++,'التاريخ':x.date,'الوصف':x.description||'','المنتج':'','الكمية':'','الوحدة':'','السعر':'','الإجمالي':Number(x.total||0)});
+  });
+  purchRows.push({'م':'','التاريخ':'إجمالي مشتريات الفترة','الوصف':'','المنتج':'','الكمية':'','الوحدة':'','السعر':'','الإجمالي':totalPurch});
+  const ws1 = XLSX.utils.json_to_sheet(purchRows,{header:['م','التاريخ','الوصف','المنتج','الكمية','الوحدة','السعر','الإجمالي']});
+  ws1['!cols']=[{wch:4},{wch:13},{wch:24},{wch:16},{wch:9},{wch:9},{wch:11},{wch:14}];
+  xlStyle(ws1, 0, [purchRows.length]);
+  xlPrependTitle(ws1, 'مشتريات - '+trader, 8);
+  XLSX.utils.book_append_sheet(wb, ws1, 'المشتريات');
+
+  const payRows = (payments||[]).map((x,i)=>({'م':i+1,'التاريخ':x.date,'النوع':x.category.includes('تسوية')?'تسوية':'سداد','المبلغ':Number(x.amount||0),'ملاحظات':x.notes||''}));
+  payRows.push({'م':'','التاريخ':'إجمالي مدفوعات الفترة','النوع':'','المبلغ':totalPay,'ملاحظات':''});
+  payRows.push({'م':'','التاريخ':'الرصيد الافتتاحي','النوع':'','المبلغ':openingXl,'ملاحظات':''});
+  payRows.push({'م':'','التاريخ':'الرصيد الختامي','النوع':'','المبلغ':closingXl,'ملاحظات':''});
+  const ws2 = XLSX.utils.json_to_sheet(payRows,{header:['م','التاريخ','النوع','المبلغ','ملاحظات']});
+  ws2['!cols']=[{wch:4},{wch:22},{wch:9},{wch:14},{wch:25}];
+  xlStyle(ws2, 0, [payRows.length-3,payRows.length-2,payRows.length-1]);
+  xlPrependTitle(ws2, 'المدفوعات - '+trader, 5);
+  XLSX.utils.book_append_sheet(wb, ws2, 'المدفوعات');
+  XLSX.writeFile(wb, `كشف_مشتريات_${trader}.xlsx`);
   showToast('✅ تم التصدير!');
 }
 </script>
