@@ -684,6 +684,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
     <button class="bnav" id="bnav-deferred-purchases" style="display:none;"></button>
     <button class="bnav" id="bnav-dp-account-statement" style="display:none;"></button>
     <button class="bnav" id="bnav-dp-payment" style="display:none;"></button>
+    <button class="bnav" id="bnav-inventory" style="display:none;"></button>
   </div>
 
   <!-- HOME -->
@@ -744,6 +745,11 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       <div class="card" onclick="showPage('deferred-purchases',document.getElementById('bnav-deferred-purchases'))" style="cursor:pointer;text-align:center;padding:12px;">
         <div style="font-size:1.6rem;">🛍️</div>
         <div style="font-size:0.75rem;font-weight:800;color:#6a1b9a;margin-top:3px;">مشتريات آجل</div>
+      </div>
+
+      <div class="card" onclick="showPage('inventory',document.getElementById('bnav-inventory'))" style="cursor:pointer;text-align:center;padding:12px;">
+        <div style="font-size:1.6rem;">🏪</div>
+        <div style="font-size:0.75rem;font-weight:800;color:#e65100;margin-top:3px;">المخزن</div>
       </div>
 
     </div>
@@ -1251,6 +1257,53 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       <div id="dpp-list"><div class="empty">لا يوجد سدادات</div></div>
     </div>
   </div><!-- end page-dp-payment -->
+
+  <!-- صفحة المخزن -->
+  <div class="page" id="page-inventory">
+    <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px;padding:0 2px;flex-wrap:wrap;">
+      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="showPage('home',document.getElementById('bnav-home'))">← رجوع</button>
+      <span style="font-size:0.95rem;font-weight:900;color:#e65100;flex:1;">🏪 المخزن</span>
+      <button class="btn-sm" style="background:#e65100;color:#fff;border:none;" onclick="exportInventoryExcel()">📊 Excel</button>
+    </div>
+
+    <!-- أزرار العمليات -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+      <button onclick="openInvModal('in')" style="background:#e65100;color:#fff;border:none;border-radius:14px;padding:12px 6px;font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:900;cursor:pointer;">📥 استلام</button>
+      <button onclick="openInvModal('sale')" style="background:var(--g2);color:#fff;border:none;border-radius:14px;padding:12px 6px;font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:900;cursor:pointer;">💰 بيع</button>
+      <button onclick="openInvModal('usage')" style="background:#6a1b9a;color:#fff;border:none;border-radius:14px;padding:12px 6px;font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:900;cursor:pointer;">🔧 صرف</button>
+    </div>
+
+    <!-- الجرد الحالي -->
+    <div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div class="card-title" style="margin:0;">📦 الجرد الحالي</div>
+        <button onclick="openInvItemManager()" style="background:none;border:none;font-size:0.75rem;color:#e65100;font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">⚙️ إدارة الأصناف</button>
+      </div>
+      <div id="inv-stock-table"><div class="loading">⏳</div></div>
+    </div>
+
+    <!-- فلتر وسجل الحركات -->
+    <div class="card">
+      <div class="card-title">📋 سجل الحركات</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+        <select id="inv-filter-item" onchange="renderInvHistory()" style="flex:1;padding:7px 10px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
+          <option value="">كل الأصناف</option>
+        </select>
+        <select id="inv-filter-type" onchange="renderInvHistory()" style="flex:1;padding:7px 10px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
+          <option value="">كل العمليات</option>
+          <option value="in">استلام</option>
+          <option value="sale">بيع</option>
+          <option value="usage">صرف</option>
+        </select>
+      </div>
+      <div class="date-filter">
+        <label>من:</label><input type="date" id="inv-from" onchange="renderInvHistory()">
+        <label>إلى:</label><input type="date" id="inv-to" onchange="renderInvHistory()">
+        <button class="clear-btn" onclick="clearInvFilter()">الكل</button>
+      </div>
+      <div id="inv-history"><div class="loading">⏳</div></div>
+    </div>
+  </div><!-- end page-inventory -->
 
   <!-- صفحة سداد المبيعات -->
   <div class="page" id="page-sales-payment">
@@ -2013,7 +2066,7 @@ function showPage(name, btn) {
   document.getElementById('page-'+name).classList.add('active');
   if(btn) btn.classList.add('active');
   else {
-    const map = {home:'bnav-home',income:'bnav-income',expense:'bnav-expense',vault:'bnav-vault',ajal:'bnav-ajal',log:'bnav-log',analytics:'bnav-analytics',search:'bnav-search',seasons:'bnav-seasons','season-detail':'bnav-seasons',deferred:'bnav-deferred','sales-payment':'bnav-sales-payment','account-statement':'bnav-account-statement','deferred-purchases':'bnav-deferred-purchases','dp-account-statement':'bnav-dp-account-statement','dp-payment':'bnav-dp-payment'};
+    const map = {home:'bnav-home',income:'bnav-income',expense:'bnav-expense',vault:'bnav-vault',ajal:'bnav-ajal',log:'bnav-log',analytics:'bnav-analytics',search:'bnav-search',seasons:'bnav-seasons','season-detail':'bnav-seasons',deferred:'bnav-deferred','sales-payment':'bnav-sales-payment','account-statement':'bnav-account-statement','deferred-purchases':'bnav-deferred-purchases','dp-account-statement':'bnav-dp-account-statement','dp-payment':'bnav-dp-payment',inventory:'bnav-inventory'};
     if(map[name]) document.getElementById(map[name]).classList.add('active');
     // else: no nav button to highlight
   }
@@ -2042,6 +2095,7 @@ function showPage(name, btn) {
   if(name==='account-statement') initAccountStatementPage();
   if(name==='dp-account-statement') initDpAccountStatementPage();
   if(name==='dp-payment') initDpPaymentPage();
+  if(name==='inventory') initInventoryPage();
   setTimeout(setDateInputs, 100);
   if(name==='capital') renderCapitalList();
   if(name==='vault') { renderVaultList(); renderVaultSummary(); }
@@ -6981,6 +7035,314 @@ async function exportDpAccountStatementExcel(trader, from, to){
   xlPrependTitle(ws2, 'المدفوعات - '+trader, 5);
   XLSX.utils.book_append_sheet(wb, ws2, 'المدفوعات');
   XLSX.writeFile(wb, `كشف_مشتريات_${trader}.xlsx`);
+  showToast('✅ تم التصدير!');
+}
+
+// ===== المخزن =====
+async function getInvItems(){ const {data}=await sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','inventory_items').limit(1); return data?.[0]?.categories||[]; }
+async function saveInvItems(list){ await sb.from('user_categories').upsert({user_id:currentUser.id,type:'inventory_items',categories:list},{onConflict:'user_id,type'}); }
+
+async function initInventoryPage(){
+  await renderInvStock();
+  await renderInvHistory();
+  const items = await getInvItems();
+  const sel = document.getElementById('inv-filter-item');
+  if(sel) sel.innerHTML='<option value="">كل الأصناف</option>'+items.map(i=>`<option>${s(i)}</option>`).join('');
+  setTimeout(setDateInputs,100);
+}
+
+// يحسب الجرد الحالي ومتوسط التكلفة لكل الأصناف
+async function calcAllStock(){
+  const {data} = await sb.from('inventory_transactions').select('item,type,quantity,avg_cost,unit').eq('user_id',currentUser.id);
+  const map = {};
+  (data||[]).forEach(r=>{
+    if(!map[r.item]) map[r.item]={item:r.item,unit:r.unit||'',qty:0,avg_cost:0};
+    if(r.type==='in'){
+      const prev = map[r.item];
+      // avg_cost محفوظ وقت الاستلام
+      prev.avg_cost = r.avg_cost||0;
+      prev.qty += Number(r.quantity||0);
+    } else {
+      map[r.item].qty -= Number(r.quantity||0);
+    }
+  });
+  return Object.values(map);
+}
+
+// يحسب متوسط وكمية صنف واحد
+async function calcItemStock(item){
+  const {data} = await sb.from('inventory_transactions').select('type,quantity,avg_cost').eq('user_id',currentUser.id).eq('item',item).order('created_at',{ascending:true});
+  let qty=0, avg=0;
+  (data||[]).forEach(r=>{
+    if(r.type==='in'){
+      const newQty = Number(r.quantity||0);
+      avg = (qty*avg + newQty*Number(r.avg_cost||0)) / (qty+newQty||1);
+      qty += newQty;
+    } else {
+      qty -= Number(r.quantity||0);
+    }
+  });
+  return {qty, avg};
+}
+
+async function renderInvStock(){
+  const el = document.getElementById('inv-stock-table');
+  if(!el) return;
+  const stocks = await calcAllStock();
+  const active = stocks.filter(r=>r.qty>0.001);
+  if(!active.length){ el.innerHTML='<div class="empty">المخزن فارغ 📭</div>'; return; }
+  const grandTotal = active.reduce((s,r)=>s+r.qty*r.avg_cost,0);
+  el.innerHTML=`<div style="overflow-x:auto;">
+  <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
+    <thead><tr style="background:var(--g5);">
+      <th style="padding:7px 8px;text-align:right;">الصنف</th>
+      <th style="padding:7px 8px;text-align:center;">الكمية</th>
+      <th style="padding:7px 8px;text-align:center;">متوسط التكلفة</th>
+      <th style="padding:7px 8px;text-align:center;">القيمة الإجمالية</th>
+    </tr></thead>
+    <tbody>
+      ${active.map(r=>`<tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:7px 8px;font-weight:700;">${s(r.item)}<span style="font-size:0.68rem;color:var(--muted);margin-right:4px;">${s(r.unit)}</span></td>
+        <td style="padding:7px 8px;text-align:center;font-weight:900;">${Number(r.qty).toLocaleString('en-US')}</td>
+        <td style="padding:7px 8px;text-align:center;">${Number(r.avg_cost).toLocaleString('en-US')} ج</td>
+        <td style="padding:7px 8px;text-align:center;font-weight:900;color:#e65100;">${Number(r.qty*r.avg_cost).toLocaleString('en-US')} ج</td>
+      </tr>`).join('')}
+      <tr style="background:var(--g5);font-weight:900;border-top:2px solid #e65100;">
+        <td style="padding:7px 8px;" colspan="3">إجمالي قيمة المخزن</td>
+        <td style="padding:7px 8px;text-align:center;color:#e65100;">${Number(grandTotal).toLocaleString('en-US')} ج</td>
+      </tr>
+    </tbody>
+  </table></div>`;
+}
+
+async function renderInvHistory(){
+  const el = document.getElementById('inv-history');
+  if(!el) return;
+  el.innerHTML='<div class="loading">⏳</div>';
+  const item  = document.getElementById('inv-filter-item')?.value||'';
+  const type  = document.getElementById('inv-filter-type')?.value||'';
+  const from  = document.getElementById('inv-from')?.value||'';
+  const to    = document.getElementById('inv-to')?.value||'';
+  let q = sb.from('inventory_transactions').select('*').eq('user_id',currentUser.id).order('date',{ascending:false}).order('created_at',{ascending:false});
+  if(item) q=q.eq('item',item);
+  if(type) q=q.eq('type',type);
+  if(from) q=q.gte('date',from);
+  if(to)   q=q.lte('date',to);
+  const {data,error}=await q;
+  if(error||!data?.length){el.innerHTML='<div class="empty">لا يوجد حركات</div>';return;}
+  const typeLabel={'in':'📥 استلام','sale':'💰 بيع','usage':'🔧 صرف'};
+  const typeColor={'in':'#e65100','sale':'var(--g2)','usage':'#6a1b9a'};
+  el.innerHTML=data.map(r=>`
+    <div class="item" style="padding:10px 14px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <span style="font-size:0.78rem;font-weight:900;background:${typeColor[r.type]}22;color:${typeColor[r.type]};border-radius:6px;padding:2px 7px;">${typeLabel[r.type]||r.type}</span>
+          <span style="font-size:0.85rem;font-weight:800;margin-right:6px;">${s(r.item)}</span>
+          <span style="font-size:0.72rem;color:var(--muted);">${Number(r.quantity).toLocaleString('en-US')} ${s(r.unit||'')}</span>
+          ${r.crop?`<span style="font-size:0.7rem;color:#6a1b9a;margin-right:4px;">🌾 ${s(r.crop)}</span>`:''}
+        </div>
+        <div style="text-align:left;">
+          <div style="font-size:0.85rem;font-weight:900;color:${typeColor[r.type]};">${Number(r.total||0).toLocaleString('en-US')} ج</div>
+          <div style="font-size:0.68rem;color:var(--muted);">${fmtDate(r.date)}</div>
+        </div>
+      </div>
+      ${r.notes?`<div style="font-size:0.72rem;color:var(--muted);margin-top:3px;">${s(r.notes)}</div>`:''}
+    </div>`).join('');
+}
+
+function clearInvFilter(){
+  document.getElementById('inv-from').value='';
+  document.getElementById('inv-to').value='';
+  document.getElementById('inv-filter-item').value='';
+  document.getElementById('inv-filter-type').value='';
+  renderInvHistory();
+}
+
+async function openInvModal(type){
+  const items = await getInvItems();
+  const crops = await getCrops();
+  const typeLabel={'in':'📥 استلام مخزن','sale':'💰 بيع من المخزن','usage':'🔧 صرف من المخزن'};
+  const typeColor={'in':'#e65100','sale':'var(--g2)','usage':'#6a1b9a'};
+  const stocks = await calcAllStock();
+
+  const itemOpts = items.map(i=>`<option>${s(i)}</option>`).join('');
+  const cropOpts = crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${s(c)}</option>`).join('');
+
+  document.getElementById('modal-title').textContent = typeLabel[type];
+  document.getElementById('modal-body').innerHTML=`
+    <div class="edit-modal-row"><label>الصنف</label>
+      <select id="inv-m-item" onchange="onInvItemChange()" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.88rem;">
+        <option value="">-- اختار الصنف --</option>${itemOpts}
+      </select>
+    </div>
+    ${type!=='in'?`<div id="inv-m-stock-info" style="display:none;background:var(--g5);border-radius:10px;padding:8px 12px;margin-bottom:8px;font-size:0.8rem;font-weight:800;color:var(--muted);">الكمية المتاحة: <span id="inv-m-avail" style="color:#e65100;">0</span> · متوسط التكلفة: <span id="inv-m-avgcost">0</span> ج</div>`:''}
+    <div class="edit-modal-row"><label>الكمية</label>
+      <input type="text" inputmode="decimal" id="inv-m-qty" placeholder="0" oninput="calcInvTotal('${type}')"></div>
+    ${type==='in'?`<div class="edit-modal-row"><label>سعر الوحدة</label>
+      <input type="text" inputmode="decimal" id="inv-m-price" placeholder="0" oninput="calcInvTotal('${type}')"></div>`:''}
+    ${type==='sale'?`<div class="edit-modal-row"><label>سعر البيع للوحدة</label>
+      <input type="text" inputmode="decimal" id="inv-m-price" placeholder="0" oninput="calcInvTotal('${type}')"></div>`:''}
+    <div class="edit-modal-row"><label>الوحدة</label>
+      <input type="text" id="inv-m-unit" placeholder="كيلو / لتر / كيس ..."></div>
+    ${type==='usage'?`<div class="edit-modal-row"><label>🌾 المحصول (اختياري)</label>
+      <select id="inv-m-crop" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.88rem;">
+        <option value="">-- بدون تخصيص --</option><option value="عام 🌍">عام 🌍</option>${cropOpts}
+      </select></div>`:''}
+    <div id="inv-m-total-box" style="display:none;background:var(--g5);border-radius:10px;padding:8px 12px;margin-bottom:8px;font-size:0.9rem;font-weight:900;color:#e65100;text-align:center;">الإجمالي: <span id="inv-m-total">0</span> ج</div>
+    <div class="edit-modal-row"><label>التاريخ</label>
+      <input type="date" id="inv-m-date" value="${today()}"></div>
+    <div class="edit-modal-row"><label>ملاحظات</label>
+      <input type="text" id="inv-m-notes" placeholder="اختياري..."></div>`;
+
+  // fill stock info if sale/usage
+  window._invModalType = type;
+  window._invStocks = stocks;
+
+  document.getElementById('modal-save').onclick = ()=>saveInvTransaction(type);
+  openModal();
+}
+
+async function onInvItemChange(){
+  const item = document.getElementById('inv-m-item')?.value;
+  const type = window._invModalType;
+  if(!item||type==='in') return;
+  const infoBox = document.getElementById('inv-m-stock-info');
+  if(!infoBox) return;
+  const st = (window._invStocks||[]).find(r=>r.item===item);
+  const qty = st?.qty||0;
+  const avg = st?.avg_cost||0;
+  document.getElementById('inv-m-avail').textContent=Number(qty).toLocaleString('en-US');
+  document.getElementById('inv-m-avgcost').textContent=Number(avg).toLocaleString('en-US');
+  infoBox.style.display='block';
+  // fill unit
+  const unitEl=document.getElementById('inv-m-unit');
+  if(unitEl&&st?.unit) unitEl.value=st.unit;
+}
+
+function calcInvTotal(type){
+  const qty   = parseNum(document.getElementById('inv-m-qty')?.value||'0');
+  const price = parseNum(document.getElementById('inv-m-price')?.value||'0');
+  const box   = document.getElementById('inv-m-total-box');
+  const span  = document.getElementById('inv-m-total');
+  if(!box||!span) return;
+  if((type==='in'||type==='sale')&&qty>0&&price>0){
+    box.style.display='block';
+    span.textContent=Number(qty*price).toLocaleString('en-US');
+  } else { box.style.display='none'; }
+}
+
+async function saveInvTransaction(type){
+  const item  = document.getElementById('inv-m-item')?.value;
+  const qty   = parseNum(document.getElementById('inv-m-qty')?.value||'0');
+  const price = parseNum(document.getElementById('inv-m-price')?.value||'0');
+  const unit  = document.getElementById('inv-m-unit')?.value.trim()||'';
+  const date  = document.getElementById('inv-m-date')?.value;
+  const notes = document.getElementById('inv-m-notes')?.value.trim()||'';
+  const crop  = document.getElementById('inv-m-crop')?.value||null;
+
+  if(!item) return showToast('❌ اختار الصنف');
+  if(!qty||qty<=0) return showToast('❌ اكتب الكمية');
+  if((type==='in'||type==='sale')&&(!price||price<=0)) return showToast('❌ اكتب السعر');
+  if(!date) return showToast('❌ اختار التاريخ');
+
+  // حساب المتوسط المرجح للاستلام
+  let avg_cost = 0;
+  if(type==='in'){
+    const cur = (window._invStocks||[]).find(r=>r.item===item);
+    const curQty = cur?.qty||0;
+    const curAvg = cur?.avg_cost||0;
+    avg_cost = curQty>0 ? (curQty*curAvg + qty*price)/(curQty+qty) : price;
+  } else {
+    const cur = (window._invStocks||[]).find(r=>r.item===item);
+    avg_cost = cur?.avg_cost||0;
+    // تحقق من الكمية المتاحة
+    if((cur?.qty||0) < qty){
+      const ok = await showConfirm(`⚠️ الكمية المطلوبة (${qty}) أكبر من المتاح (${cur?.qty||0}).\nهل تكمل؟`,'⚠️');
+      if(!ok) return;
+    }
+  }
+
+  const unit_price = (type==='in'||type==='sale') ? price : avg_cost;
+  const total = qty * unit_price;
+
+  const {error} = await sb.from('inventory_transactions').insert({
+    user_id:currentUser.id, item, unit, type, quantity:qty,
+    unit_price, avg_cost, total, date, notes:notes||null, crop:crop||null
+  });
+  if(error) return showToast('❌ خطأ: '+error.message);
+
+  // لو صرف لمحصول → سجّل كمصروف في expenses
+  if(type==='usage'&&crop){
+    await sb.from('expenses').insert({
+      user_id:currentUser.id,
+      description:'صرف مخزن: '+item+(notes?' - '+notes:''),
+      amount:total, category:'مستلزمات', crop:crop, date, notes:notes||null
+    });
+  }
+
+  showToast(type==='in'?'✅ تم الاستلام':type==='sale'?'✅ تم البيع':'✅ تم الصرف');
+  closeModal();
+  // تحديث الـ stocks cache
+  window._invStocks = await calcAllStock();
+  renderInvStock();
+  renderInvHistory();
+}
+
+async function openInvItemManager(){
+  let items = await getInvItems();
+  const refresh=()=>{
+    document.getElementById('inv-item-list').outerHTML=`<div id="inv-item-list">${items.map((t,j)=>`<div class="cat-item"><span>${s(t)}</span><button class="btn-sm btn-r" onclick="window._invItemDel(${j})">🗑️</button></div>`).join('')}</div>`;
+  };
+  document.getElementById('modal-title').textContent='⚙️ إدارة الأصناف';
+  document.getElementById('modal-body').innerHTML=`
+    <div id="inv-item-list">${items.map((t,i)=>`<div class="cat-item"><span>${s(t)}</span><button class="btn-sm btn-r" onclick="window._invItemDel(${i})">🗑️</button></div>`).join('')}</div>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <input id="new-inv-item" placeholder="اسم صنف جديد" style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.88rem;">
+      <button class="btn-sm btn-g" onclick="window._invItemAdd()" style="padding:10px 16px;">➕</button>
+    </div>`;
+  window._invItemAdd=async()=>{
+    const inp=document.getElementById('new-inv-item');const name=inp?.value.trim();
+    if(!name)return;if(items.includes(name))return showToast('❌ موجود مسبقاً');
+    items.push(name);await saveInvItems(items);inp.value='';refresh();
+    const sel=document.getElementById('inv-filter-item');
+    if(sel) sel.innerHTML='<option value="">كل الأصناف</option>'+items.map(i=>`<option>${s(i)}</option>`).join('');
+  };
+  window._invItemDel=async(i)=>{
+    items.splice(i,1);await saveInvItems(items);refresh();
+    const sel=document.getElementById('inv-filter-item');
+    if(sel) sel.innerHTML='<option value="">كل الأصناف</option>'+items.map(i=>`<option>${s(i)}</option>`).join('');
+  };
+  document.getElementById('modal-save').onclick=()=>closeModal();
+  openModal();
+}
+
+async function exportInventoryExcel(){
+  showToast('⏳ جاري التصدير...');
+  const stocks = await calcAllStock();
+  const {data:txns} = await sb.from('inventory_transactions').select('*').eq('user_id',currentUser.id).order('date',{ascending:false});
+
+  const wb = XLSX.utils.book_new();
+
+  // شيت الجرد
+  const stockRows = stocks.filter(r=>r.qty>0.001).map((r,i)=>({'م':i+1,'الصنف':r.item,'الوحدة':r.unit||'','الكمية':r.qty,'متوسط التكلفة':r.avg_cost,'القيمة الإجمالية':r.qty*r.avg_cost}));
+  const grandTotal = stockRows.reduce((s,r)=>s+r['القيمة الإجمالية'],0);
+  stockRows.push({'م':'','الصنف':'الإجمالي','الوحدة':'','الكمية':'','متوسط التكلفة':'','القيمة الإجمالية':grandTotal});
+  const ws1 = XLSX.utils.json_to_sheet(stockRows,{header:['م','الصنف','الوحدة','الكمية','متوسط التكلفة','القيمة الإجمالية']});
+  ws1['!cols']=[{wch:4},{wch:18},{wch:9},{wch:10},{wch:16},{wch:18}];
+  xlStyle(ws1,0,[stockRows.length]);
+  xlPrependTitle(ws1,'جرد المخزن',6);
+  XLSX.utils.book_append_sheet(wb,ws1,'الجرد');
+
+  // شيت الحركات
+  const typeLabel={'in':'استلام','sale':'بيع','usage':'صرف'};
+  const txnRows=(txns||[]).map((r,i)=>({'م':i+1,'التاريخ':r.date,'العملية':typeLabel[r.type]||r.type,'الصنف':r.item,'الكمية':r.quantity,'الوحدة':r.unit||'','سعر الوحدة':r.unit_price||0,'الإجمالي':r.total||0,'المحصول':r.crop||'','ملاحظات':r.notes||''}));
+  const ws2=XLSX.utils.json_to_sheet(txnRows,{header:['م','التاريخ','العملية','الصنف','الكمية','الوحدة','سعر الوحدة','الإجمالي','المحصول','ملاحظات']});
+  ws2['!cols']=[{wch:4},{wch:13},{wch:9},{wch:16},{wch:9},{wch:9},{wch:13},{wch:13},{wch:12},{wch:20}];
+  xlStyle(ws2,0,[]);
+  xlPrependTitle(ws2,'سجل حركات المخزن',10);
+  XLSX.utils.book_append_sheet(wb,ws2,'الحركات');
+
+  XLSX.writeFile(wb,`المخزن_${today()}.xlsx`);
   showToast('✅ تم التصدير!');
 }
 
