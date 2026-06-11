@@ -683,6 +683,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
     <button class="bnav" id="bnav-account-statement" style="display:none;"></button>
     <button class="bnav" id="bnav-deferred-purchases" style="display:none;"></button>
     <button class="bnav" id="bnav-dp-account-statement" style="display:none;"></button>
+    <button class="bnav" id="bnav-dp-payment" style="display:none;"></button>
   </div>
 
   <!-- HOME -->
@@ -1085,6 +1086,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
     <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px;padding:0 2px;flex-wrap:wrap;">
       <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="showPage('deferred',document.getElementById('bnav-deferred'))">← رجوع</button>
       <span style="font-size:0.95rem;font-weight:900;color:#6a1b9a;flex:1;">🛍️ مشتريات آجل</span>
+      <button class="btn-sm" style="background:#6a1b9a;color:#fff;border:none;" onclick="showPage('dp-payment',document.getElementById('bnav-dp-payment'))">💵 سداد</button>
       <button class="btn-sm" style="background:#6a1b9a;color:#fff;border:none;" onclick="showPage('dp-account-statement',document.getElementById('bnav-dp-account-statement'))">📋 كشف حساب</button>
       <button class="btn-sm" style="background:#6a1b9a;color:#fff;border:none;" onclick="exportDpToExcel()">📊 Excel</button>
     </div>
@@ -1189,6 +1191,66 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
     </div>
     <div id="dpas-result"></div>
   </div><!-- end page-dp-account-statement -->
+
+  <!-- صفحة سداد مشتريات -->
+  <div class="page" id="page-dp-payment">
+    <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px;padding:0 2px;flex-wrap:wrap;">
+      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="showPage('deferred-purchases',document.getElementById('bnav-deferred-purchases'))">← رجوع</button>
+      <span style="font-size:0.95rem;font-weight:900;color:#6a1b9a;flex:1;">💵 سداد مشتريات</span>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💵 تسجيل سداد</div>
+
+      <div class="form-row">
+        <label>التاجر</label>
+        <select id="dpp-trader" onchange="onDppTraderChange()">
+          <option value="">-- اختار التاجر --</option>
+        </select>
+      </div>
+
+      <div id="dpp-debt-box" style="display:none;background:#f3e5f5;border-radius:12px;padding:12px 14px;margin-bottom:10px;justify-content:space-between;align-items:center;">
+        <span style="font-size:0.85rem;font-weight:700;color:var(--muted);">إجمالي المديونية</span>
+        <span style="font-size:1.1rem;font-weight:900;color:var(--red);" id="dpp-debt-val">0 ج</span>
+      </div>
+
+      <div class="form-row">
+        <label>المبلغ المسدَّد</label>
+        <input type="text" inputmode="decimal" id="dpp-amount" placeholder="0">
+      </div>
+
+      <div class="form-row">
+        <label>التاريخ</label>
+        <input type="date" id="dpp-date">
+      </div>
+
+      <div class="form-row">
+        <label>ملاحظات</label>
+        <input type="text" id="dpp-notes" placeholder="اختياري...">
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:stretch;">
+        <button class="btn" style="flex:3;background:#6a1b9a;color:#fff;border:none;border-radius:14px;font-family:Cairo,sans-serif;font-size:0.9rem;font-weight:900;cursor:pointer;padding:12px;" onclick="addDpPayment()">💾 تسجيل السداد</button>
+        <button style="flex:1;background:#1565C0;color:#fff;border:none;border-radius:14px;font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:900;cursor:pointer;padding:10px 6px;line-height:1.3;" onclick="addDpTaswiya()">📋 تسوية</button>
+      </div>
+    </div>
+
+    <div id="dpp-history-section" style="display:none;">
+      <div class="date-filter" style="margin-top:12px;">
+        <label>من:</label><input type="date" id="dpp-from" onchange="renderDpPayments()">
+        <label>إلى:</label><input type="date" id="dpp-to" onchange="renderDpPayments()">
+        <button class="clear-btn" onclick="clearDppFilter()">الكل</button>
+      </div>
+      <div style="background:#f3e5f5;border-radius:12px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:0.8rem;font-weight:700;color:var(--muted);">إجمالي المسدَّد</span>
+        <span style="font-size:0.95rem;font-weight:900;color:#6a1b9a;" id="dpp-total-paid">0 ج</span>
+      </div>
+      <div style="margin-bottom:8px;">
+        <button id="dpp-bulk-delete-btn" onclick="bulkDeleteDpPayments()" style="display:none;background:var(--red);color:#fff;border:none;padding:8px 16px;border-radius:10px;font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:800;cursor:pointer;">🗑️ حذف المحدد</button>
+      </div>
+      <div id="dpp-list"><div class="empty">لا يوجد سدادات</div></div>
+    </div>
+  </div><!-- end page-dp-payment -->
 
   <!-- صفحة سداد المبيعات -->
   <div class="page" id="page-sales-payment">
@@ -1951,7 +2013,7 @@ function showPage(name, btn) {
   document.getElementById('page-'+name).classList.add('active');
   if(btn) btn.classList.add('active');
   else {
-    const map = {home:'bnav-home',income:'bnav-income',expense:'bnav-expense',vault:'bnav-vault',ajal:'bnav-ajal',log:'bnav-log',analytics:'bnav-analytics',search:'bnav-search',seasons:'bnav-seasons','season-detail':'bnav-seasons',deferred:'bnav-deferred','sales-payment':'bnav-sales-payment','account-statement':'bnav-account-statement','deferred-purchases':'bnav-deferred-purchases','dp-account-statement':'bnav-dp-account-statement'};
+    const map = {home:'bnav-home',income:'bnav-income',expense:'bnav-expense',vault:'bnav-vault',ajal:'bnav-ajal',log:'bnav-log',analytics:'bnav-analytics',search:'bnav-search',seasons:'bnav-seasons','season-detail':'bnav-seasons',deferred:'bnav-deferred','sales-payment':'bnav-sales-payment','account-statement':'bnav-account-statement','deferred-purchases':'bnav-deferred-purchases','dp-account-statement':'bnav-dp-account-statement','dp-payment':'bnav-dp-payment'};
     if(map[name]) document.getElementById(map[name]).classList.add('active');
     // else: no nav button to highlight
   }
@@ -1962,6 +2024,7 @@ function showPage(name, btn) {
     ajal: [],
     deferred: ['ds-from','ds-to'],
     'sales-payment': ['sp-from','sp-to'],
+    'dp-payment': ['dpp-from','dpp-to'],
     'deferred-purchases': ['dp-from','dp-to'],
     capital: ['cap-from','cap-to'],
     vault: ['vault-from','vault-to'],
@@ -1978,6 +2041,7 @@ function showPage(name, btn) {
   if(name==='sales-payment') initSalesPaymentPage();
   if(name==='account-statement') initAccountStatementPage();
   if(name==='dp-account-statement') initDpAccountStatementPage();
+  if(name==='dp-payment') initDpPaymentPage();
   setTimeout(setDateInputs, 100);
   if(name==='capital') renderCapitalList();
   if(name==='vault') { renderVaultList(); renderVaultSummary(); }
@@ -6918,5 +6982,206 @@ async function exportDpAccountStatementExcel(trader, from, to){
   XLSX.utils.book_append_sheet(wb, ws2, 'المدفوعات');
   XLSX.writeFile(wb, `كشف_مشتريات_${trader}.xlsx`);
   showToast('✅ تم التصدير!');
+}
+
+// ===== سداد مشتريات =====
+async function initDpPaymentPage(){
+  const traders = await getDpTraders();
+  const sel = document.getElementById('dpp-trader');
+  if(sel) sel.innerHTML = '<option value="">-- اختار التاجر --</option>' + traders.map(t=>`<option>${s(t)}</option>`).join('');
+  document.getElementById('dpp-debt-box').style.display = 'none';
+  document.getElementById('dpp-history-section').style.display = 'none';
+  document.getElementById('dpp-list').innerHTML = '<div class="empty">اختار تاجر أولاً</div>';
+  setTimeout(setDateInputs, 100);
+}
+
+async function onDppTraderChange(){
+  const trader = document.getElementById('dpp-trader').value;
+  if(!trader){
+    document.getElementById('dpp-debt-box').style.display = 'none';
+    document.getElementById('dpp-history-section').style.display = 'none';
+    return;
+  }
+  const [{data:purchData}, {data:paidData}] = await Promise.all([
+    sb.from('deferred_purchases').select('total').eq('user_id',currentUser.id).eq('trader',trader),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).in('category',['سداد_مشتريات','تسوية_مشتريات']).like('description','سداد مشتريات: '+trader)
+  ]);
+  const totalPurch = (purchData||[]).reduce((s,x)=>s+Number(x.total||0),0);
+  const totalPaid  = (paidData||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const debt = totalPurch - totalPaid;
+  const box = document.getElementById('dpp-debt-box');
+  box.style.display = 'flex';
+  document.getElementById('dpp-debt-val').textContent = Number(debt).toLocaleString('en-US') + ' ج';
+  document.getElementById('dpp-debt-val').style.color = debt > 0 ? 'var(--red)' : '#6a1b9a';
+  document.getElementById('dpp-history-section').style.display = 'block';
+  renderDpPayments();
+}
+
+async function addDpPayment(){
+  const trader = document.getElementById('dpp-trader').value;
+  const amount = parseNum(document.getElementById('dpp-amount').value);
+  const date   = document.getElementById('dpp-date').value;
+  const notes  = document.getElementById('dpp-notes').value.trim();
+  if(!trader) return showToast('❌ اختار التاجر');
+  if(!amount || amount <= 0) return showToast('❌ اكتب المبلغ');
+  if(!date) return showToast('❌ اختار التاريخ');
+
+  const debtTxt = document.getElementById('dpp-debt-val')?.textContent||'';
+  const currentDebt = parseNum(debtTxt.replace(' ج','').replace(/,/g,''));
+  if(amount > currentDebt && currentDebt >= 0){
+    const ok = await showConfirm(`⚠️ المبلغ (${fmt(amount)} ج) أكبر من المديونية (${fmt(currentDebt)} ج).\nهل أنت متأكد؟`,'⚠️');
+    if(!ok) return;
+  }
+
+  const {error} = await sb.from('vault').insert({
+    user_id: currentUser.id, type: 'out',
+    description: 'سداد مشتريات: '+trader,
+    amount, date, notes: notes||'', category: 'سداد_مشتريات'
+  });
+  if(error) return showToast('❌ خطأ: '+error.message);
+
+  logActivity('إضافة','vault','سداد مشتريات: '+trader, amount);
+  showToast('✅ تم تسجيل السداد');
+  document.getElementById('dpp-amount').value='';
+  document.getElementById('dpp-notes').value='';
+  document.getElementById('dpp-date').value=today();
+  onDppTraderChange();
+  renderHome();
+}
+
+async function addDpTaswiya(){
+  const trader = document.getElementById('dpp-trader').value;
+  const amount = parseNum(document.getElementById('dpp-amount').value);
+  const date   = document.getElementById('dpp-date').value;
+  const notes  = document.getElementById('dpp-notes').value.trim();
+  if(!trader) return showToast('❌ اختار التاجر');
+  if(!amount || amount <= 0) return showToast('❌ اكتب المبلغ');
+  if(!date) return showToast('❌ اختار التاريخ');
+
+  const debtTxt = document.getElementById('dpp-debt-val')?.textContent||'';
+  const currentDebt = parseNum(debtTxt.replace(' ج','').replace(/,/g,''));
+  if(amount > currentDebt && currentDebt >= 0){
+    const ok = await showConfirm(`⚠️ مبلغ التسوية (${fmt(amount)} ج) أكبر من المديونية (${fmt(currentDebt)} ج).\nهل أنت متأكد؟`,'⚠️');
+    if(!ok) return;
+  }
+
+  const {error} = await sb.from('vault').insert({
+    user_id: currentUser.id, type: 'taswiya',
+    description: 'سداد مشتريات: '+trader,
+    amount, date,
+    notes: (notes?notes+' - ':'')+'تسوية',
+    category: 'تسوية_مشتريات'
+  });
+  if(error) return showToast('❌ خطأ: '+error.message);
+
+  logActivity('إضافة','vault','تسوية مشتريات: '+trader, amount);
+  showToast('✅ تم تسجيل التسوية');
+  document.getElementById('dpp-amount').value='';
+  document.getElementById('dpp-notes').value='';
+  document.getElementById('dpp-date').value=today();
+  onDppTraderChange();
+}
+
+function clearDppFilter(){
+  document.getElementById('dpp-from').value='';
+  document.getElementById('dpp-to').value='';
+  renderDpPayments();
+}
+
+let _dppSelected = new Set();
+
+async function renderDpPayments(){
+  const el = document.getElementById('dpp-list');
+  const trader = document.getElementById('dpp-trader').value;
+  if(!trader||!el) return;
+  el.innerHTML='<div class="loading">⏳</div>';
+  _dppSelected.clear();
+  updateDppDeleteBtn();
+
+  const from = document.getElementById('dpp-from')?.value;
+  const to   = document.getElementById('dpp-to')?.value;
+
+  let q = sb.from('vault').select('*').eq('user_id',currentUser.id)
+    .in('category',['سداد_مشتريات','تسوية_مشتريات'])
+    .like('description','سداد مشتريات: '+trader)
+    .order('date',{ascending:false});
+  if(from) q=q.gte('date',from);
+  if(to)   q=q.lte('date',to);
+
+  const {data,error}=await q;
+  if(error){el.innerHTML='<div class="empty">❌ خطأ</div>';return;}
+  if(!data?.length){el.innerHTML='<div class="empty">لا يوجد سدادات</div>';document.getElementById('dpp-total-paid').textContent='0 ج';return;}
+
+  const total=data.reduce((s,x)=>s+Number(x.amount||0),0);
+  document.getElementById('dpp-total-paid').textContent=Number(total).toLocaleString('en-US')+' ج';
+
+  el.innerHTML=data.map(x=>{
+    const isTaswiya=x.category==='تسوية_مشتريات';
+    return `<div class="item" style="display:flex;align-items:center;gap:10px;padding:12px 14px;">
+      <input type="checkbox" style="width:18px;height:18px;cursor:pointer;accent-color:#6a1b9a;"
+        onchange="toggleDppSelect('${x.id}',this.checked)">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:0.85rem;font-weight:800;">💵 ${Number(x.amount||0).toLocaleString('en-US')} ج
+          <span style="margin-right:6px;background:${isTaswiya?'#E3F2FD':'#f3e5f5'};color:${isTaswiya?'#1565C0':'#6a1b9a'};border-radius:6px;padding:1px 6px;font-size:0.7rem;font-weight:900;">${isTaswiya?'تسوية':'سداد'}</span>
+        </div>
+        <div style="font-size:0.72rem;color:var(--muted);">${fmtDate(x.date)}${x.notes?' · '+s(x.notes):''}</div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn-sm" style="background:#f3e5f5;color:#6a1b9a;border:none;" onclick="editDppPayment('${x.id}',${x.amount},'${x.date}','${s(x.notes||'')}')">✏️</button>
+        <button class="btn-sm btn-r" onclick="deleteDppPayment('${x.id}')">🗑️</button>
+      </div>
+    </div>`;}).join('');
+}
+
+function toggleDppSelect(id,checked){
+  if(checked) _dppSelected.add(id); else _dppSelected.delete(id);
+  updateDppDeleteBtn();
+}
+function updateDppDeleteBtn(){
+  const btn=document.getElementById('dpp-bulk-delete-btn');
+  if(!btn) return;
+  if(_dppSelected.size>0){btn.style.display='inline-block';btn.textContent='🗑️ حذف المحدد ('+_dppSelected.size+')';}
+  else btn.style.display='none';
+}
+async function deleteDppPayment(id){
+  if(!await showConfirm('⚠️ هتحذف هذا السداد من الخزنة. متأكد؟','⚠️')) return;
+  await sb.from('vault').delete().eq('id',id).eq('user_id',currentUser.id);
+  showToast('🗑️ تم الحذف');
+  onDppTraderChange();
+  renderHome();
+}
+async function bulkDeleteDpPayments(){
+  if(!_dppSelected.size) return;
+  if(!await showConfirm('⚠️ هتحذف '+_dppSelected.size+' سداد من الخزنة. متأكد؟','🗑️')) return;
+  await sb.from('vault').delete().in('id',[..._dppSelected]).eq('user_id',currentUser.id);
+  showToast('🗑️ تم حذف '+_dppSelected.size+' سداد');
+  _dppSelected.clear();
+  onDppTraderChange();
+  renderHome();
+}
+
+function editDppPayment(id, amount, date, notes){
+  document.getElementById('modal-title').textContent='✏️ تعديل السداد';
+  document.getElementById('modal-body').innerHTML=`
+    <div class="edit-modal-row"><label>المبلغ</label>
+      <input type="text" inputmode="decimal" id="dppedit-amount" value="${amount}" autocomplete="off"></div>
+    <div class="edit-modal-row"><label>التاريخ</label>
+      <input type="date" id="dppedit-date" value="${date}"></div>
+    <div class="edit-modal-row"><label>ملاحظات</label>
+      <input type="text" id="dppedit-notes" value="${notes}"></div>`;
+  document.getElementById('modal-save').onclick = async ()=>{
+    const newAmt  = parseNum(document.getElementById('dppedit-amount').value);
+    const newDate = document.getElementById('dppedit-date').value;
+    const newNotes= document.getElementById('dppedit-notes').value;
+    if(!newAmt||newAmt<=0) return showToast('❌ اكتب مبلغ صحيح');
+    if(!newDate) return showToast('❌ اختار التاريخ');
+    const {error}=await sb.from('vault').update({amount:newAmt,date:newDate,notes:newNotes}).eq('id',id).eq('user_id',currentUser.id);
+    if(error) return showToast('❌ خطأ: '+error.message);
+    showToast('✅ تم التعديل');
+    closeModal();
+    onDppTraderChange();
+    renderHome();
+  };
+  openModal();
 }
 </script>
