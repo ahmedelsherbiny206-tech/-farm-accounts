@@ -7083,7 +7083,8 @@ async function openReturnModal(tableType, origId, trader, saleType, origTotal){
         <input type="text" inputmode="decimal" id="ret-inv-qty" placeholder="0"></div>
       <div class="edit-modal-row"><label>الوحدة</label>
         <input type="text" id="ret-inv-unit" placeholder="كيلو / لتر ..."></div>
-    </div>`:''}`;
+    </div>`:''}
+    <button class="btn btn-g" style="width:100%;margin-top:12px;" onclick="saveReturn()">💾 تسجيل المرتجع</button>`;
 
   window._retCash = false;
   window._retInv  = false;
@@ -7093,7 +7094,6 @@ async function openReturnModal(tableType, origId, trader, saleType, origTotal){
   window._retSaleType  = saleType;
   window._retIsSale    = isSale;
 
-  document.getElementById('modal-save').onclick = saveReturn;
   document.getElementById('detail-overlay').classList.add('open');
 }
 
@@ -7370,13 +7370,13 @@ async function openInvModal(type){
     <div class="edit-modal-row"><label>التاريخ</label>
       <input type="date" id="inv-m-date" value="${today()}"></div>
     <div class="edit-modal-row"><label>ملاحظات</label>
-      <input type="text" id="inv-m-notes" placeholder="اختياري..."></div>`;
+      <input type="text" id="inv-m-notes" placeholder="اختياري..."></div>
+    <button class="btn" style="width:100%;margin-top:12px;background:${typeColor[type]};color:#fff;border:none;border-radius:14px;font-family:Cairo,sans-serif;font-size:0.9rem;font-weight:900;cursor:pointer;padding:12px;" onclick="saveInvTransaction('${type}')">💾 حفظ</button>`;
 
   // fill stock info if sale/usage
   window._invModalType = type;
   window._invStocks = stocks;
 
-  document.getElementById('modal-save').onclick = ()=>saveInvTransaction(type);
   document.getElementById('detail-overlay').classList.add('open');
 }
 
@@ -7490,7 +7490,6 @@ async function openInvItemManager(){
     const sel=document.getElementById('inv-filter-item');
     if(sel) sel.innerHTML='<option value="">كل الأصناف</option>'+items.map(i=>`<option>${s(i)}</option>`).join('');
   };
-  document.getElementById('modal-save').onclick=()=>closeModal();
   document.getElementById('detail-overlay').classList.add('open');
 }
 
@@ -7708,20 +7707,22 @@ function editDppPayment(id, amount, date, notes){
     <div class="edit-modal-row"><label>التاريخ</label>
       <input type="date" id="dppedit-date" value="${date}"></div>
     <div class="edit-modal-row"><label>ملاحظات</label>
-      <input type="text" id="dppedit-notes" value="${notes}"></div>`;
-  document.getElementById('modal-save').onclick = async ()=>{
-    const newAmt  = parseNum(document.getElementById('dppedit-amount').value);
-    const newDate = document.getElementById('dppedit-date').value;
-    const newNotes= document.getElementById('dppedit-notes').value;
-    if(!newAmt||newAmt<=0) return showToast('❌ اكتب مبلغ صحيح');
-    if(!newDate) return showToast('❌ اختار التاريخ');
-    const {error}=await sb.from('vault').update({amount:newAmt,date:newDate,notes:newNotes}).eq('id',id).eq('user_id',currentUser.id);
-    if(error) return showToast('❌ خطأ: '+error.message);
-    showToast('✅ تم التعديل');
-    closeModal();
-    onDppTraderChange();
-    renderHome();
-  };
+      <input type="text" id="dppedit-notes" value="${notes}"></div>
+    <button class="btn" style="width:100%;margin-top:12px;background:#6a1b9a;color:#fff;border:none;border-radius:14px;font-family:Cairo,sans-serif;font-size:0.9rem;font-weight:900;cursor:pointer;padding:12px;" onclick="saveDppEdit('${id}')">💾 حفظ</button>`;
   document.getElementById('detail-overlay').classList.add('open');
+}
+
+async function saveDppEdit(id){
+  const newAmt   = parseNum(document.getElementById('dppedit-amount').value);
+  const newDate  = document.getElementById('dppedit-date').value;
+  const newNotes = document.getElementById('dppedit-notes').value;
+  if(!newAmt||newAmt<=0) return showToast('❌ اكتب مبلغ صحيح');
+  if(!newDate) return showToast('❌ اختار التاريخ');
+  const {error} = await sb.from('vault').update({amount:newAmt,date:newDate,notes:newNotes}).eq('id',id).eq('user_id',currentUser.id);
+  if(error) return showToast('❌ خطأ: '+error.message);
+  showToast('✅ تم التعديل');
+  closeModal();
+  onDppTraderChange();
+  renderHome();
 }
 </script>
