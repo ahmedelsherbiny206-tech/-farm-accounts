@@ -4697,12 +4697,14 @@ async function renderDeferredPurchases() {
   el.innerHTML = data.map(x=>{
     const items = x.items||[];
     const itemsHtml = items.map(it=>`<div style="font-size:0.72rem;color:var(--muted);">• ${s(it.name)} — ${it.qty} × ${fmt(it.price)} = ${fmt(it.qty*it.price)} ج</div>`).join('');
-    return `<div class="item ${x.paid?'':'exp'}" id="dp-item-${x.id}" style="flex-direction:column;align-items:stretch;gap:6px;padding:12px 14px;">
+    return `<div class="item ${x.paid?'':'exp'}" id="dp-item-${x.id}" style="flex-direction:column;align-items:stretch;gap:6px;padding:12px 14px;${x.is_return?'border-right:3px solid var(--red);opacity:0.9;':''}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div style="flex:1;">
-          <div class="i-desc">${x.description?s(x.description):(x.trader?'فاتورة - '+s(x.trader):'فاتورة مشتريات')}</div>
+          <div class="i-desc">${x.description?s(x.description):(x.trader?'فاتورة - '+s(x.trader):'فاتورة مشتريات')}
+            ${x.is_return?'<span style="font-size:0.6rem;background:#fdecea;color:var(--red);padding:2px 6px;border-radius:8px;font-weight:800;margin-right:4px;">🔄 مرتجع</span>':''}
+          </div>
           <div class="i-sub">${fmtDate(x.date)}${x.trader?' · 👤 '+s(x.trader):''}
-            <span class="badge ${x.paid?'badge-paid':'badge-pend'}" style="margin-right:4px;">${x.paid?'✅ مسددة':'⏳ معلقة'}</span>
+            ${!x.is_return?`<span class="badge ${x.paid?'badge-paid':'badge-pend'}" style="margin-right:4px;">${x.paid?'✅ مسددة':'⏳ معلقة'}</span>`:''}
           </div>
         </div>
         <div style="text-align:left;">
@@ -4711,8 +4713,9 @@ async function renderDeferredPurchases() {
       </div>
       <div style="border-top:1px solid var(--border);padding-top:6px;">${itemsHtml}</div>
       ${x.notes?`<div style="font-size:0.72rem;color:var(--muted);">📝 ${s(x.notes)}</div>`:''}
-      <div style="display:flex;gap:6px;margin-top:4px;">
-        ${!x.paid?`<button class="btn-sm btn-g" onclick="payDeferredPurchase('${x.id}')">✅ سُدِّدت</button>`:''}
+      <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
+        ${!x.paid&&!x.is_return?`<button class="btn-sm btn-g" onclick="payDeferredPurchase('${x.id}')">✅ سُدِّدت</button>`:''}
+        ${!x.is_return?`<button class="btn-sm" style="background:#fff3e0;color:#e65100;border:1.5px solid #e65100;" onclick="openReturnModal('purchase','${x.id}','${s(x.trader||'')}','',${Math.abs(x.total||0)})">🔄 مرتجع</button>`:''}
         <button class="btn-sm" style="background:var(--blue-p);color:var(--blue);border:none;" onclick="editDeferredPurchase('${x.id}')">✏️ تعديل</button>
         <button class="btn-sm btn-r" onclick="deleteDeferredPurchase('${x.id}','${x.paid}')">🗑️ حذف</button>
       </div>
@@ -5889,10 +5892,13 @@ async function renderDeferredSales(){
     const isProd = x.sale_type === 'product';
     const hasItems = (x.items||[]).length > 0;
     const itemsHtml = hasItems ? (x.items||[]).map(it=>`<div style="font-size:0.72rem;color:var(--muted);">• ${s(it.name)} — ${it.qty} ${s(it.unit||'')} × ${fmt(it.price)} = ${fmt((it.qty||0)*(it.price||0))} ج</div>`).join('') : '';
-    return `<div class="ds-card ${isPaid?'ds-paid':''}" id="ds-item-${x.id}">
+    return `<div class="ds-card ${isPaid?'ds-paid':''}" id="ds-item-${x.id}" style="${x.is_return?'border-right:3px solid var(--red);opacity:0.9;':''}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div style="flex:1;min-width:0;">
-          <div style="font-size:0.88rem;font-weight:900;color:var(--text);">${s(x.description||'')} ${isPaid?'<span style="font-size:0.6rem;background:#d4edda;color:#155724;padding:2px 6px;border-radius:8px;font-weight:800;">✅ مسددة</span>':''}</div>
+          <div style="font-size:0.88rem;font-weight:900;color:var(--text);">${s(x.description||'')}
+            ${x.is_return?'<span style="font-size:0.6rem;background:#fdecea;color:var(--red);padding:2px 6px;border-radius:8px;font-weight:800;">🔄 مرتجع</span>':''}
+            ${isPaid&&!x.is_return?'<span style="font-size:0.6rem;background:#d4edda;color:#155724;padding:2px 6px;border-radius:8px;font-weight:800;">✅ مسددة</span>':''}
+          </div>
           <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">${fmtDate(x.date)}${x.variety?' · 🌿 '+s(x.variety):''}${x.trader?' · 👤 '+s(x.trader):''}</div>
           ${hasItems?`<div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;">${itemsHtml}</div>`:''}
           ${!hasItems&&!isProd?`<div style="font-size:0.7rem;color:var(--muted);">${x.quantity} ${s(x.unit||'')} × ${Number(x.price).toLocaleString('en-US')} ج</div>`:''}
@@ -5901,7 +5907,8 @@ async function renderDeferredSales(){
         <div class="ds-total-badge">${Number(x.total||0).toLocaleString('en-US')} ج</div>
       </div>
       <div class="ds-actions">
-        ${!isPaid?`<button class="btn-sm btn-g" onclick="payDeferredSale('${x.id}')">✅ تسديد</button>`:''}
+        ${!isPaid&&!x.is_return?`<button class="btn-sm btn-g" onclick="payDeferredSale('${x.id}')">✅ تسديد</button>`:''}
+        ${!x.is_return?`<button class="btn-sm" style="background:#fff3e0;color:#e65100;border:1.5px solid #e65100;" onclick="openReturnModal('sale','${x.id}','${s(x.trader||'')}','${x.sale_type}',${Math.abs(x.total||0)})">🔄 مرتجع</button>`:''}
         <button class="btn-sm" style="background:var(--blue-p);color:var(--blue);border:none;" onclick="editDeferredSale('${x.id}')">✏️ تعديل</button>
         <button class="btn-sm btn-r" onclick="deleteDeferredSale('${x.id}',${isPaid})">🗑️</button>
       </div>
@@ -7036,6 +7043,177 @@ async function exportDpAccountStatementExcel(trader, from, to){
   XLSX.utils.book_append_sheet(wb, ws2, 'المدفوعات');
   XLSX.writeFile(wb, `كشف_مشتريات_${trader}.xlsx`);
   showToast('✅ تم التصدير!');
+}
+
+// ===== المرتجعات =====
+async function openReturnModal(tableType, origId, trader, saleType, origTotal){
+  const invItems = await getInvItems();
+  const hasInv = invItems.length > 0;
+  const isSale = tableType === 'sale';
+
+  document.getElementById('modal-title').textContent = isSale ? '🔄 مرتجع مبيعات' : '🔄 مرتجع مشتريات';
+  document.getElementById('modal-body').innerHTML = `
+    <div style="background:var(--g5);border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:0.8rem;color:var(--muted);">
+      ${trader?`👤 ${s(trader)} · `:''}إجمالي الفاتورة: <strong>${Number(origTotal).toLocaleString('en-US')} ج</strong>
+    </div>
+    <div class="edit-modal-row"><label>مبلغ المرتجع</label>
+      <input type="text" inputmode="decimal" id="ret-amount" placeholder="0" value="${origTotal}"></div>
+    <div class="edit-modal-row"><label>التاريخ</label>
+      <input type="date" id="ret-date" value="${today()}"></div>
+    <div class="edit-modal-row"><label>ملاحظات</label>
+      <input type="text" id="ret-notes" placeholder="سبب المرتجع..."></div>
+
+    <div style="margin:10px 0 6px;font-size:0.82rem;font-weight:900;color:var(--text);">💰 هل يصاحبه حركة نقدية؟</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+      <button id="ret-cash-no"  onclick="setRetCash(false)" style="border-radius:10px;padding:9px;font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;background:var(--g3);color:#fff;border:2px solid var(--g3);">لا — تسوية دفترية فقط</button>
+      <button id="ret-cash-yes" onclick="setRetCash(true)"  style="border-radius:10px;padding:9px;font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;background:var(--bg);color:var(--text);border:2px solid var(--border);">${isSale?'نعم — ردّ نقدية للتاجر':'نعم — استلام نقدية من التاجر'}</button>
+    </div>
+
+    ${hasInv?`<div style="margin:10px 0 6px;font-size:0.82rem;font-weight:900;color:var(--text);">🏪 هل البضاعة ترجع للمخزن؟</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+      <button id="ret-inv-no"  onclick="setRetInv(false)" style="border-radius:10px;padding:9px;font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;background:var(--g3);color:#fff;border:2px solid var(--g3);">لا</button>
+      <button id="ret-inv-yes" onclick="setRetInv(true)"  style="border-radius:10px;padding:9px;font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;background:var(--bg);color:var(--text);border:2px solid var(--border);">نعم</button>
+    </div>
+    <div id="ret-inv-box" style="display:none;">
+      <div class="edit-modal-row"><label>الصنف في المخزن</label>
+        <select id="ret-inv-item" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.88rem;">
+          <option value="">-- اختار الصنف --</option>${invItems.map(i=>`<option>${s(i)}</option>`).join('')}
+        </select></div>
+      <div class="edit-modal-row"><label>الكمية</label>
+        <input type="text" inputmode="decimal" id="ret-inv-qty" placeholder="0"></div>
+      <div class="edit-modal-row"><label>الوحدة</label>
+        <input type="text" id="ret-inv-unit" placeholder="كيلو / لتر ..."></div>
+    </div>`:''}`;
+
+  window._retCash = false;
+  window._retInv  = false;
+  window._retTableType = tableType;
+  window._retOrigId    = origId;
+  window._retTrader    = trader;
+  window._retSaleType  = saleType;
+  window._retIsSale    = isSale;
+
+  document.getElementById('modal-save').onclick = saveReturn;
+  openModal();
+}
+
+function setRetCash(val){
+  window._retCash = val;
+  const yes = document.getElementById('ret-cash-yes');
+  const no  = document.getElementById('ret-cash-no');
+  if(!yes||!no) return;
+  yes.style.background = val  ? 'var(--g3)' : 'var(--bg)';
+  yes.style.color      = val  ? '#fff' : 'var(--text)';
+  yes.style.border     = val  ? '2px solid var(--g3)' : '2px solid var(--border)';
+  no.style.background  = !val ? 'var(--g3)' : 'var(--bg)';
+  no.style.color       = !val ? '#fff' : 'var(--text)';
+  no.style.border      = !val ? '2px solid var(--g3)' : '2px solid var(--border)';
+}
+
+function setRetInv(val){
+  window._retInv = val;
+  const yes = document.getElementById('ret-inv-yes');
+  const no  = document.getElementById('ret-inv-no');
+  const box = document.getElementById('ret-inv-box');
+  if(!yes||!no) return;
+  yes.style.background = val  ? 'var(--g3)' : 'var(--bg)';
+  yes.style.color      = val  ? '#fff' : 'var(--text)';
+  yes.style.border     = val  ? '2px solid var(--g3)' : '2px solid var(--border)';
+  no.style.background  = !val ? 'var(--g3)' : 'var(--bg)';
+  no.style.color       = !val ? '#fff' : 'var(--text)';
+  no.style.border      = !val ? '2px solid var(--g3)' : '2px solid var(--border)';
+  if(box) box.style.display = val ? '' : 'none';
+}
+
+async function saveReturn(){
+  const amount = parseNum(document.getElementById('ret-amount')?.value||'0');
+  const date   = document.getElementById('ret-date')?.value;
+  const notes  = document.getElementById('ret-notes')?.value.trim()||'';
+  if(!amount||amount<=0) return showToast('❌ اكتب مبلغ المرتجع');
+  if(!date) return showToast('❌ اختار التاريخ');
+
+  const {tableType,origId,trader,saleType,isSale,retCash,retInv} = {
+    tableType: window._retTableType, origId: window._retOrigId,
+    trader: window._retTrader, saleType: window._retSaleType,
+    isSale: window._retIsSale, retCash: window._retCash, retInv: window._retInv
+  };
+
+  const desc = 'مرتجع' + (isSale?' مبيعات':' مشتريات') + (trader?' - '+trader:'');
+
+  // 1. سجّل المرتجع في نفس الجدول بـ total سالب
+  if(isSale){
+    const {data:orig} = await sb.from('deferred_sales').select('*').eq('id',origId).eq('user_id',currentUser.id).limit(1);
+    const o = orig?.[0]||{};
+    const {error} = await sb.from('deferred_sales').insert({
+      user_id: currentUser.id, description: desc, sale_type: saleType||o.sale_type||'crop',
+      trader: trader||null, total: -Math.abs(amount), date, notes: notes||null,
+      is_return: true, paid: false, crop: o.crop||null, items: [], quantity:0, unit:'', price:0
+    });
+    if(error) return showToast('❌ خطأ: '+error.message);
+    // income بقيمة سالبة لتتطرح من الموسم
+    await sb.from('income').insert({
+      user_id:currentUser.id, description:desc, category:'مرتجع_مبيعات',
+      crop:o.crop||null, amount:-Math.abs(amount), date, notes:notes||null
+    });
+    // خزنة: لو فيه رد نقدية → يخرج من الخزنة
+    if(retCash){
+      await sb.from('vault').insert({
+        user_id:currentUser.id, type:'out', description:desc,
+        amount:Math.abs(amount), date, notes:notes||null, category:'مرتجع_مبيعات'
+      });
+    }
+  } else {
+    const {data:orig} = await sb.from('deferred_purchases').select('*').eq('id',origId).eq('user_id',currentUser.id).limit(1);
+    const o = orig?.[0]||{};
+    const {error} = await sb.from('deferred_purchases').insert({
+      user_id: currentUser.id, description: desc,
+      trader: trader||null, total: -Math.abs(amount), date, notes: notes||null,
+      is_return: true, paid: false, crop: o.crop||null, items: []
+    });
+    if(error) return showToast('❌ خطأ: '+error.message);
+    // expenses بقيمة سالبة
+    await sb.from('expenses').insert({
+      user_id:currentUser.id, description:desc, category:'مرتجع_مشتريات',
+      crop:o.crop||null, amount:-Math.abs(amount), date, notes:notes||null
+    });
+    // خزنة: لو استلمنا نقدية → يدخل للخزنة
+    if(retCash){
+      await sb.from('vault').insert({
+        user_id:currentUser.id, type:'in', description:desc,
+        amount:Math.abs(amount), date, notes:notes||null, category:'مرتجع_مشتريات'
+      });
+    }
+  }
+
+  // 2. لو البضاعة رجعت للمخزن
+  if(retInv){
+    const invItem = document.getElementById('ret-inv-item')?.value;
+    const invQty  = parseNum(document.getElementById('ret-inv-qty')?.value||'0');
+    const invUnit = document.getElementById('ret-inv-unit')?.value.trim()||'';
+    if(invItem&&invQty>0){
+      // مرتجع مبيعات → البضاعة ترجع للمخزن (in) بمتوسط التكلفة الحالي
+      // مرتجع مشتريات → البضاعة تخرج من المخزن (usage)
+      const invType = isSale ? 'in' : 'usage';
+      const stocks  = await calcAllStock();
+      const cur     = stocks.find(r=>r.item===invItem);
+      const curQty  = cur?.qty||0;
+      const curAvg  = cur?.avg_cost||0;
+      const unitPrice = isSale ? curAvg : curAvg;
+      const avg_cost  = isSale
+        ? (curQty>0 ? (curQty*curAvg + invQty*curAvg)/(curQty+invQty) : curAvg)
+        : curAvg;
+      await sb.from('inventory_transactions').insert({
+        user_id:currentUser.id, item:invItem, unit:invUnit||cur?.unit||'',
+        type:invType, quantity:invQty, unit_price:unitPrice,
+        avg_cost, total:invQty*unitPrice, date, notes:'مرتجع: '+desc
+      });
+    }
+  }
+
+  showToast('✅ تم تسجيل المرتجع');
+  closeModal();
+  if(isSale) renderDeferredSales(); else renderDeferredPurchases();
+  renderHome();
 }
 
 // ===== المخزن =====
