@@ -914,54 +914,100 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
       <div class="card">
         <div class="card-title">🛒 بيعة آجل جديدة</div>
 
-        <div class="form-row"><label>الوصف</label>
-          <input type="text" id="ds-desc" placeholder="مثال: بيع قمح للتاجر أحمد"></div>
-
-        <div class="form-row">
-          <label style="display:flex;justify-content:space-between;">المحصول
-            <button onclick="openCropManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">🌾 إدارة</button>
-          </label>
-          <select id="ds-crop"><option value="">-- اختار المحصول --</option></select>
+        <!-- التوجل: محصول أو منتج -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;">
+          <button id="ds-type-crop-btn" onclick="setDsSaleType('crop')"
+            style="padding:10px;border-radius:10px;border:2px solid var(--g3);background:var(--g3);color:#fff;font-family:Cairo,sans-serif;font-size:0.88rem;font-weight:900;cursor:pointer;">🌾 بيع محصول</button>
+          <button id="ds-type-prod-btn" onclick="setDsSaleType('product')"
+            style="padding:10px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.88rem;font-weight:900;cursor:pointer;">📦 بيع منتج</button>
         </div>
 
-        <div class="form-row">
-          <label style="display:flex;justify-content:space-between;">الكمية
-            <button onclick="openUnitManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">⚙️ وحدات</button>
-          </label>
-          <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">
-            <input type="text" inputmode="decimal" id="ds-qty" placeholder="0" oninput="calcDsTotal()">
-            <select id="ds-unit"></select>
+        <!-- فورم المحصول -->
+        <div id="ds-form-crop">
+          <div class="form-row"><label>الوصف</label>
+            <input type="text" id="ds-desc" placeholder="مثال: بيع قمح للتاجر أحمد"></div>
+
+          <div class="form-row">
+            <label style="display:flex;justify-content:space-between;">المحصول
+              <button onclick="openCropManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">🌾 إدارة</button>
+            </label>
+            <select id="ds-crop"><option value="">-- اختار المحصول --</option></select>
           </div>
+
+          <div class="form-row">
+            <label style="display:flex;justify-content:space-between;">الكمية
+              <button onclick="openUnitManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">⚙️ وحدات</button>
+            </label>
+            <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">
+              <input type="text" inputmode="decimal" id="ds-qty" placeholder="0" oninput="calcDsTotal()">
+              <select id="ds-unit"></select>
+            </div>
+          </div>
+
+          <div class="form-row"><label>السعر (للوحدة)</label>
+            <input type="text" inputmode="decimal" id="ds-price" placeholder="0" oninput="calcDsTotal()"></div>
+
+          <div class="form-row"><label>الإجمالي</label>
+            <div style="background:var(--g5);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-weight:900;color:var(--g2);font-size:1rem;" id="ds-total-display">0 ج</div>
+          </div>
+
+          <div class="form-row">
+            <label style="display:flex;justify-content:space-between;">الصنف
+              <button onclick="openVarietyManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">🌿 إدارة</button>
+            </label>
+            <select id="ds-variety"><option value="">-- اختار الصنف (اختياري) --</option></select>
+          </div>
+
+          <div class="form-row">
+            <label style="display:flex;justify-content:space-between;">التاجر
+              <button onclick="openTraderManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">👤 إدارة</button>
+            </label>
+            <select id="ds-trader"><option value="">-- اختار التاجر --</option></select>
+          </div>
+
+          <div class="form-row"><label>التاريخ</label>
+            <input type="date" id="ds-date"></div>
+
+          <div class="form-row"><label>ملاحظات</label>
+            <textarea id="ds-notes" placeholder="أي تفاصيل..."></textarea></div>
+
+          <button class="btn btn-g" onclick="addDeferredSale()">➕ تسجيل البيعة</button>
         </div>
 
-        <div class="form-row"><label>السعر (للوحدة)</label>
-          <input type="text" inputmode="decimal" id="ds-price" placeholder="0" oninput="calcDsTotal()"></div>
+        <!-- فورم المنتج -->
+        <div id="ds-form-product" style="display:none;">
+          <div class="form-row"><label>الوصف</label>
+            <input type="text" id="ds-prod-desc" placeholder="وصف الفاتورة..."></div>
 
-        <div class="form-row"><label>الإجمالي</label>
-          <div style="background:var(--g5);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-weight:900;color:var(--g2);font-size:1rem;" id="ds-total-display">0 ج</div>
+          <div class="form-row">
+            <label style="display:flex;justify-content:space-between;">التاجر
+              <button onclick="openTraderManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">👤 إدارة</button>
+            </label>
+            <select id="ds-prod-trader"><option value="">-- اختار التاجر --</option></select>
+          </div>
+
+          <div style="margin:10px 0 6px;display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-weight:900;font-size:0.88rem;color:var(--text);">📦 المنتجات</span>
+            <div style="display:flex;gap:8px;">
+              <button onclick="openDsProductManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">📦 إدارة المنتجات</button>
+              <button onclick="openDsUnitManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">📐 إدارة الوحدات</button>
+            </div>
+          </div>
+          <div id="ds-prod-items-list"></div>
+          <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);margin-bottom:10px;" onclick="addDsProdItem()">➕ إضافة منتج</button>
+
+          <div class="form-row"><label>الإجمالي</label>
+            <div style="background:var(--g5);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-weight:900;color:var(--g2);font-size:1rem;" id="ds-prod-total-display">0 ج</div>
+          </div>
+
+          <div class="form-row"><label>التاريخ</label>
+            <input type="date" id="ds-prod-date"></div>
+
+          <div class="form-row"><label>ملاحظات</label>
+            <textarea id="ds-prod-notes" placeholder="أي تفاصيل..."></textarea></div>
+
+          <button class="btn btn-g" onclick="addDeferredSaleProd()">➕ تسجيل البيعة</button>
         </div>
-
-        <div class="form-row">
-          <label style="display:flex;justify-content:space-between;">الصنف
-            <button onclick="openVarietyManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">🌿 إدارة</button>
-          </label>
-          <select id="ds-variety"><option value="">-- اختار الصنف (اختياري) --</option></select>
-        </div>
-
-        <div class="form-row">
-          <label style="display:flex;justify-content:space-between;">التاجر
-            <button onclick="openTraderManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">👤 إدارة</button>
-          </label>
-          <select id="ds-trader"><option value="">-- اختار التاجر --</option></select>
-        </div>
-
-        <div class="form-row"><label>التاريخ</label>
-          <input type="date" id="ds-date"></div>
-
-        <div class="form-row"><label>ملاحظات</label>
-          <textarea id="ds-notes" placeholder="أي تفاصيل..."></textarea></div>
-
-        <button class="btn btn-g" onclick="addDeferredSale()">➕ تسجيل البيعة</button>
       </div>
 
       <!-- فلاتر -->
@@ -5118,8 +5164,164 @@ async function saveTraders(t){
 }
 
 // تهيئة صفحة المبيعات
+// ===== DS SALE TYPE TOGGLE =====
+let _dsSaleType = 'crop';
+let _dsProdItems = [];
+let _dsProdProducts = [];
+let _dsProdUnits = [];
+
+function setDsSaleType(type) {
+  _dsSaleType = type;
+  document.getElementById('ds-form-crop').style.display    = type==='crop'    ? '' : 'none';
+  document.getElementById('ds-form-product').style.display = type==='product' ? '' : 'none';
+  const cropBtn = document.getElementById('ds-type-crop-btn');
+  const prodBtn = document.getElementById('ds-type-prod-btn');
+  if(cropBtn){ cropBtn.style.background=type==='crop'?'var(--g3)':'var(--bg)'; cropBtn.style.color=type==='crop'?'#fff':'var(--text)'; cropBtn.style.borderColor=type==='crop'?'var(--g3)':'var(--border)'; }
+  if(prodBtn){ prodBtn.style.background=type==='product'?'var(--g3)':'var(--bg)'; prodBtn.style.color=type==='product'?'#fff':'var(--text)'; prodBtn.style.borderColor=type==='product'?'var(--g3)':'var(--border)'; }
+}
+
+async function getDsProducts() {
+  const {data} = await sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','ds_products').maybeSingle();
+  return data?.categories || [];
+}
+async function saveDsProducts(list) {
+  await sb.from('user_categories').upsert({user_id:currentUser.id,type:'ds_products',categories:list},{onConflict:'user_id,type'});
+}
+
+function addDsProdItem() {
+  _dsProdItems.push({name:'', qty:'', unit:_dsProdUnits[0]||'', price:0});
+  renderDsProdItemsForm();
+}
+function removeDsProdItem(i) {
+  _dsProdItems.splice(i,1);
+  renderDsProdItemsForm();
+  calcDsProdTotal();
+}
+function renderDsProdItemsForm() {
+  const el = document.getElementById('ds-prod-items-list');
+  if(!el) return;
+  if(!_dsProdItems.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;margin-bottom:8px;">لا يوجد منتجات — اضغط "إضافة منتج"</div>';
+    return;
+  }
+  el.innerHTML = _dsProdItems.map((item,i)=>`
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:6px;margin-bottom:4px;align-items:center;">
+      <select onchange="_dsProdItems[${i}].name=this.value"
+        style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
+        <option value="">-- اختار منتج --</option>
+        ${_dsProdProducts.map(p=>`<option ${item.name===p?'selected':''}>${s(p)}</option>`).join('')}
+      </select>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+        <input type="text" inputmode="decimal" placeholder="الكمية" value="${item.qty||''}" oninput="_dsProdItems[${i}].qty=parseNum(this.value);calcDsProdTotal()"
+          style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;min-width:0;">
+        <select onchange="_dsProdItems[${i}].unit=this.value"
+          style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;min-width:0;">
+          ${_dsProdUnits.map(u=>`<option ${item.unit===u?'selected':''}>${s(u)}</option>`).join('')}
+        </select>
+      </div>
+      <input type="text" inputmode="decimal" placeholder="السعر" value="${item.price||''}"
+        oninput="_dsProdItems[${i}].price=parseNum(this.value);calcDsProdTotal()"
+        onblur="if(_dsProdItems[${i}].name&&_dsProdItems[${i}].qty>0&&_dsProdItems[${i}].price>0&&${i}===_dsProdItems.length-1){_dsProdItems.push({name:'',qty:'',unit:_dsProdUnits[0]||'',price:0});renderDsProdItemsForm();}"
+        onkeydown="if(event.key==='Enter'&&_dsProdItems[${i}].name&&_dsProdItems[${i}].qty>0&&_dsProdItems[${i}].price>0){event.preventDefault();_dsProdItems.push({name:'',qty:'',unit:_dsProdUnits[0]||'',price:0});renderDsProdItemsForm();}"
+        style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
+      <button onclick="removeDsProdItem(${i})" style="background:var(--red-p,#ffebee);color:var(--red);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:0.85rem;">✕</button>
+    </div>
+    <div style="font-size:0.75rem;color:var(--muted);margin:0 0 8px;text-align:left;">إجمالي: ${fmt((item.qty||0)*(item.price||0))} ج</div>
+  `).join('');
+}
+function calcDsProdTotal() {
+  const total = _dsProdItems.reduce((s,x)=>s+(x.qty||0)*(x.price||0),0);
+  const el = document.getElementById('ds-prod-total-display');
+  if(el) el.textContent = Number(total).toLocaleString('en-US')+' ج';
+}
+
+async function addDeferredSaleProd() {
+  const desc    = document.getElementById('ds-prod-desc').value.trim();
+  const trader  = document.getElementById('ds-prod-trader').value||null;
+  const date    = document.getElementById('ds-prod-date').value;
+  const notes   = document.getElementById('ds-prod-notes').value;
+  if(!date) return showToast('❌ اختار التاريخ');
+  if(!_dsProdItems.length) return showToast('❌ أضف منتج واحد على الأقل');
+  const validItems = _dsProdItems.filter(x=>x.name.trim()&&x.qty>0&&x.price>0);
+  if(!validItems.length) return showToast('❌ تأكد من إدخال اسم وكمية وسعر لكل منتج');
+  const total = validItems.reduce((s,x)=>s+x.qty*x.price, 0);
+  const {data:dsRow, error} = await sb.from('deferred_sales').insert({
+    user_id: currentUser.id,
+    description: desc || (trader?'بيع منتجات - '+trader:'بيع منتجات'),
+    sale_type: 'product',
+    items: validItems,
+    trader, total, date,
+    notes: notes||null,
+    paid: false,
+    crop: null, quantity: 0, unit: '', price: 0
+  }).select('id');
+  if(error) return showToast('❌ خطأ: '+error.message);
+  const saleId = dsRow?.[0]?.id;
+  await sb.from('income').insert({
+    user_id: currentUser.id,
+    description: 'بيع آجل منتجات'+(trader?' - '+trader:'')+(desc?' - '+desc:''),
+    category: 'مبيعات آجل', crop: null, amount: total, date,
+    notes: notes||null, ref_id: saleId
+  });
+  logActivity('إضافة','deferred_sales','بيعة آجل منتجات'+(trader?' - '+trader:''), total);
+  showToast('✅ تم تسجيل البيعة');
+  _dsProdItems = [{name:'', qty:'', unit:_dsProdUnits[0]||'', price:0}];
+  renderDsProdItemsForm();
+  calcDsProdTotal();
+  document.getElementById('ds-prod-desc').value='';
+  document.getElementById('ds-prod-notes').value='';
+  document.getElementById('ds-prod-date').value=today();
+  renderDeferredSales();
+}
+
+async function openDsProductManager() {
+  let products = await getDsProducts();
+  document.getElementById('modal-title').textContent='📦 إدارة منتجات المبيعات';
+  const refresh = () => { document.getElementById('ds-prod-mgr-list').outerHTML=`<div id="ds-prod-mgr-list">${products.map((p,j)=>`<div class="cat-item"><span>${s(p)}</span><button class="btn-sm btn-r" onclick="window._dsProdMgrDel(${j})">🗑️</button></div>`).join('')}</div>`; };
+  document.getElementById('modal-body').innerHTML=`
+    <div id="ds-prod-mgr-list">${products.map((p,i)=>`<div class="cat-item"><span>${s(p)}</span><button class="btn-sm btn-r" onclick="window._dsProdMgrDel(${i})">🗑️</button></div>`).join('')}</div>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <input id="new-ds-prod" placeholder="اسم المنتج" style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.88rem;">
+      <button class="btn-sm btn-g" onclick="window._dsProdMgrAdd()" style="padding:10px 16px;">➕</button>
+    </div>`;
+  window._dsProdMgrAdd = async () => {
+    const inp=document.getElementById('new-ds-prod'); const name=inp?.value.trim();
+    if(!name) return showToast('❌ اكتب الاسم');
+    if(products.includes(name)) return showToast('❌ موجود بالفعل');
+    products.push(name); await saveDsProducts(products); _dsProdProducts=products; inp.value=''; refresh(); showToast('✅ تمت الإضافة');
+  };
+  window._dsProdMgrDel = async (i) => { products.splice(i,1); await saveDsProducts(products); _dsProdProducts=products; refresh(); };
+  document.getElementById('detail-overlay').classList.add('open');
+}
+
+async function openDsUnitManager() {
+  let units = [..._dsProdUnits];
+  document.getElementById('modal-title').textContent='📐 إدارة وحدات المبيعات';
+  const refresh = () => { document.getElementById('ds-unit-mgr-list').outerHTML=`<div id="ds-unit-mgr-list">${units.map((u,j)=>`<div class="cat-item"><span>${s(u)}</span><button class="btn-sm btn-r" onclick="window._dsUnitMgrDel(${j})">🗑️</button></div>`).join('')}</div>`; };
+  document.getElementById('modal-body').innerHTML=`
+    <div id="ds-unit-mgr-list">${units.map((u,i)=>`<div class="cat-item"><span>${s(u)}</span><button class="btn-sm btn-r" onclick="window._dsUnitMgrDel(${i})">🗑️</button></div>`).join('')}</div>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <input id="new-ds-unit" placeholder="وحدة جديدة" style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.88rem;">
+      <button class="btn-sm btn-g" onclick="window._dsUnitMgrAdd()" style="padding:10px 16px;">➕</button>
+    </div>`;
+  window._dsUnitMgrAdd = async () => {
+    const inp=document.getElementById('new-ds-unit'); const name=inp?.value.trim();
+    if(!name) return showToast('❌ اكتب الوحدة');
+    if(units.includes(name)) return showToast('❌ موجودة بالفعل');
+    units.push(name); await sb.from('user_categories').upsert({user_id:currentUser.id,type:'ds_prod_units',categories:units},{onConflict:'user_id,type'}); _dsProdUnits=units; inp.value=''; refresh();
+  };
+  window._dsUnitMgrDel = async (i) => { units.splice(i,1); await sb.from('user_categories').upsert({user_id:currentUser.id,type:'ds_prod_units',categories:units},{onConflict:'user_id,type'}); _dsProdUnits=units; refresh(); };
+  document.getElementById('detail-overlay').classList.add('open');
+}
+
 async function initDeferredSalesPage(){
-  const [crops, units, traders, varieties] = await Promise.all([getCrops(), getUnits(), getTraders(), getVarieties()]);
+  const [crops, units, traders, varieties, dsProds, dsProdUnitsData] = await Promise.all([
+    getCrops(), getUnits(), getTraders(), getVarieties(), getDsProducts(),
+    sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','ds_prod_units').maybeSingle()
+  ]);
+
+  _dsProdProducts = dsProds;
+  _dsProdUnits = dsProdUnitsData?.data?.categories?.length ? dsProdUnitsData.data.categories : [...DP_DEFAULT_UNITS];
 
   const cropSel = document.getElementById('ds-crop');
   if(cropSel) cropSel.innerHTML = '<option value="">-- اختار المحصول --</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${c}</option>`).join('');
@@ -5129,6 +5331,9 @@ async function initDeferredSalesPage(){
 
   const traderSel = document.getElementById('ds-trader');
   if(traderSel) traderSel.innerHTML = '<option value="">-- اختار التاجر --</option>'+traders.map(t=>`<option>${t}</option>`).join('');
+
+  const prodTraderSel = document.getElementById('ds-prod-trader');
+  if(prodTraderSel) prodTraderSel.innerHTML = '<option value="">-- اختار التاجر --</option>'+traders.map(t=>`<option>${t}</option>`).join('');
 
   const fCrop = document.getElementById('ds-filter-crop');
   if(fCrop) fCrop.innerHTML = '<option value="">كل المحاصيل</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${c}</option>`).join('');
@@ -5147,6 +5352,14 @@ async function initDeferredSalesPage(){
 
   const dsDate = document.getElementById('ds-date');
   if(dsDate && !dsDate.value) dsDate.value = today();
+
+  const dsProdDate = document.getElementById('ds-prod-date');
+  if(dsProdDate && !dsProdDate.value) dsProdDate.value = today();
+
+  _dsProdItems = [{name:'', qty:'', unit:_dsProdUnits[0]||'', price:0}];
+  renderDsProdItemsForm();
+  calcDsProdTotal();
+  setDsSaleType('crop');
 
   renderDeferredSales();
 }
@@ -5268,12 +5481,15 @@ async function renderDeferredSales(){
 
   el.innerHTML = data.map(x=>{
     const isPaid = x.paid;
+    const isProd = x.sale_type === 'product';
+    const itemsHtml = isProd ? (x.items||[]).map(it=>`<div style="font-size:0.72rem;color:var(--muted);">• ${s(it.name)} — ${it.qty} ${s(it.unit||'')} × ${fmt(it.price)} = ${fmt((it.qty||0)*(it.price||0))} ج</div>`).join('') : '';
     return `<div class="ds-card ${isPaid?'ds-paid':''}" id="ds-item-${x.id}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div style="flex:1;min-width:0;">
           <div style="font-size:0.88rem;font-weight:900;color:var(--text);">${s(x.description||'')} ${isPaid?'<span style="font-size:0.6rem;background:#d4edda;color:#155724;padding:2px 6px;border-radius:8px;font-weight:800;">✅ مسددة</span>':''}</div>
           <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">${fmtDate(x.date)}${x.crop?' · 🌾 '+s(x.crop):''}${x.variety?' · 🌿 '+s(x.variety):''}${x.trader?' · 👤 '+s(x.trader):''}</div>
-          <div style="font-size:0.7rem;color:var(--muted);">${x.quantity} ${s(x.unit||'')} × ${Number(x.price).toLocaleString('en-US')} ج</div>
+          ${!isProd?`<div style="font-size:0.7rem;color:var(--muted);">${x.quantity} ${s(x.unit||'')} × ${Number(x.price).toLocaleString('en-US')} ج</div>`:''}
+          ${isProd&&itemsHtml?`<div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;">${itemsHtml}</div>`:''}
           ${x.notes?`<div style="font-size:0.68rem;color:var(--muted);margin-top:2px;">${s(x.notes)}</div>`:''}
         </div>
         <div class="ds-total-badge">${Number(x.total||0).toLocaleString('en-US')} ج</div>
