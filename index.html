@@ -1804,7 +1804,7 @@ function showPage(name, btn) {
   if(name==='analytics') renderAnalytics();
   if(name==='search'){ populateSearchCrops(); }
   if(name==='seasons') renderSeasons();
-  if(name==='report') { const t=today(); document.getElementById('rep-from').value=t.slice(0,7)+'-01'; document.getElementById('rep-to').value=t; }
+  if(name==='report') { renderReport(); }
 }
 function showMoreMenu() {
   const menu = document.getElementById('more-menu');
