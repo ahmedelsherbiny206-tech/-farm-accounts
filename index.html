@@ -991,6 +991,10 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
             <select id="ds-prod-trader"><option value="">-- اختار التاجر --</option></select>
           </div>
 
+          <div class="form-row"><label>🌾 المحصول / التوزيع</label>
+            <select id="ds-prod-crop"><option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option></select>
+          </div>
+
           <div style="margin:10px 0 6px;display:flex;align-items:center;justify-content:space-between;">
             <span style="font-weight:900;font-size:0.88rem;color:var(--text);">📦 المنتجات</span>
             <div style="display:flex;gap:8px;">
@@ -1095,6 +1099,10 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
         <button onclick="openDpTraderManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">👤 إدارة</button>
       </label>
         <select id="dp-trader"><option value="">-- اختار التاجر --</option></select>
+      </div>
+
+      <div class="form-row"><label>🌾 المحصول / التوزيع</label>
+        <select id="dp-crop"><option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option></select>
       </div>
 
       <!-- المنتجات -->
@@ -3357,6 +3365,12 @@ async function populateCatSelects(){
   // Expense filter crop
   const expFiltCrop = document.getElementById('exp-filter-crop');
   if(expFiltCrop){ expFiltCrop.innerHTML='<option value="">كل المحاصيل</option>'+crops.map(c=>`<option>${s(c)}</option>`).join(''); }
+  // مبيعات منتج - crop selector
+  const dsProdCrop = document.getElementById('ds-prod-crop');
+  if(dsProdCrop){ dsProdCrop.innerHTML='<option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option>'+crops.map(c=>`<option>${s(c)}</option>`).join(''); }
+  // مشتريات آجل - crop selector
+  const dpCrop = document.getElementById('dp-crop');
+  if(dpCrop){ dpCrop.innerHTML='<option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option>'+crops.map(c=>`<option>${s(c)}</option>`).join(''); }
 }
 
 let catManagerType = '';
@@ -4478,6 +4492,7 @@ async function addDeferredPurchase() {
   const trader = document.getElementById('dp-trader').value;
   const date = document.getElementById('dp-date').value;
   const notes = document.getElementById('dp-notes').value;
+  const dpCropVal = document.getElementById('dp-crop')?.value||null;
   if(!date) return showToast('❌ اختار التاريخ');
   if(!_dpItems.length) return showToast('❌ أضف منتج واحد على الأقل');
   const validItems = _dpItems.filter(x=>x.name.trim() && x.qty>0 && x.price>0);
@@ -4496,13 +4511,14 @@ async function addDeferredPurchase() {
     user_id: currentUser.id,
     description: desc||null, items: validItems,
     trader: trader||null, total, date, notes: notes||null,
-    paid: isPaidNow, paid_at: isPaidNow ? new Date().toISOString() : null
+    paid: isPaidNow, paid_at: isPaidNow ? new Date().toISOString() : null,
+    crop: dpCropVal||null
   }).select('id');
   if(error) return showToast('❌ خطأ: '+error.message);
   const purchaseId = dpRow?.[0]?.id;
 
   const expDesc = 'مشتريات آجل'+(trader?' - '+trader:'')+(desc?' - '+desc:'');
-  await sb.from('expenses').insert({user_id:currentUser.id,description:expDesc,amount:total,category:'مشتريات آجل',date,notes:notes||null});
+  await sb.from('expenses').insert({user_id:currentUser.id,description:expDesc,amount:total,category:'مشتريات آجل',crop:dpCropVal||null,date,notes:notes||null});
 
   if(_dpPayType==='full'||_dpPayType==='partial'){
     const vAmount = _dpPayType==='full' ? total : partialAmt;
@@ -4521,6 +4537,7 @@ async function addDeferredPurchase() {
   document.getElementById('dp-desc').value='';
   document.getElementById('dp-notes').value='';
   document.getElementById('dp-date').value=today();
+  if(document.getElementById('dp-crop')) document.getElementById('dp-crop').value='';
   if(document.getElementById('dp-partial-amount')) document.getElementById('dp-partial-amount').value='';
   renderDeferredPurchases();
   renderHome();
@@ -5423,6 +5440,7 @@ async function addDeferredSaleProd() {
   const trader  = document.getElementById('ds-prod-trader').value||null;
   const date    = document.getElementById('ds-prod-date').value;
   const notes   = document.getElementById('ds-prod-notes').value;
+  const dsProdCropVal = document.getElementById('ds-prod-crop')?.value||null;
   if(!date) return showToast('❌ اختار التاريخ');
   if(!_dsProdItems.length) return showToast('❌ أضف منتج واحد على الأقل');
   const validItems = _dsProdItems.filter(x=>x.name.trim()&&x.qty>0&&x.price>0);
@@ -5443,7 +5461,7 @@ async function addDeferredSaleProd() {
     sale_type: 'product', items: validItems,
     trader, total, date, notes: notes||null,
     paid: isPaidNow, paid_at: isPaidNow ? new Date().toISOString() : null,
-    crop: null, quantity: 0, unit: '', price: 0
+    crop: dsProdCropVal||null, quantity: 0, unit: '', price: 0
   }).select('id');
   if(error) return showToast('❌ خطأ: '+error.message);
   const saleId = dsRow?.[0]?.id;
@@ -5451,7 +5469,7 @@ async function addDeferredSaleProd() {
   await sb.from('income').insert({
     user_id: currentUser.id,
     description: 'بيع آجل منتجات'+(trader?' - '+trader:'')+(desc?' - '+desc:''),
-    category: 'مبيعات آجل', crop: null, amount: total, date,
+    category: 'مبيعات آجل', crop: dsProdCropVal||null, amount: total, date,
     notes: notes||null, ref_id: saleId
   });
 
@@ -5472,6 +5490,7 @@ async function addDeferredSaleProd() {
   document.getElementById('ds-prod-desc').value='';
   document.getElementById('ds-prod-notes').value='';
   document.getElementById('ds-prod-date').value=today();
+  if(document.getElementById('ds-prod-crop')) document.getElementById('ds-prod-crop').value='';
   if(document.getElementById('dsp-partial-amount')) document.getElementById('dsp-partial-amount').value='';
   renderDeferredSales();
   renderHome();
