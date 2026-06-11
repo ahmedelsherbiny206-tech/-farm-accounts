@@ -6271,7 +6271,7 @@ async function initAccountStatementPage(){
   _asSaleType = _dsSaleType;
   const traders = _asSaleType==='product' ? await getDsProdTraders() : await getTraders();
   const sel = document.getElementById('as-trader');
-  if(sel) sel.innerHTML = '<option value="">-- اختار التاجر --</option>' + traders.map(t=>`<option>${s(t)}</option>`).join('');
+  if(sel) sel.innerHTML = '<option value="">-- اختار التاجر --</option><option value="ALL">-- كل التجار --</option>' + traders.map(t=>`<option>${s(t)}</option>`).join('');
   // شارة النوع
   const titleEl = document.querySelector('#page-account-statement span[style*="font-weight:900"]');
   if(titleEl) titleEl.textContent = _asSaleType==='product' ? '📋 كشف حساب منتجات' : '📋 كشف حساب محاصيل';
@@ -6283,14 +6283,106 @@ function _asValidate(){
   const trader = document.getElementById('as-trader').value;
   const from   = document.getElementById('as-from').value;
   const to     = document.getElementById('as-to').value;
-  if(!trader) { showToast('❌ اختار التاجر'); return null; }
   if(!from||!to) { showToast('❌ حدد الفترة الزمنية'); return null; }
   return {trader, from, to};
+}
+
+// helper: يحسب أرصدة كل تجار المبيعات في 4 queries بس
+async function _allTradersSalesBalance(traders, from, to){
+  const saleType = _asSaleType==='product' ? 'product' : 'crop';
+  const cats = _asCategories();
+  const [
+    {data:preS}, {data:preP},
+    {data:perS}, {data:perP}
+  ] = await Promise.all([
+    sb.from('deferred_sales').select('total,trader').eq('user_id',currentUser.id).eq('sale_type',saleType).lt('date',from).in('trader',traders),
+    sb.from('vault').select('amount,description').eq('user_id',currentUser.id).in('category',cats).lt('date',from),
+    sb.from('deferred_sales').select('total,trader').eq('user_id',currentUser.id).eq('sale_type',saleType).gte('date',from).lte('date',to).in('trader',traders),
+    sb.from('vault').select('amount,description').eq('user_id',currentUser.id).in('category',cats).gte('date',from).lte('date',to)
+  ]);
+  return traders.map(t=>{
+    const opening  = (preS||[]).filter(x=>x.trader===t).reduce((a,x)=>a+Number(x.total||0),0)
+                   - (preP||[]).filter(x=>x.description===_asVaultDesc(t)).reduce((a,x)=>a+Number(x.amount||0),0);
+    const pSales   = (perS||[]).filter(x=>x.trader===t).reduce((a,x)=>a+Number(x.total||0),0);
+    const pPaid    = (perP||[]).filter(x=>x.description===_asVaultDesc(t)).reduce((a,x)=>a+Number(x.amount||0),0);
+    return {trader:t, opening, pSales, pPaid, closing: opening+pSales-pPaid};
+  }).filter(r=>r.opening||r.pSales||r.pPaid);
+}
+
+// helper: يحسب أرصدة كل تجار المشتريات في 4 queries بس
+async function _allTradersPurchasesBalance(traders, from, to){
+  const [
+    {data:preS}, {data:preP},
+    {data:perS}, {data:perP}
+  ] = await Promise.all([
+    sb.from('deferred_purchases').select('total,trader').eq('user_id',currentUser.id).lt('date',from).in('trader',traders),
+    sb.from('vault').select('amount,description').eq('user_id',currentUser.id).in('category',['سداد_مشتريات','تسوية_مشتريات']).lt('date',from),
+    sb.from('deferred_purchases').select('total,trader').eq('user_id',currentUser.id).gte('date',from).lte('date',to).in('trader',traders),
+    sb.from('vault').select('amount,description').eq('user_id',currentUser.id).in('category',['سداد_مشتريات','تسوية_مشتريات']).gte('date',from).lte('date',to)
+  ]);
+  return traders.map(t=>{
+    const opening  = (preS||[]).filter(x=>x.trader===t).reduce((a,x)=>a+Number(x.total||0),0)
+                   - (preP||[]).filter(x=>x.description==='سداد مشتريات: '+t).reduce((a,x)=>a+Number(x.amount||0),0);
+    const pPurch   = (perS||[]).filter(x=>x.trader===t).reduce((a,x)=>a+Number(x.total||0),0);
+    const pPaid    = (perP||[]).filter(x=>x.description==='سداد مشتريات: '+t).reduce((a,x)=>a+Number(x.amount||0),0);
+    return {trader:t, opening, pSales:pPurch, pPaid, closing: opening+pPurch-pPaid};
+  }).filter(r=>r.opening||r.pSales||r.pPaid);
+}
+
+// عرض HTML لجدول كل التجار
+function _renderAllTradersTable(rows, from, to, title, color){
+  if(!rows.length) return '<div class="empty">لا يوجد بيانات في هذه الفترة</div>';
+  const grandO = rows.reduce((a,r)=>a+r.opening,0);
+  const grandS = rows.reduce((a,r)=>a+r.pSales,0);
+  const grandP = rows.reduce((a,r)=>a+r.pPaid,0);
+  const grandC = rows.reduce((a,r)=>a+r.closing,0);
+  const cell = (v,red)=>`<td style="padding:7px 8px;text-align:center;font-weight:900;color:${red&&v>0?'var(--red)':'var(--text)'};">${Number(v).toLocaleString('en-US')} ج</td>`;
+  return `<div class="card">
+    <div style="background:${color};color:#fff;border-radius:10px;padding:8px 14px;margin-bottom:10px;font-size:0.82rem;font-weight:900;text-align:center;">${title}</div>
+    <div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px;">${fmtDate(from)} → ${fmtDate(to)}</div>
+    <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+      <thead>
+        <tr style="background:var(--g5);">
+          <th style="padding:7px 8px;text-align:right;">التاجر</th>
+          <th style="padding:7px 8px;text-align:center;">رصيد افتتاحي</th>
+          <th style="padding:7px 8px;text-align:center;">الفترة</th>
+          <th style="padding:7px 8px;text-align:center;">مدفوع</th>
+          <th style="padding:7px 8px;text-align:center;">رصيد ختامي</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(r=>`<tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:7px 8px;font-weight:700;">${s(r.trader)}</td>
+          ${cell(r.opening,true)}${cell(r.pSales,false)}${cell(r.pPaid,false)}${cell(r.closing,true)}
+        </tr>`).join('')}
+        <tr style="background:var(--g5);font-weight:900;border-top:2px solid var(--g3);">
+          <td style="padding:7px 8px;font-weight:900;">الإجمالي</td>
+          ${cell(grandO,true)}${cell(grandS,false)}${cell(grandP,false)}${cell(grandC,true)}
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </div>`;
 }
 
 async function showAccountStatement(){
   const v = _asValidate(); if(!v) return;
   const {trader, from, to} = v;
+  if(!trader) return showToast('❌ اختار التاجر');
+  // === كل التجار ===
+  if(trader === 'ALL'){
+    showToast('⏳ جاري التحميل...');
+    const allTraders = _asSaleType==='product' ? await getDsProdTraders() : await getTraders();
+    const rows = await _allTradersSalesBalance(allTraders, from, to);
+    const label = _asSaleType==='product' ? '📋 كشف حساب كل تجار المنتجات' : '📋 كشف حساب كل تجار المحاصيل';
+    const el = document.getElementById('as-result');
+    el.innerHTML = `<div style="display:flex;justify-content:flex-start;margin:10px 0 4px;">
+      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="exportAccountStatementExcel('ALL','${from}','${to}')">📊 تصدير Excel</button>
+    </div>` + _renderAllTradersTable(rows, from, to, label, '#1a6fa8');
+    showToast('✅ تم!');
+    return;
+  }
   showToast('⏳ جاري التحميل...');
 
   const isProd = _asSaleType === 'product';
@@ -6373,6 +6465,7 @@ async function showAccountStatement(){
 async function showDetailedStatement(){
   const v = _asValidate(); if(!v) return;
   const {trader, from, to} = v;
+  if(!trader || trader==='ALL') return showToast('❌ اختار تاجر واحد للكشف التفصيلي');
   showToast('⏳ جاري التحميل...');
 
   const isDetProd = _asSaleType === 'product';
@@ -6481,6 +6574,25 @@ async function showDetailedStatement(){
 
 async function exportAccountStatementExcel(trader, from, to){
   showToast('⏳ جاري التصدير...');
+  if(trader === 'ALL'){
+    const allTraders = _asSaleType==='product' ? await getDsProdTraders() : await getTraders();
+    const rows = await _allTradersSalesBalance(allTraders, from, to);
+    if(!rows.length) return showToast('❌ لا يوجد بيانات');
+    const grandO = rows.reduce((a,r)=>a+r.opening,0);
+    const grandS = rows.reduce((a,r)=>a+r.pSales,0);
+    const grandP = rows.reduce((a,r)=>a+r.pPaid,0);
+    const grandC = rows.reduce((a,r)=>a+r.closing,0);
+    const sheetRows = rows.map((r,i)=>({'م':i+1,'التاجر':r.trader,'رصيد افتتاحي':r.opening,'مبيعات الفترة':r.pSales,'سدادات الفترة':r.pPaid,'رصيد ختامي':r.closing}));
+    sheetRows.push({'م':'','التاجر':'الإجمالي','رصيد افتتاحي':grandO,'مبيعات الفترة':grandS,'سدادات الفترة':grandP,'رصيد ختامي':grandC});
+    const ws = XLSX.utils.json_to_sheet(sheetRows,{header:['م','التاجر','رصيد افتتاحي','مبيعات الفترة','سدادات الفترة','رصيد ختامي']});
+    ws['!cols']=[{wch:4},{wch:18},{wch:15},{wch:15},{wch:15},{wch:15}];
+    xlStyle(ws, 0, [sheetRows.length]);
+    xlPrependTitle(ws, (_asSaleType==='product'?'كشف حساب كل تجار المنتجات':'كشف حساب كل تجار المحاصيل')+' - '+from+' : '+to, 6);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'كل التجار');
+    XLSX.writeFile(wb, `كشف_كل_التجار_${from}_${to}.xlsx`);
+    return showToast('✅ تم التصدير!');
+  }
   const isXlProd = _asSaleType === 'product';
   const saleTypeXl = isXlProd ? 'product' : 'crop';
   const [
@@ -6632,7 +6744,7 @@ async function exportDetailedStatementExcel(trader, from, to){
 async function initDpAccountStatementPage(){
   const traders = await getDpTraders();
   const sel = document.getElementById('dpas-trader');
-  if(sel) sel.innerHTML = '<option value="">-- اختار التاجر --</option>' + traders.map(t=>`<option>${s(t)}</option>`).join('');
+  if(sel) sel.innerHTML = '<option value="">-- اختار التاجر --</option><option value="ALL">-- كل التجار --</option>' + traders.map(t=>`<option>${s(t)}</option>`).join('');
   document.getElementById('dpas-result').innerHTML = '';
   setTimeout(setDateInputs, 100);
 }
@@ -6641,8 +6753,19 @@ async function showDpAccountStatement(){
   const trader = document.getElementById('dpas-trader').value;
   const from   = document.getElementById('dpas-from').value;
   const to     = document.getElementById('dpas-to').value;
-  if(!trader) return showToast('❌ اختار التاجر');
   if(!from||!to) return showToast('❌ حدد الفترة الزمنية');
+  if(!trader) return showToast('❌ اختار التاجر');
+  if(trader === 'ALL'){
+    showToast('⏳ جاري التحميل...');
+    const allTraders = await getDpTraders();
+    const rows = await _allTradersPurchasesBalance(allTraders, from, to);
+    const el = document.getElementById('dpas-result');
+    el.innerHTML = `<div style="display:flex;justify-content:flex-start;margin:10px 0 4px;">
+      <button class="btn-sm" style="background:var(--g5);color:#6a1b9a;border:1.5px solid #6a1b9a;" onclick="exportDpAccountStatementExcel('ALL','${from}','${to}')">📊 تصدير Excel</button>
+    </div>` + _renderAllTradersTable(rows, from, to, '📋 كشف حساب كل تجار المشتريات', '#6a1b9a');
+    showToast('✅ تم!');
+    return;
+  }
   showToast('⏳ جاري التحميل...');
 
   const [
@@ -6715,6 +6838,25 @@ async function showDpAccountStatement(){
 
 async function exportDpAccountStatementExcel(trader, from, to){
   showToast('⏳ جاري التصدير...');
+  if(trader === 'ALL'){
+    const allTraders = await getDpTraders();
+    const rows = await _allTradersPurchasesBalance(allTraders, from, to);
+    if(!rows.length) return showToast('❌ لا يوجد بيانات');
+    const grandO = rows.reduce((a,r)=>a+r.opening,0);
+    const grandS = rows.reduce((a,r)=>a+r.pSales,0);
+    const grandP = rows.reduce((a,r)=>a+r.pPaid,0);
+    const grandC = rows.reduce((a,r)=>a+r.closing,0);
+    const sheetRows = rows.map((r,i)=>({'م':i+1,'التاجر':r.trader,'رصيد افتتاحي':r.opening,'مشتريات الفترة':r.pSales,'مدفوعات الفترة':r.pPaid,'رصيد ختامي':r.closing}));
+    sheetRows.push({'م':'','التاجر':'الإجمالي','رصيد افتتاحي':grandO,'مشتريات الفترة':grandS,'مدفوعات الفترة':grandP,'رصيد ختامي':grandC});
+    const ws = XLSX.utils.json_to_sheet(sheetRows,{header:['م','التاجر','رصيد افتتاحي','مشتريات الفترة','مدفوعات الفترة','رصيد ختامي']});
+    ws['!cols']=[{wch:4},{wch:18},{wch:15},{wch:15},{wch:15},{wch:15}];
+    xlStyle(ws, 0, [sheetRows.length]);
+    xlPrependTitle(ws, 'كشف حساب كل تجار المشتريات - '+from+' : '+to, 6);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'كل التجار');
+    XLSX.writeFile(wb, `كشف_مشتريات_كل_التجار_${from}_${to}.xlsx`);
+    return showToast('✅ تم التصدير!');
+  }
   const [
     {data:prePurch},  {data:prePay},
     {data:purchases}, {data:payments}
