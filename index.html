@@ -1029,6 +1029,9 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
         <select id="ds-filter-variety" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
           <option value="">كل الأصناف</option>
         </select>
+        <select id="ds-filter-product" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
+          <option value="">كل المنتجات</option>
+        </select>
       </div>
       <div style="display:flex;gap:6px;margin-bottom:10px;">
         <button class="filter-btn active" id="dsf-all" onclick="setDsFilter('all',this)">الكل</button>
@@ -5349,6 +5352,8 @@ async function initDeferredSalesPage(){
 
   const fVariety = document.getElementById('ds-filter-variety');
   if(fVariety) fVariety.innerHTML = '<option value="">كل الأصناف</option>'+varieties.map(v=>`<option>${v}</option>`).join('');
+  const fProduct = document.getElementById('ds-filter-product');
+  if(fProduct) fProduct.innerHTML = '<option value="">كل المنتجات</option>'+_dsProdProducts.map(p=>`<option>${s(p)}</option>`).join('');
 
   const dsDate = document.getElementById('ds-date');
   if(dsDate && !dsDate.value) dsDate.value = today();
@@ -5439,6 +5444,7 @@ function clearDsFilter(){
   document.getElementById('ds-filter-trader').value='';
   document.getElementById('ds-filter-unit').value='';
   document.getElementById('ds-filter-variety').value='';
+  document.getElementById('ds-filter-product').value='';
   renderDeferredSales();
 }
 
@@ -5455,6 +5461,7 @@ async function renderDeferredSales(){
   const trader = document.getElementById('ds-filter-trader')?.value;
   const unit = document.getElementById('ds-filter-unit')?.value;
   const variety = document.getElementById('ds-filter-variety')?.value;
+  const fProduct = document.getElementById('ds-filter-product')?.value;
 
   if(from) q=q.gte('date',from);
   if(to) q=q.lte('date',to);
@@ -5465,9 +5472,10 @@ async function renderDeferredSales(){
   if(_dsFilter==='paid') q=q.eq('paid',true);
   if(_dsFilter==='unpaid') q=q.eq('paid',false);
 
-  const {data,error} = await q;
+  const {data:rawDs,error} = await q;
   if(error){ el.innerHTML='<div class="empty">❌ '+error.message+'</div>'; return; }
-  if(!data?.length){
+  const data = fProduct ? (rawDs||[]).filter(x=>(x.items||[]).some(it=>it.name===fProduct)) : (rawDs||[]);
+  if(!data.length){
     el.innerHTML='<div class="empty">لا يوجد مبيعات</div>';
     document.getElementById('ds-total-shown').textContent='0 ج';
     document.getElementById('ds-units-shown').textContent='0';
