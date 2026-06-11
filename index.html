@@ -1775,6 +1775,19 @@ function showPage(name, btn) {
     if(map[name]) document.getElementById(map[name]).classList.add('active');
     // else: no nav button to highlight
   }
+  // امسح فلاتر التواريخ عند فتح الصفحة
+  const filterMap = {
+    income: ['inc-from','inc-to'],
+    expense: ['exp-from','exp-to'],
+    ajal: [],
+    deferred: ['ds-from','ds-to'],
+    'sales-payment': ['sp-from','sp-to'],
+    capital: ['cap-from','cap-to'],
+    vault: ['vault-from','vault-to'],
+    report: ['rep-from','rep-to'],
+  };
+  (filterMap[name]||[]).forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+
   if(name==='home') renderHome();
   if(name==='income') renderIncomeList();
   if(name==='expense') renderExpenseList();
