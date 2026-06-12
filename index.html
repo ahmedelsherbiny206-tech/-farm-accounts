@@ -5699,7 +5699,11 @@ async function initDeferredSalesPage(){
     getDsProdTraders()
   ]);
 
-  _dsProdProducts = dsProds;
+  // دمج منتجات المخزن مع قائمة المنتجات المحفوظة
+  const {data: invItems} = await sb.from('inventory_transactions').select('item').eq('user_id',currentUser.id);
+  const invNames = [...new Set((invItems||[]).map(r=>r.item).filter(Boolean))];
+  const mergedProds = [...new Set([...dsProds, ...invNames])];
+  _dsProdProducts = mergedProds;
   _dsProdUnits = dsProdUnitsData?.data?.categories?.length ? dsProdUnitsData.data.categories : [...DP_DEFAULT_UNITS];
   _dsCropCrops = crops;
   _dsCropUnits = units;
