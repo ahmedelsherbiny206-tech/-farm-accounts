@@ -3485,10 +3485,10 @@ async function populateCatSelects(){
   if(expFiltCrop){ expFiltCrop.innerHTML='<option value="">كل المحاصيل</option>'+crops.map(c=>`<option>${s(c)}</option>`).join(''); }
   // مبيعات منتج - crop selector
   const dsProdCrop = document.getElementById('ds-prod-crop');
-  if(dsProdCrop){ dsProdCrop.innerHTML='<option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${s(c)}</option>`).join(''); }
+  if(dsProdCrop){ dsProdCrop.innerHTML='<option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option><option value="المخزن 🏪">المخزن 🏪 (يتسجل في المخزن تلقائياً)</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${s(c)}</option>`).join(''); }
   // مشتريات آجل - crop selector
   const dpCrop = document.getElementById('dp-crop');
-  if(dpCrop){ dpCrop.innerHTML='<option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${s(c)}</option>`).join(''); }
+  if(dpCrop){ dpCrop.innerHTML='<option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option><option value="المخزن 🏪">المخزن 🏪 (يتسجل في المخزن تلقائياً)</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${s(c)}</option>`).join(''); }
 }
 
 let catManagerType = '';
@@ -4636,7 +4636,26 @@ async function addDeferredPurchase() {
   const purchaseId = dpRow?.[0]?.id;
 
   const expDesc = 'مشتريات آجل'+(trader?' - '+trader:'')+(desc?' - '+desc:'');
-  await sb.from('expenses').insert({user_id:currentUser.id,description:expDesc,amount:total,category:'مشتريات آجل',crop:dpCropVal||null,date,notes:notes||null});
+  if(dpCropVal === 'المخزن 🏪'){
+    // كل صنف يدخل المخزن تلقائياً بالمتوسط المرجح
+    const {data:allTxns} = await sb.from('inventory_transactions').select('item,type,quantity,avg_cost').eq('user_id',currentUser.id);
+    const stockMap = {};
+    (allTxns||[]).forEach(r=>{
+      if(!stockMap[r.item]) stockMap[r.item]={qty:0,avg:0};
+      if(r.type==='in'){ stockMap[r.item].avg=r.avg_cost||0; stockMap[r.item].qty+=Number(r.quantity||0); }
+      else stockMap[r.item].qty-=Number(r.quantity||0);
+    });
+    const invRows = validItems.map(it=>{
+      const cur = stockMap[it.name]||{qty:0,avg:0};
+      const newAvg = cur.qty>0 ? (cur.qty*cur.avg + it.qty*it.price)/(cur.qty+it.qty) : it.price;
+      // تحديث stockMap للعناصر التالية في نفس الفاتورة
+      stockMap[it.name] = {qty:(cur.qty+it.qty), avg:newAvg};
+      return {user_id:currentUser.id,item:it.name,unit:it.unit||'',type:'in',quantity:it.qty,unit_price:it.price,avg_cost:newAvg,total:it.qty*it.price,date,notes:notes||null,crop:null};
+    });
+    await sb.from('inventory_transactions').insert(invRows);
+  } else {
+    await sb.from('expenses').insert({user_id:currentUser.id,description:expDesc,amount:total,category:'مشتريات آجل',crop:dpCropVal||null,date,notes:notes||null});
+  }
 
   if(_dpPayType==='full'||_dpPayType==='partial'){
     const vAmount = _dpPayType==='full' ? total : partialAmt;
@@ -5587,12 +5606,28 @@ async function addDeferredSaleProd() {
   if(error) return showToast('❌ خطأ: '+error.message);
   const saleId = dsRow?.[0]?.id;
 
-  await sb.from('income').insert({
-    user_id: currentUser.id,
-    description: 'بيع آجل منتجات'+(trader?' - '+trader:'')+(desc?' - '+desc:''),
-    category: 'مبيعات آجل', crop: dsProdCropVal||null, amount: total, date,
-    notes: notes||null, ref_id: saleId
-  });
+  if(dsProdCropVal === 'المخزن 🏪'){
+    // كل منتج يتسجل بيع من المخزن تلقائياً
+    const {data:allTxns} = await sb.from('inventory_transactions').select('item,type,quantity,avg_cost').eq('user_id',currentUser.id);
+    const stockMap = {};
+    (allTxns||[]).forEach(r=>{
+      if(!stockMap[r.item]) stockMap[r.item]={qty:0,avg:0};
+      if(r.type==='in'){ stockMap[r.item].avg=r.avg_cost||0; stockMap[r.item].qty+=Number(r.quantity||0); }
+      else stockMap[r.item].qty-=Number(r.quantity||0);
+    });
+    const invRows = validItems.map(it=>{
+      const cur = stockMap[it.name]||{qty:0,avg:0};
+      return {user_id:currentUser.id,item:it.name,unit:it.unit||'',type:'sale',quantity:it.qty,unit_price:it.price,avg_cost:cur.avg||it.price,total:it.qty*it.price,date,notes:notes||null,crop:null};
+    });
+    await sb.from('inventory_transactions').insert(invRows);
+  } else {
+    await sb.from('income').insert({
+      user_id: currentUser.id,
+      description: 'بيع آجل منتجات'+(trader?' - '+trader:'')+(desc?' - '+desc:''),
+      category: 'مبيعات آجل', crop: dsProdCropVal||null, amount: total, date,
+      notes: notes||null, ref_id: saleId
+    });
+  }
 
   if(_dspPayType==='full'||_dspPayType==='partial'){
     const vAmount = _dspPayType==='full' ? total : partialAmt;
