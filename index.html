@@ -570,6 +570,27 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 .ds-card.ds-paid{border-right-color:#aaa;opacity:0.75;}
 .ds-total-badge{font-size:1rem;font-weight:900;color:var(--g2);}
 .ds-actions{display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+
+/* Searchable Select */
+.ss-wrap{position:relative;display:block;}
+.ss-wrap select{display:none!important;}
+.ss-input{width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.88rem;box-sizing:border-box;cursor:pointer;outline:none;transition:border-color 0.2s;}
+.ss-input:focus{border-color:var(--g2);}
+.ss-input::placeholder{color:var(--muted);}
+.ss-dropdown{position:absolute;top:calc(100% + 4px);right:0;left:0;background:var(--card);border:1.5px solid var(--border);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.15);z-index:9999;max-height:220px;overflow-y:auto;display:none;}
+.ss-dropdown.open{display:block;}
+.ss-search-box{padding:8px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);}
+.ss-search-box input{width:100%;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.82rem;outline:none;box-sizing:border-box;}
+.ss-option{padding:10px 14px;cursor:pointer;font-size:0.88rem;color:var(--text);transition:background 0.15s;}
+.ss-option:hover,.ss-option.highlighted{background:var(--g5);color:var(--g2);}
+.ss-option.placeholder-opt{color:var(--muted);}
+.ss-empty{padding:10px 14px;color:var(--muted);font-size:0.82rem;text-align:center;}
+body.dark-mode .ss-input{background:#2a2a2a;color:#e0e0e0;border-color:#444;}
+body.dark-mode .ss-dropdown{background:#2a2a2a;border-color:#444;}
+body.dark-mode .ss-search-box{background:#2a2a2a;border-color:#444;}
+body.dark-mode .ss-search-box input{background:#1e1e1e;color:#e0e0e0;border-color:#555;}
+body.dark-mode .ss-option:hover,body.dark-mode .ss-option.highlighted{background:#333;color:#52a375;}
+body.dark-mode .ss-option{color:#e0e0e0;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -7764,4 +7785,161 @@ async function saveDppEdit(id){
   onDppTraderChange();
   renderHome();
 }
+
+// ===== SEARCHABLE SELECT =====
+function makeSearchable(selectEl) {
+  if (!selectEl || selectEl._ssInit) return;
+  selectEl._ssInit = true;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'ss-wrap';
+  // copy inline style width/flex from select if any
+  if (selectEl.style.cssText) wrap.style.cssText = selectEl.style.cssText;
+  selectEl.parentNode.insertBefore(wrap, selectEl);
+  wrap.appendChild(selectEl);
+
+  const displayInput = document.createElement('input');
+  displayInput.className = 'ss-input';
+  displayInput.type = 'text';
+  displayInput.readOnly = true;
+  displayInput.setAttribute('autocomplete', 'off');
+  wrap.insertBefore(displayInput, selectEl);
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'ss-dropdown';
+
+  const searchBox = document.createElement('div');
+  searchBox.className = 'ss-search-box';
+  const searchInput = document.createElement('input');
+  searchInput.type = 'text';
+  searchInput.placeholder = '🔍 ابحث...';
+  searchInput.setAttribute('autocomplete', 'off');
+  searchBox.appendChild(searchInput);
+  dropdown.appendChild(searchBox);
+
+  wrap.appendChild(dropdown);
+
+  function getOptions() { return Array.from(selectEl.options); }
+
+  function isPlaceholder(opt) {
+    return !opt.value || opt.text.startsWith('--') || opt.text.startsWith('كل ');
+  }
+
+  function syncDisplay() {
+    const sel = selectEl.options[selectEl.selectedIndex];
+    if (sel && !isPlaceholder(sel)) {
+      displayInput.value = sel.text;
+    } else {
+      displayInput.value = '';
+      const ph = getOptions().find(o => isPlaceholder(o));
+      displayInput.placeholder = ph ? ph.text.replace(/^--\s*/, '') : 'اختار...';
+    }
+  }
+
+  function buildOptions(filter) {
+    // remove old option divs
+    Array.from(dropdown.querySelectorAll('.ss-option,.ss-empty')).forEach(el => el.remove());
+    const f = (filter || '').toLowerCase().trim();
+    const opts = getOptions();
+    let count = 0;
+    opts.forEach(opt => {
+      if (f && !opt.text.toLowerCase().includes(f)) return;
+      const div = document.createElement('div');
+      div.className = 'ss-option' + (isPlaceholder(opt) ? ' placeholder-opt' : '');
+      div.textContent = opt.text;
+      div.dataset.value = opt.value;
+      if (opt.value === selectEl.value) div.classList.add('highlighted');
+      div.addEventListener('mousedown', e => {
+        e.preventDefault();
+        selectEl.value = opt.value;
+        syncDisplay();
+        closeDropdown();
+        selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+        // also trigger any inline onchange
+        if (typeof selectEl.onchange === 'function') selectEl.onchange.call(selectEl);
+      });
+      dropdown.appendChild(div);
+      count++;
+    });
+    if (!count) {
+      const empty = document.createElement('div');
+      empty.className = 'ss-empty';
+      empty.textContent = 'لا يوجد نتائج';
+      dropdown.appendChild(empty);
+    }
+  }
+
+  function openDropdown() {
+    searchInput.value = '';
+    buildOptions('');
+    dropdown.classList.add('open');
+    searchInput.focus();
+    // scroll highlighted into view
+    const hi = dropdown.querySelector('.highlighted');
+    if (hi) hi.scrollIntoView({ block: 'nearest' });
+  }
+
+  function closeDropdown() {
+    dropdown.classList.remove('open');
+    searchInput.value = '';
+  }
+
+  displayInput.addEventListener('click', () => {
+    if (dropdown.classList.contains('open')) { closeDropdown(); return; }
+    openDropdown();
+  });
+
+  displayInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDropdown(); }
+  });
+
+  searchInput.addEventListener('input', () => buildOptions(searchInput.value));
+
+  searchInput.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeDropdown(); displayInput.focus(); }
+  });
+
+  document.addEventListener('click', e => {
+    if (!wrap.contains(e.target)) closeDropdown();
+  }, true);
+
+  // watch for option changes (dynamic population)
+  const obs = new MutationObserver(() => {
+    syncDisplay();
+    if (dropdown.classList.contains('open')) buildOptions(searchInput.value);
+  });
+  obs.observe(selectEl, { childList: true, subtree: false });
+
+  // watch for programmatic value changes
+  const origProp = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+  Object.defineProperty(selectEl, 'value', {
+    get() { return origProp.get.call(this); },
+    set(v) { origProp.set.call(this, v); syncDisplay(); }
+  });
+
+  syncDisplay();
+}
+
+function initAllSearchable() {
+  document.querySelectorAll('select').forEach(sel => {
+    if (!sel._ssInit) makeSearchable(sel);
+  });
+}
+
+// Auto-apply to dynamically added selects
+const _ssBodyObserver = new MutationObserver(mutations => {
+  mutations.forEach(m => {
+    m.addedNodes.forEach(node => {
+      if (node.nodeType !== 1) return;
+      if (node.tagName === 'SELECT' && !node._ssInit) makeSearchable(node);
+      node.querySelectorAll && node.querySelectorAll('select').forEach(sel => {
+        if (!sel._ssInit) makeSearchable(sel);
+      });
+    });
+  });
+});
+_ssBodyObserver.observe(document.body, { childList: true, subtree: true });
+
+// Init after DOM ready
+document.addEventListener('DOMContentLoaded', () => initAllSearchable());
 </script>
