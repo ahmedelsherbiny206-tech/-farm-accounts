@@ -612,11 +612,120 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 .ds-total,.ds-total-badge{font-size:1rem;font-weight:900;color:var(--primary);}
 .ds-actions{display:flex;gap:6px;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;}
 
+/* ======= PAGE TOP ACTIONS BAR ======= */
+.page-actions{
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+  margin-bottom:14px;
+}
+.page-actions .btn-sm{padding:9px 14px;border-radius:10px;font-size:0.8rem;font-weight:700;}
+.page-actions .btn-sm.primary{background:var(--primary);color:#fff;}
+.page-actions .btn-sm.outline{background:var(--card);color:var(--text);border:1.5px solid var(--border);}
+.page-actions .btn-sm.outline:hover{border-color:var(--primary);color:var(--primary);}
+.page-actions .btn-sm.excel{background:var(--primary-bg);color:var(--primary);border:1.5px solid var(--primary-border);}
+.page-actions .page-title{flex:1;font-size:1rem;font-weight:900;color:var(--text);}
+
+/* ======= SECTION HEADER IN CARD ======= */
+.section-lbl{
+  display:flex;justify-content:space-between;align-items:center;
+  margin:16px 0 10px;padding-bottom:8px;border-bottom:1px solid var(--border);
+}
+.section-lbl span{font-size:0.85rem;font-weight:800;color:var(--text);}
+.section-lbl .lbl-actions{display:flex;gap:8px;}
+.section-lbl .lbl-actions button{
+  background:none;border:none;font-size:0.75rem;color:var(--primary);
+  font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;padding:0;
+}
+
+/* ======= INVOICE ROWS ======= */
+.inv-row{
+  background:var(--bg);border:1px solid var(--border);border-radius:10px;
+  padding:10px;margin-bottom:8px;display:grid;gap:6px;align-items:center;
+}
+.inv-row-4{grid-template-columns:2.5fr 1fr 1fr 34px;}
+.inv-row-5{grid-template-columns:2fr 1fr 0.8fr 1fr 34px;}
+.inv-row-qty{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.inv-field{
+  width:100%;padding:9px 10px;border-radius:8px;border:1.5px solid var(--border);
+  background:var(--card);font-family:Cairo,sans-serif;font-size:0.83rem;
+  color:var(--text);outline:none;transition:border-color 0.2s;box-sizing:border-box;
+  min-width:0;
+}
+.inv-field:focus{border-color:var(--primary);box-shadow:0 0 0 2px rgba(45,106,79,0.1);}
+.inv-del{
+  background:var(--red-p);color:var(--red);border:none;border-radius:8px;
+  width:34px;height:34px;cursor:pointer;font-size:0.9rem;display:flex;
+  align-items:center;justify-content:center;transition:background 0.15s;
+}
+.inv-del:hover{background:#fecaca;}
+.inv-subtotal{font-size:0.72rem;color:var(--muted);padding:0 2px 4px;text-align:left;}
+
+/* ======= TOTAL DISPLAY ======= */
+.total-display{
+  background:var(--primary-bg);border:1px solid var(--primary-border);
+  border-radius:10px;padding:12px 16px;
+  display:flex;justify-content:space-between;align-items:center;
+  margin:8px 0;
+}
+.total-display .td-lbl{font-size:0.8rem;font-weight:700;color:var(--primary);}
+.total-display .td-val{font-size:1.05rem;font-weight:900;color:var(--primary);}
+.total-display.red{background:var(--red-p);border-color:#fca5a5;}
+.total-display.red .td-lbl,.total-display.red .td-val{color:var(--red);}
+
+/* ======= FILTER SECTION ======= */
+.filter-section{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:12px 14px;margin-bottom:12px;
+}
+.filter-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:0;}
+.filter-row+.filter-row{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+.filter-label{font-size:0.72rem;font-weight:700;color:var(--muted);white-space:nowrap;}
+.filter-input{
+  flex:1;min-width:100px;padding:8px 10px;border-radius:8px;
+  border:1.5px solid var(--border);background:var(--bg);
+  font-family:Cairo,sans-serif;font-size:0.82rem;color:var(--text);outline:none;
+  transition:border-color 0.2s;
+}
+.filter-input:focus{border-color:var(--primary);}
+.filter-select{
+  flex:1;padding:8px 10px;border-radius:8px;border:1.5px solid var(--border);
+  background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;
+  color:var(--text);outline:none;
+}
+.filter-btns{display:flex;gap:6px;}
+.filter-btns .filter-btn{padding:8px 14px;border-radius:8px;border:none;background:var(--primary);color:#fff;font-family:Cairo,sans-serif;font-size:0.78rem;font-weight:700;cursor:pointer;}
+.filter-btns .clear-btn{padding:8px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--muted);font-family:Cairo,sans-serif;font-size:0.78rem;font-weight:700;cursor:pointer;}
+
+/* ======= RESULTS HEADER ======= */
+.results-header{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:8px;
+}
+.results-count{font-size:0.75rem;font-weight:700;color:var(--muted);}
+.results-total{font-size:0.82rem;font-weight:900;color:var(--primary);}
+
+/* ======= TYPE TOGGLE (crop/product) ======= */
+.type-toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+.type-btn{
+  padding:12px;border-radius:10px;border:2px solid var(--border);
+  background:var(--bg);color:var(--text-secondary);font-family:Cairo,sans-serif;
+  font-size:0.88rem;font-weight:800;cursor:pointer;transition:all 0.2s;text-align:center;
+}
+.type-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+
+/* ======= PAY TYPE SELECTOR ======= */
+.pay-type-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:12px 0;}
+.pay-type-btn{
+  padding:10px 6px;border-radius:9px;border:1.5px solid var(--border);
+  background:var(--bg);color:var(--muted);font-family:Cairo,sans-serif;
+  font-size:0.78rem;font-weight:700;cursor:pointer;text-align:center;transition:all 0.2s;
+}
+.pay-type-btn.active{background:var(--primary-bg);color:var(--primary);border-color:var(--primary-border);}
+
 /* Searchable Select */
 .ss-wrap{position:relative;display:block;}
 .ss-wrap select{display:none!important;}
-.ss-input{width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.88rem;box-sizing:border-box;cursor:pointer;outline:none;transition:border-color 0.2s;}
-.ss-input:focus{border-color:var(--g2);}
+.ss-input{width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.88rem;box-sizing:border-box;cursor:pointer;outline:none;transition:border-color 0.2s;}
+.ss-input:focus{border-color:var(--primary);}
 .ss-input::placeholder{color:var(--muted);}
 .ss-dropdown{position:absolute;top:calc(100% + 4px);right:0;left:0;background:var(--card);border:1.5px solid var(--border);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.15);z-index:9999;max-height:220px;overflow-y:auto;display:none;}
 .ss-dropdown.open{display:block;}
@@ -824,24 +933,18 @@ body.dark-mode .ss-option{color:#e0e0e0;}
 
   <!-- INCOME -->
   <div class="page" id="page-income">
-    <div style="display:flex;justify-content:flex-start;margin:14px 0 -4px;padding:0 2px;">
-      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="exportToExcel('income')">📊 تصدير Excel</button>
+    <div class="page-actions">
+      <button class="btn-sm excel" onclick="exportToExcel('income')">📊 تصدير Excel</button>
     </div>
     <div class="card">
       <div class="card-title">💰 تسجيل وارد جديد</div>
       <div class="form-row"><label>الوصف</label><input type="text" id="inc-desc" placeholder="مثال: بيع محصول قمح"></div>
       <div class="form-row">
-        <label style="display:flex;justify-content:space-between;align-items:center;">
-          النوع
-          <button onclick="openCatManager('income')" style="background:none;border:none;font-size:0.78rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">⚙️ إدارة الأنواع</button>
-        </label>
+        <div class="section-lbl"><span>النوع</span><div class="lbl-actions"><button onclick="openCatManager('income')">⚙️ إدارة الأنواع</button></div></div>
         <select id="inc-type"><option value="">-- اختار النوع --</option></select>
       </div>
       <div class="form-row">
-        <label style="display:flex;justify-content:space-between;align-items:center;">
-          المحصول
-          <button onclick="openCropManager()" style="background:none;border:none;font-size:0.78rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">🌾 إدارة المحاصيل</button>
-        </label>
+        <div class="section-lbl"><span>المحصول</span><div class="lbl-actions"><button onclick="openCropManager()">🌾 إدارة المحاصيل</button></div></div>
         <select id="inc-crop"><option value="">-- اختار المحصول --</option></select>
       </div>
       <div class="form-row"><label>المبلغ (جنيه)</label><input type="text" inputmode="decimal" id="inc-amt" placeholder="0"></div>
@@ -849,104 +952,83 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       <div class="form-row"><label>ملاحظات</label><textarea id="inc-notes" placeholder="أي تفاصيل..."></textarea></div>
       <button class="btn btn-g" onclick="addIncome()">➕ إضافة</button>
     </div>
-    <div class="date-filter">
-      <label>من:</label><input type="date" id="inc-from">
-      <label>إلى:</label><input type="date" id="inc-to">
-      <button class="filter-btn" onclick="renderIncomeList()">عرض</button>
-      <button class="clear-btn" onclick="clearIncFilter()">الكل</button>
-    </div>
-    <div class="date-filter" style="padding-top:6px;">
-      <label>النوع:</label>
-      <select id="inc-filter-type" onchange="renderIncomeList()" style="flex:1;padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
-        <option value="">كل الأنواع</option>
-      </select>
-    </div>
-    <div class="date-filter" style="padding-top:6px;">
-      <label>المحصول:</label>
-      <select id="inc-filter-crop" onchange="renderIncomeList()" style="flex:1;padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
-        <option value="">كل المحاصيل</option>
-      </select>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:0 2px;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <input type="checkbox" id="inc-select-all" onclick="toggleSelectAllIncome(this)" style="width:16px;height:16px;accent-color:var(--g2);cursor:pointer;">
-        <span style="font-size:0.78rem;font-weight:700;color:var(--muted);">تحديد الكل</span>
+    <div class="filter-section">
+      <div class="filter-row">
+        <span class="filter-label">من:</span><input type="date" id="inc-from" class="filter-input">
+        <span class="filter-label">إلى:</span><input type="date" id="inc-to" class="filter-input">
+        <div class="filter-btns"><button class="filter-btn" onclick="renderIncomeList()">عرض</button><button class="clear-btn" onclick="clearIncFilter()">الكل</button></div>
       </div>
-      <button id="inc-delete-selected-btn" style="display:none;" class="btn-sm btn-r" onclick="deleteSelectedIncome()">🗑️ حذف المحدد (<span id="inc-sel-count">0</span>)</button>
+      <div class="filter-row">
+        <span class="filter-label">النوع:</span>
+        <select id="inc-filter-type" class="filter-input" onchange="renderIncomeList()"><option value="">كل الأنواع</option></select>
+        <span class="filter-label">المحصول:</span>
+        <select id="inc-filter-crop" class="filter-input" onchange="renderIncomeList()"><option value="">كل المحاصيل</option></select>
+      </div>
     </div>
-    <div id="inc-total-bar" style="display:none;background:var(--g5);border-radius:10px;padding:8px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
-      <span style="font-size:0.8rem;font-weight:700;color:var(--g2);">إجمالي المحدد / المعروض</span>
-      <span style="font-size:0.9rem;font-weight:900;color:var(--g2);" id="inc-total-val">0 ج</span>
+    <div class="results-header">
+      <label style="display:flex;align-items:center;gap:6px;font-size:0.78rem;font-weight:700;color:var(--muted);cursor:pointer;">
+        <input type="checkbox" id="inc-select-all" onclick="toggleSelectAllIncome(this)" style="width:16px;height:16px;accent-color:var(--primary);">تحديد الكل
+      </label>
+      <button id="inc-delete-selected-btn" style="display:none;" class="btn-sm btn-r" onclick="deleteSelectedIncome()">🗑️ حذف (<span id="inc-sel-count">0</span>)</button>
+    </div>
+    <div id="inc-total-bar" class="total-display" style="display:none;margin-bottom:8px;">
+      <span class="td-lbl">إجمالي المعروض</span><span class="td-val" id="inc-total-val">0 ج</span>
     </div>
     <div id="income-list"><div class="loading">⏳ جاري التحميل...</div></div>
   </div>
 
   <!-- EXPENSE -->
   <div class="page" id="page-expense">
-    <div style="display:flex;justify-content:flex-start;margin:14px 0 -4px;padding:0 2px;">
-      <button class="btn-sm" style="background:var(--red-p);color:var(--red);border:1.5px solid var(--red);" onclick="exportToExcel('expense')">📊 تصدير Excel</button>
+    <div class="page-actions">
+      <button class="btn-sm" style="background:var(--red-p);color:var(--red);border:1.5px solid #fca5a5;" onclick="exportToExcel('expense')">📊 تصدير Excel</button>
     </div>
     <div class="card">
       <div class="card-title">💸 تسجيل صادر جديد</div>
       <div class="form-row"><label>الوصف</label><input type="text" id="exp-desc" placeholder="مثال: أسمدة، عمالة..."></div>
       <div class="form-row"><label>المبلغ (جنيه)</label><input type="text" inputmode="decimal" id="exp-amt" placeholder="0"></div>
       <div class="form-row">
-        <label style="display:flex;justify-content:space-between;align-items:center;">
-          التصنيف
-          <button onclick="openCatManager('expense')" style="background:none;border:none;font-size:0.78rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">⚙️ إدارة التصنيفات</button>
-        </label>
+        <div class="section-lbl"><span>التصنيف</span><div class="lbl-actions"><button onclick="openCatManager('expense')">⚙️ إدارة التصنيفات</button></div></div>
         <select id="exp-cat"><option value="">-- اختار التصنيف --</option></select>
       </div>
       <div class="form-row">
-        <label style="display:flex;justify-content:space-between;align-items:center;">
-          المحصول
-          <button onclick="openCropManager()" style="background:none;border:none;font-size:0.78rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">🌾 إدارة المحاصيل</button>
-        </label>
+        <div class="section-lbl"><span>المحصول</span><div class="lbl-actions"><button onclick="openCropManager()">🌾 إدارة المحاصيل</button></div></div>
         <select id="exp-crop"><option value="">-- اختار المحصول --</option></select>
       </div>
       <div class="form-row"><label>التاريخ</label><input type="date" id="exp-date"></div>
       <div class="form-row"><label>ملاحظات</label><textarea id="exp-notes" placeholder="أي تفاصيل..."></textarea></div>
       <button class="btn btn-r" onclick="addExpense()">➕ إضافة</button>
     </div>
-    <div class="date-filter">
-      <label>من:</label><input type="date" id="exp-from">
-      <label>إلى:</label><input type="date" id="exp-to">
-      <button class="filter-btn" onclick="renderExpenseList()">عرض</button>
-      <button class="clear-btn" onclick="clearExpFilter()">الكل</button>
-    </div>
-    <div class="date-filter" style="padding-top:6px;">
-      <label>التصنيف:</label>
-      <select id="exp-filter-cat" onchange="renderExpenseList()" style="flex:1;padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
-        <option value="">كل التصنيفات</option>
-      </select>
-    </div>
-    <div class="date-filter" style="padding-top:6px;">
-      <label>المحصول:</label>
-      <select id="exp-filter-crop" onchange="renderExpenseList()" style="flex:1;padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
-        <option value="">كل المحاصيل</option>
-      </select>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:0 2px;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <input type="checkbox" id="exp-select-all" onclick="toggleSelectAllExpense(this)" style="width:16px;height:16px;accent-color:var(--red);cursor:pointer;">
-        <span style="font-size:0.78rem;font-weight:700;color:var(--muted);">تحديد الكل</span>
+    <div class="filter-section">
+      <div class="filter-row">
+        <span class="filter-label">من:</span><input type="date" id="exp-from" class="filter-input">
+        <span class="filter-label">إلى:</span><input type="date" id="exp-to" class="filter-input">
+        <div class="filter-btns"><button class="filter-btn" onclick="renderExpenseList()">عرض</button><button class="clear-btn" onclick="clearExpFilter()">الكل</button></div>
       </div>
-      <button id="exp-delete-selected-btn" style="display:none;" class="btn-sm btn-r" onclick="deleteSelectedExpense()">🗑️ حذف المحدد (<span id="exp-sel-count">0</span>)</button>
+      <div class="filter-row">
+        <span class="filter-label">التصنيف:</span>
+        <select id="exp-filter-cat" class="filter-input" onchange="renderExpenseList()"><option value="">كل التصنيفات</option></select>
+        <span class="filter-label">المحصول:</span>
+        <select id="exp-filter-crop" class="filter-input" onchange="renderExpenseList()"><option value="">كل المحاصيل</option></select>
+      </div>
     </div>
-    <div id="exp-total-bar" style="background:var(--red-p);border-radius:10px;padding:8px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
-      <span style="font-size:0.8rem;font-weight:700;color:var(--red);">إجمالي المعروض</span>
-      <span style="font-size:0.9rem;font-weight:900;color:var(--red);" id="exp-total-val">0 ج</span>
+    <div class="results-header">
+      <label style="display:flex;align-items:center;gap:6px;font-size:0.78rem;font-weight:700;color:var(--muted);cursor:pointer;">
+        <input type="checkbox" id="exp-select-all" onclick="toggleSelectAllExpense(this)" style="width:16px;height:16px;accent-color:var(--red);">تحديد الكل
+      </label>
+      <button id="exp-delete-selected-btn" style="display:none;" class="btn-sm btn-r" onclick="deleteSelectedExpense()">🗑️ حذف (<span id="exp-sel-count">0</span>)</button>
+    </div>
+    <div id="exp-total-bar" class="total-display red" style="margin-bottom:8px;">
+      <span class="td-lbl">إجمالي المعروض</span><span class="td-val" id="exp-total-val">0 ج</span>
     </div>
     <div id="expense-list"><div class="loading">⏳ جاري التحميل...</div></div>
   </div>
 
   <!-- AJAL -->
   <div class="page" id="page-ajal">
-    <div style="display:flex;justify-content:flex-start;margin:14px 0 -4px;padding:0 2px;">
-      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="exportAjalToExcel()">📊 تصدير Excel</button>
+    <div class="page-actions">
+      <button class="btn-sm excel" onclick="exportAjalToExcel()">📊 تصدير Excel</button>
     </div>
     <div id="ajal-cash-section">
-    <!-- قسم نقدي آجل -->
     <div id="ajal-section-normal">
     <div class="card">
       <div class="card-title">🕐 تسجيل آجل</div>
@@ -962,9 +1044,9 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       <div class="form-row"><label>تاريخ الاستحقاق</label><input type="date" id="aj-due"></div>
       <button class="btn btn-gold" onclick="addAjal()">➕ إضافة</button>
     </div>
-    <div style="font-size:0.82rem;font-weight:800;color:var(--muted);margin-bottom:8px;padding-right:4px;">ديون لي 💰</div>
+    <div style="font-size:0.78rem;font-weight:800;color:var(--muted);margin-bottom:8px;">ديون لي 💰</div>
     <div id="ajal-rec-list"><div class="loading">⏳</div></div>
-    <div style="font-size:0.82rem;font-weight:800;color:var(--muted);margin:12px 0 8px;padding-right:4px;">ديون عليَّ 💸</div>
+    <div style="font-size:0.78rem;font-weight:800;color:var(--muted);margin:14px 0 8px;">ديون عليَّ 💸</div>
     <div id="ajal-pay-list"><div class="loading">⏳</div></div>
   </div>
 
@@ -998,30 +1080,27 @@ body.dark-mode .ss-option{color:#e0e0e0;}
             <input type="text" id="ds-desc" placeholder="مثال: بيع قمح للتاجر أحمد"></div>
 
           <div class="form-row">
-            <label style="display:flex;justify-content:space-between;">التاجر
-              <button onclick="openTraderManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">👤 إدارة</button>
-            </label>
+            <div class="section-lbl"><span>التاجر</span><div class="lbl-actions"><button onclick="openTraderManager()">👤 إدارة</button></div></div>
             <select id="ds-trader"><option value="">-- اختار التاجر --</option></select>
           </div>
 
-          <div style="margin:10px 0 6px;display:flex;align-items:center;justify-content:space-between;">
-            <span style="font-weight:900;font-size:0.88rem;color:var(--text);">🌾 المحاصيل</span>
-            <div style="display:flex;gap:8px;">
-              <button onclick="openCropManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">🌾 إدارة المحاصيل</button>
-              <button onclick="openUnitManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">⚙️ الوحدات</button>
+          <div class="section-lbl">
+            <span>🌾 المحاصيل</span>
+            <div class="lbl-actions">
+              <button onclick="openCropManager()">🌾 إدارة</button>
+              <button onclick="openUnitManager()">⚙️ الوحدات</button>
             </div>
           </div>
           <div id="ds-crop-items-list"></div>
-          <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);margin-bottom:10px;" onclick="addDsCropItem()">➕ إضافة محصول</button>
+          <button class="btn-sm excel" style="margin-bottom:12px;" onclick="addDsCropItem()">➕ إضافة محصول</button>
 
-          <div class="form-row"><label>الإجمالي</label>
-            <div style="background:var(--g5);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-weight:900;color:var(--g2);font-size:1rem;" id="ds-total-display">0 ج</div>
+          <div class="total-display" style="margin-bottom:12px;">
+            <span class="td-lbl">الإجمالي</span>
+            <span class="td-val" id="ds-total-display">0 ج</span>
           </div>
 
           <div class="form-row">
-            <label style="display:flex;justify-content:space-between;">الصنف
-              <button onclick="openVarietyManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">🌿 إدارة</button>
-            </label>
+            <div class="section-lbl"><span>الصنف</span><div class="lbl-actions"><button onclick="openVarietyManager()">🌿 إدارة</button></div></div>
             <select id="ds-variety"><option value="">-- اختار الصنف (اختياري) --</option></select>
           </div>
 
@@ -1031,15 +1110,11 @@ body.dark-mode .ss-option{color:#e0e0e0;}
           <div class="form-row"><label>ملاحظات</label>
             <textarea id="ds-notes" placeholder="أي تفاصيل..."></textarea></div>
 
-          <!-- نوع الدفع -->
-          <div style="margin:10px 0 6px;font-size:0.8rem;font-weight:900;color:var(--text);">💳 نوع الدفع</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">
-            <button id="ds-pay-ajal-btn" onclick="setDsPayType('ajal',this)"
-              style="padding:9px 4px;border-radius:10px;border:2px solid var(--g3);background:var(--g3);color:#fff;font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">⏳ آجل</button>
-            <button id="ds-pay-full-btn" onclick="setDsPayType('full',this)"
-              style="padding:9px 4px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">✅ سداد</button>
-            <button id="ds-pay-partial-btn" onclick="setDsPayType('partial',this)"
-              style="padding:9px 4px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">💵 جزئي</button>
+          <label style="font-size:0.72rem;font-weight:700;color:var(--muted);display:block;margin-bottom:8px;">💳 نوع الدفع</label>
+          <div class="pay-type-row">
+            <button id="ds-pay-ajal-btn" class="pay-type-btn active" onclick="setDsPayType('ajal',this)">⏳ آجل</button>
+            <button id="ds-pay-full-btn" class="pay-type-btn" onclick="setDsPayType('full',this)">✅ سداد كامل</button>
+            <button id="ds-pay-partial-btn" class="pay-type-btn" onclick="setDsPayType('partial',this)">💵 دفعة جزئية</button>
           </div>
           <div id="ds-pay-partial-box" style="display:none;">
             <div class="form-row"><label>المبلغ المسدَّد الآن</label>
@@ -1054,19 +1129,17 @@ body.dark-mode .ss-option{color:#e0e0e0;}
             <input type="text" id="ds-prod-desc" placeholder="وصف الفاتورة..."></div>
 
           <div class="form-row">
-            <label style="display:flex;justify-content:space-between;">التاجر
-              <button onclick="openDsProdTraderManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">👤 إدارة</button>
-            </label>
+            <div class="section-lbl"><span>التاجر</span><div class="lbl-actions"><button onclick="openDsProdTraderManager()">👤 إدارة</button></div></div>
             <select id="ds-prod-trader"><option value="">-- اختار التاجر --</option></select>
           </div>
 
-          <div class="form-row"><label>🌾 المحصول / التوزيع</label>
+          <div class="form-row"><label>المحصول / التوزيع</label>
             <select id="ds-prod-crop"><option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option></select>
           </div>
 
-          <div style="margin:10px 0 6px;display:flex;align-items:center;justify-content:space-between;">
-            <span style="font-weight:900;font-size:0.88rem;color:var(--text);">📦 المنتجات</span>
-            <div style="display:flex;gap:8px;">
+          <div class="section-lbl">
+            <span>📦 المنتجات</span>
+            <div class="lbl-actions">
               <button onclick="openDsProductManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">📦 إدارة المنتجات</button>
               <button onclick="openDsUnitManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">📐 إدارة الوحدات</button>
             </div>
@@ -1085,14 +1158,11 @@ body.dark-mode .ss-option{color:#e0e0e0;}
             <textarea id="ds-prod-notes" placeholder="أي تفاصيل..."></textarea></div>
 
           <!-- نوع الدفع -->
-          <div style="margin:10px 0 6px;font-size:0.8rem;font-weight:900;color:var(--text);">💳 نوع الدفع</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">
-            <button id="dsp-pay-ajal-btn" onclick="setDspPayType('ajal',this)"
-              style="padding:9px 4px;border-radius:10px;border:2px solid var(--g3);background:var(--g3);color:#fff;font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">⏳ آجل</button>
-            <button id="dsp-pay-full-btn" onclick="setDspPayType('full',this)"
-              style="padding:9px 4px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">✅ سداد</button>
-            <button id="dsp-pay-partial-btn" onclick="setDspPayType('partial',this)"
-              style="padding:9px 4px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">💵 جزئي</button>
+          <div class="section-lbl" style="margin-top:12px;"><span>💳 نوع الدفع</span></div>
+          <div class="pay-type-row">
+            <button id="dsp-pay-ajal-btn" class="pay-type-btn active" onclick="setDspPayType('ajal',this)">⏳ آجل</button>
+            <button id="dsp-pay-full-btn" class="pay-type-btn" onclick="setDspPayType('full',this)">✅ سداد</button>
+            <button id="dsp-pay-partial-btn" class="pay-type-btn" onclick="setDspPayType('partial',this)">💵 جزئي</button>
           </div>
           <div id="dsp-pay-partial-box" style="display:none;">
             <div class="form-row"><label>المبلغ المسدَّد الآن</label>
@@ -1103,46 +1173,48 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       </div>
 
       <!-- فلاتر -->
-      <div class="date-filter">
-        <label>من:</label><input type="date" id="ds-from" onchange="renderDeferredSales()">
-        <label>إلى:</label><input type="date" id="ds-to" onchange="renderDeferredSales()">
-        <button class="clear-btn" onclick="clearDsFilter()">الكل</button>
-      </div>
-      <!-- فلاتر المحصول -->
-      <div id="ds-filters-crop" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-        <select id="ds-filter-crop" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
-          <option value="">كل المحاصيل</option>
-        </select>
-        <select id="ds-filter-trader" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
-          <option value="">كل التجار</option>
-        </select>
-        <select id="ds-filter-variety" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
-          <option value="">كل الأصناف</option>
-        </select>
-      </div>
-      <!-- فلاتر المنتج -->
-      <div id="ds-filters-product" style="display:none;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-        <select id="ds-filter-prod-trader" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
-          <option value="">كل التجار</option>
-        </select>
-        <select id="ds-filter-product" onchange="renderDeferredSales()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
-          <option value="">كل المنتجات</option>
-        </select>
-      </div>
-      <div style="display:flex;gap:6px;margin-bottom:10px;">
-        <button class="filter-btn active" id="dsf-all" onclick="setDsFilter('all',this)">الكل</button>
-        <button class="filter-btn" id="dsf-unpaid" onclick="setDsFilter('unpaid',this)">غير مسددة</button>
-        <button class="filter-btn" id="dsf-paid" onclick="setDsFilter('paid',this)">مسددة</button>
+      <div class="filter-section">
+        <div class="filter-row">
+          <span class="filter-label">من:</span>
+          <input type="date" id="ds-from" class="filter-input" onchange="renderDeferredSales()">
+          <span class="filter-label">إلى:</span>
+          <input type="date" id="ds-to" class="filter-input" onchange="renderDeferredSales()">
+          <button class="btn-sm outline" onclick="clearDsFilter()">الكل</button>
+        </div>
+        <div id="ds-filters-crop" class="filter-row" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+          <select id="ds-filter-crop" class="filter-input" onchange="renderDeferredSales()">
+            <option value="">كل المحاصيل</option>
+          </select>
+          <select id="ds-filter-trader" class="filter-input" onchange="renderDeferredSales()">
+            <option value="">كل التجار</option>
+          </select>
+          <select id="ds-filter-variety" class="filter-input" onchange="renderDeferredSales()">
+            <option value="">كل الأصناف</option>
+          </select>
+        </div>
+        <div id="ds-filters-product" style="display:none;" class="filter-row" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+          <select id="ds-filter-prod-trader" class="filter-input" onchange="renderDeferredSales()">
+            <option value="">كل التجار</option>
+          </select>
+          <select id="ds-filter-product" class="filter-input" onchange="renderDeferredSales()">
+            <option value="">كل المنتجات</option>
+          </select>
+        </div>
+        <div class="filter-row" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);gap:6px;">
+          <button class="filter-btn active" id="dsf-all" onclick="setDsFilter('all',this)">الكل</button>
+          <button class="filter-btn" id="dsf-unpaid" onclick="setDsFilter('unpaid',this)">غير مسددة</button>
+          <button class="filter-btn" id="dsf-paid" onclick="setDsFilter('paid',this)">مسددة</button>
+        </div>
       </div>
       <!-- ملخص الإجماليات -->
-      <div style="background:var(--g5);border-radius:12px;padding:12px 14px;margin-bottom:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <div style="text-align:center;">
-          <div style="font-size:0.75rem;font-weight:700;color:var(--muted);">إجمالي المبيعات</div>
-          <div style="font-size:1rem;font-weight:900;color:var(--g2);" id="ds-total-shown">0 ج</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+        <div class="total-display" style="flex-direction:column;align-items:center;gap:2px;">
+          <span class="td-lbl">إجمالي المبيعات</span>
+          <span class="td-val" id="ds-total-shown">0 ج</span>
         </div>
-        <div style="text-align:center;border-right:1px solid var(--border);">
-          <div style="font-size:0.75rem;font-weight:700;color:var(--muted);">إجمالي الوحدات</div>
-          <div style="font-size:1rem;font-weight:900;color:var(--g2);" id="ds-units-shown">0</div>
+        <div class="total-display" style="flex-direction:column;align-items:center;gap:2px;">
+          <span class="td-lbl">إجمالي الوحدات</span>
+          <span class="td-val" id="ds-units-shown">0</span>
         </div>
       </div>
       <div id="ds-list"><div class="loading">⏳</div></div>
@@ -1151,12 +1223,12 @@ body.dark-mode .ss-option{color:#e0e0e0;}
 
   <!-- مشتريات آجل -->
   <div class="page" id="page-deferred-purchases">
-    <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px;padding:0 2px;flex-wrap:wrap;">
-      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="showPage('deferred',document.getElementById('bnav-deferred'))">← رجوع</button>
-      <span style="font-size:0.95rem;font-weight:900;color:#6a1b9a;flex:1;">🛍️ مشتريات آجل</span>
-      <button class="btn-sm" style="background:#6a1b9a;color:#fff;border:none;" onclick="showPage('dp-payment',document.getElementById('bnav-dp-payment'))">💵 سداد</button>
-      <button class="btn-sm" style="background:#6a1b9a;color:#fff;border:none;" onclick="showPage('dp-account-statement',document.getElementById('bnav-dp-account-statement'))">📋 كشف حساب</button>
-      <button class="btn-sm" style="background:#6a1b9a;color:#fff;border:none;" onclick="exportDpToExcel()">📊 Excel</button>
+    <div class="page-actions">
+      <button class="btn-sm outline" onclick="showPage('deferred',document.getElementById('bnav-deferred'))">← رجوع</button>
+      <span class="page-title">🛍️ مشتريات آجل</span>
+      <button class="btn-sm primary" onclick="showPage('dp-payment',document.getElementById('bnav-dp-payment'))">💵 سداد</button>
+      <button class="btn-sm primary" onclick="showPage('dp-account-statement',document.getElementById('bnav-dp-account-statement'))">📋 كشف حساب</button>
+      <button class="btn-sm excel" onclick="exportDpToExcel()">📊 Excel</button>
     </div>
 
     <div class="card">
@@ -1165,29 +1237,28 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       <div class="form-row"><label>الوصف</label>
         <input id="dp-desc" placeholder="وصف الفاتورة..."></div>
 
-      <div class="form-row"><label>التاجر
-        <button onclick="openDpTraderManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">👤 إدارة</button>
-      </label>
+      <div class="form-row">
+        <div class="section-lbl"><span>التاجر</span><div class="lbl-actions"><button onclick="openDpTraderManager()">👤 إدارة</button></div></div>
         <select id="dp-trader"><option value="">-- اختار التاجر --</option></select>
       </div>
 
-      <div class="form-row"><label>🌾 المحصول / التوزيع</label>
+      <div class="form-row"><label>المحصول / التوزيع</label>
         <select id="dp-crop"><option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option></select>
       </div>
 
-      <!-- المنتجات -->
-      <div style="margin:10px 0 6px;display:flex;align-items:center;justify-content:space-between;">
-        <span style="font-weight:900;font-size:0.88rem;color:var(--text);">📦 المنتجات</span>
-        <div style="display:flex;gap:8px;">
-          <button onclick="openDpProductManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">📦 إدارة المنتجات</button>
-          <button onclick="openDpUnitManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">📐 إدارة الوحدات</button>
+      <div class="section-lbl">
+        <span>📦 المنتجات</span>
+        <div class="lbl-actions">
+          <button onclick="openDpProductManager()">📦 إدارة المنتجات</button>
+          <button onclick="openDpUnitManager()">📐 الوحدات</button>
         </div>
       </div>
       <div id="dp-items-list"></div>
-      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);margin-bottom:10px;" onclick="addDpItem()">➕ إضافة منتج</button>
+      <button class="btn-sm excel" style="margin-bottom:12px;" onclick="addDpItem()">➕ إضافة منتج</button>
 
-      <div class="form-row"><label>الإجمالي</label>
-        <div style="background:var(--g5);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-weight:900;color:#6a1b9a;font-size:1rem;" id="dp-total-display">0 ج</div>
+      <div class="total-display" style="margin-bottom:12px;">
+        <span class="td-lbl">الإجمالي</span>
+        <span class="td-val" id="dp-total-display">0 ج</span>
       </div>
 
       <div class="form-row"><label>التاريخ</label>
@@ -1196,46 +1267,40 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       <div class="form-row"><label>ملاحظات</label>
         <textarea id="dp-notes" placeholder="أي تفاصيل..."></textarea></div>
 
-      <!-- نوع الدفع -->
-      <div style="margin:10px 0 6px;font-size:0.8rem;font-weight:900;color:var(--text);">💳 نوع الدفع</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">
-        <button id="dp-pay-ajal-btn" onclick="setDpPayType('ajal',this)"
-          style="padding:9px 4px;border-radius:10px;border:2px solid #6a1b9a;background:#6a1b9a;color:#fff;font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">⏳ آجل</button>
-        <button id="dp-pay-full-btn" onclick="setDpPayType('full',this)"
-          style="padding:9px 4px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">✅ سداد</button>
-        <button id="dp-pay-partial-btn" onclick="setDpPayType('partial',this)"
-          style="padding:9px 4px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:900;cursor:pointer;">💵 جزئي</button>
+      <label style="font-size:0.72rem;font-weight:700;color:var(--muted);display:block;margin-bottom:8px;">💳 نوع الدفع</label>
+      <div class="pay-type-row">
+        <button id="dp-pay-ajal-btn" class="pay-type-btn active" onclick="setDpPayType('ajal',this)">⏳ آجل</button>
+        <button id="dp-pay-full-btn" class="pay-type-btn" onclick="setDpPayType('full',this)">✅ سداد كامل</button>
+        <button id="dp-pay-partial-btn" class="pay-type-btn" onclick="setDpPayType('partial',this)">💵 دفعة جزئية</button>
       </div>
       <div id="dp-pay-partial-box" style="display:none;">
         <div class="form-row"><label>المبلغ المدفوع الآن</label>
           <input type="text" inputmode="decimal" id="dp-partial-amount" placeholder="0"></div>
       </div>
-      <button class="btn btn-g" style="background:#6a1b9a;" onclick="addDeferredPurchase()">➕ تسجيل الفاتورة</button>
+      <button class="btn btn-g" onclick="addDeferredPurchase()">➕ تسجيل الفاتورة</button>
     </div>
 
-    <!-- فلاتر -->
-    <div class="date-filter">
-      <label>من:</label><input type="date" id="dp-from" autocomplete="off" onchange="renderDeferredPurchases()">
-      <label>إلى:</label><input type="date" id="dp-to" autocomplete="off" onchange="renderDeferredPurchases()">
-      <button class="clear-btn" onclick="clearDpFilter()">الكل</button>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-      <select id="dp-filter-trader" onchange="renderDeferredPurchases()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
-        <option value="">كل التجار</option>
-      </select>
-      <select id="dp-filter-product" onchange="renderDeferredPurchases()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
-        <option value="">كل المنتجات</option>
-      </select>
-      <select id="dp-filter-status" onchange="renderDeferredPurchases()" style="padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);">
-        <option value="">الكل</option>
-        <option value="unpaid">غير مسددة</option>
-        <option value="paid">مسددة</option>
-      </select>
+    <div class="filter-section">
+      <div class="filter-row">
+        <span class="filter-label">من:</span><input type="date" id="dp-from" class="filter-input" autocomplete="off" onchange="renderDeferredPurchases()">
+        <span class="filter-label">إلى:</span><input type="date" id="dp-to" class="filter-input" autocomplete="off" onchange="renderDeferredPurchases()">
+        <div class="filter-btns"><button class="clear-btn" onclick="clearDpFilter()">الكل</button></div>
+      </div>
+      <div class="filter-row">
+        <select id="dp-filter-trader" class="filter-input" onchange="renderDeferredPurchases()"><option value="">كل التجار</option></select>
+        <select id="dp-filter-product" class="filter-input" onchange="renderDeferredPurchases()"><option value="">كل المنتجات</option></select>
+        <select id="dp-filter-status" class="filter-input" onchange="renderDeferredPurchases()">
+          <option value="">الكل</option><option value="unpaid">غير مسددة</option><option value="paid">مسددة</option>
+        </select>
+      </div>
     </div>
 
-    <div id="dp-summary-bar" style="display:none;background:var(--card);border-radius:10px;padding:8px 14px;margin-bottom:8px;font-size:0.8rem;font-weight:800;color:var(--text);display:flex;gap:16px;flex-wrap:wrap;">
-      <span>إجمالي: <span id="dp-total-val" style="color:#6a1b9a;">0 ج</span></span>
-      <span>متبقي: <span id="dp-unpaid-val" style="color:var(--red);">0 ج</span></span>
+    <div id="dp-summary-bar" class="total-display" style="margin-bottom:10px;">
+      <span class="td-lbl">إجمالي الفواتير</span>
+      <span style="display:flex;gap:16px;font-size:0.85rem;font-weight:900;">
+        <span><span id="dp-total-val" style="color:var(--primary);">0 ج</span> إجمالي</span>
+        <span><span id="dp-unpaid-val" style="color:var(--red);">0 ج</span> متبقي</span>
+      </span>
     </div>
 
     <div id="dp-list"><div class="loading">⏳</div></div>
@@ -1243,9 +1308,9 @@ body.dark-mode .ss-option{color:#e0e0e0;}
 
   <!-- صفحة كشف حساب المشتريات -->
   <div class="page" id="page-dp-account-statement">
-    <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px;padding:0 2px;">
-      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="showPage('deferred-purchases',document.getElementById('bnav-deferred-purchases'))">← رجوع</button>
-      <span style="font-size:0.95rem;font-weight:900;color:#6a1b9a;flex:1;">📋 كشف حساب مشتريات</span>
+    <div class="page-actions">
+      <button class="btn-sm outline" onclick="showPage('deferred-purchases',document.getElementById('bnav-deferred-purchases'))">← رجوع</button>
+      <span class="page-title">📋 كشف حساب مشتريات</span>
     </div>
     <div class="card">
       <div class="card-title">📋 بيانات الكشف</div>
@@ -1255,16 +1320,16 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       </div>
       <div class="form-row"><label>من</label><input type="date" id="dpas-from"></div>
       <div class="form-row"><label>إلى</label><input type="date" id="dpas-to"></div>
-      <button class="btn" style="background:#6a1b9a;color:#fff;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-weight:900;font-size:0.9rem;cursor:pointer;width:100%;margin-top:4px;" onclick="showDpAccountStatement()">📋 عرض كشف الحساب</button>
+      <button class="btn btn-g" onclick="showDpAccountStatement()">📋 عرض كشف الحساب</button>
     </div>
     <div id="dpas-result"></div>
   </div><!-- end page-dp-account-statement -->
 
   <!-- صفحة سداد مشتريات -->
   <div class="page" id="page-dp-payment">
-    <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px;padding:0 2px;flex-wrap:wrap;">
-      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="showPage('deferred-purchases',document.getElementById('bnav-deferred-purchases'))">← رجوع</button>
-      <span style="font-size:0.95rem;font-weight:900;color:#6a1b9a;flex:1;">💵 سداد مشتريات</span>
+    <div class="page-actions">
+      <button class="btn-sm outline" onclick="showPage('deferred-purchases',document.getElementById('bnav-deferred-purchases'))">← رجوع</button>
+      <span class="page-title">💵 سداد مشتريات</span>
     </div>
 
     <div class="card">
@@ -1277,9 +1342,9 @@ body.dark-mode .ss-option{color:#e0e0e0;}
         </select>
       </div>
 
-      <div id="dpp-debt-box" style="display:none;background:#f3e5f5;border-radius:12px;padding:12px 14px;margin-bottom:10px;justify-content:space-between;align-items:center;">
-        <span style="font-size:0.85rem;font-weight:700;color:var(--muted);">إجمالي المديونية</span>
-        <span style="font-size:1.1rem;font-weight:900;color:var(--red);" id="dpp-debt-val">0 ج</span>
+      <div id="dpp-debt-box" style="display:none;" class="total-display red">
+        <span class="td-lbl">إجمالي المديونية</span>
+        <span class="td-val" id="dpp-debt-val">0 ج</span>
       </div>
 
       <div class="form-row">
@@ -1298,20 +1363,24 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       </div>
 
       <div style="display:flex;gap:10px;align-items:stretch;">
-        <button class="btn" style="flex:3;background:#6a1b9a;color:#fff;border:none;border-radius:14px;font-family:Cairo,sans-serif;font-size:0.9rem;font-weight:900;cursor:pointer;padding:12px;" onclick="addDpPayment()">💾 تسجيل السداد</button>
-        <button style="flex:1;background:#1565C0;color:#fff;border:none;border-radius:14px;font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:900;cursor:pointer;padding:10px 6px;line-height:1.3;" onclick="addDpTaswiya()">📋 تسوية</button>
+        <button class="btn btn-g" style="flex:3;" onclick="addDpPayment()">💾 تسجيل السداد</button>
+        <button class="btn btn-blue" style="flex:1;font-size:0.82rem;" onclick="addDpTaswiya()">📋 تسوية</button>
       </div>
     </div>
 
     <div id="dpp-history-section" style="display:none;">
-      <div class="date-filter" style="margin-top:12px;">
-        <label>من:</label><input type="date" id="dpp-from" onchange="renderDpPayments()">
-        <label>إلى:</label><input type="date" id="dpp-to" onchange="renderDpPayments()">
-        <button class="clear-btn" onclick="clearDppFilter()">الكل</button>
+      <div class="filter-section" style="margin-top:12px;">
+        <div class="filter-row">
+          <span class="filter-label">من:</span>
+          <input type="date" id="dpp-from" class="filter-input" onchange="renderDpPayments()">
+          <span class="filter-label">إلى:</span>
+          <input type="date" id="dpp-to" class="filter-input" onchange="renderDpPayments()">
+          <button class="btn-sm outline" onclick="clearDppFilter()">الكل</button>
+        </div>
       </div>
-      <div style="background:#f3e5f5;border-radius:12px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:0.8rem;font-weight:700;color:var(--muted);">إجمالي المسدَّد</span>
-        <span style="font-size:0.95rem;font-weight:900;color:#6a1b9a;" id="dpp-total-paid">0 ج</span>
+      <div class="total-display" style="margin-bottom:10px;">
+        <span class="td-lbl">إجمالي المسدَّد</span>
+        <span class="td-val" id="dpp-total-paid">0 ج</span>
       </div>
       <div style="margin-bottom:8px;">
         <button id="dpp-bulk-delete-btn" onclick="bulkDeleteDpPayments()" style="display:none;background:var(--red);color:#fff;border:none;padding:8px 16px;border-radius:10px;font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:800;cursor:pointer;">🗑️ حذف المحدد</button>
@@ -1322,24 +1391,24 @@ body.dark-mode .ss-option{color:#e0e0e0;}
 
   <!-- صفحة المخزن -->
   <div class="page" id="page-inventory">
-    <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px;padding:0 2px;flex-wrap:wrap;">
-      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="showPage('home',document.getElementById('bnav-home'))">← رجوع</button>
-      <span style="font-size:0.95rem;font-weight:900;color:#e65100;flex:1;">🏪 المخزن</span>
-      <button class="btn-sm" style="background:#e65100;color:#fff;border:none;" onclick="exportInventoryExcel()">📊 Excel</button>
+    <div class="page-actions">
+      <button class="btn-sm outline" onclick="showPage('home',document.getElementById('bnav-home'))">← رجوع</button>
+      <span class="page-title">🏪 المخزن</span>
+      <button class="btn-sm excel" onclick="exportInventoryExcel()">📊 Excel</button>
     </div>
 
     <!-- أزرار العمليات -->
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
-      <button onclick="openInvModal('in')" style="background:#e65100;color:#fff;border:none;border-radius:14px;padding:12px 6px;font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:900;cursor:pointer;">📥 استلام</button>
-      <button onclick="openInvModal('sale')" style="background:var(--g2);color:#fff;border:none;border-radius:14px;padding:12px 6px;font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:900;cursor:pointer;">💰 بيع</button>
-      <button onclick="openInvModal('usage')" style="background:#6a1b9a;color:#fff;border:none;border-radius:14px;padding:12px 6px;font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:900;cursor:pointer;">🔧 صرف</button>
+      <button onclick="openInvModal('in')" class="btn btn-g" style="font-size:0.82rem;padding:12px 6px;">📥 استلام</button>
+      <button onclick="openInvModal('sale')" class="btn btn-g" style="font-size:0.82rem;padding:12px 6px;">💰 بيع</button>
+      <button onclick="openInvModal('usage')" class="btn btn-g" style="font-size:0.82rem;padding:12px 6px;">🔧 صرف</button>
     </div>
 
     <!-- الجرد الحالي -->
     <div class="card" style="margin-bottom:12px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <div class="card-title" style="margin:0;">📦 الجرد الحالي</div>
-        <button onclick="openInvItemManager()" style="background:none;border:none;font-size:0.75rem;color:#e65100;font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">⚙️ إدارة الأصناف</button>
+      <div class="section-lbl">
+        <span>📦 الجرد الحالي</span>
+        <div class="lbl-actions"><button onclick="openInvItemManager()">⚙️ إدارة الأصناف</button></div>
       </div>
       <div id="inv-stock-table"><div class="loading">⏳</div></div>
     </div>
@@ -1347,21 +1416,25 @@ body.dark-mode .ss-option{color:#e0e0e0;}
     <!-- فلتر وسجل الحركات -->
     <div class="card">
       <div class="card-title">📋 سجل الحركات</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-        <select id="inv-filter-item" onchange="renderInvHistory()" style="flex:1;padding:7px 10px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
-          <option value="">كل الأصناف</option>
-        </select>
-        <select id="inv-filter-type" onchange="renderInvHistory()" style="flex:1;padding:7px 10px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
-          <option value="">كل العمليات</option>
-          <option value="in">استلام</option>
-          <option value="sale">بيع</option>
-          <option value="usage">صرف</option>
-        </select>
-      </div>
-      <div class="date-filter">
-        <label>من:</label><input type="date" id="inv-from" onchange="renderInvHistory()">
-        <label>إلى:</label><input type="date" id="inv-to" onchange="renderInvHistory()">
-        <button class="clear-btn" onclick="clearInvFilter()">الكل</button>
+      <div class="filter-section">
+        <div class="filter-row">
+          <select id="inv-filter-item" class="filter-input" onchange="renderInvHistory()">
+            <option value="">كل الأصناف</option>
+          </select>
+          <select id="inv-filter-type" class="filter-input" onchange="renderInvHistory()">
+            <option value="">كل العمليات</option>
+            <option value="in">استلام</option>
+            <option value="sale">بيع</option>
+            <option value="usage">صرف</option>
+          </select>
+        </div>
+        <div class="filter-row" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+          <span class="filter-label">من:</span>
+          <input type="date" id="inv-from" class="filter-input" onchange="renderInvHistory()">
+          <span class="filter-label">إلى:</span>
+          <input type="date" id="inv-to" class="filter-input" onchange="renderInvHistory()">
+          <button class="btn-sm outline" onclick="clearInvFilter()">الكل</button>
+        </div>
       </div>
       <div id="inv-history"><div class="loading">⏳</div></div>
     </div>
@@ -1369,9 +1442,9 @@ body.dark-mode .ss-option{color:#e0e0e0;}
 
   <!-- صفحة سداد المبيعات -->
   <div class="page" id="page-sales-payment">
-    <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px;padding:0 2px;flex-wrap:wrap;">
-      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="showPage('deferred',document.getElementById('bnav-deferred'))">← رجوع</button>
-      <span style="font-size:0.95rem;font-weight:900;color:var(--g2);flex:1;">💵 سداد مبيعات</span>
+    <div class="page-actions">
+      <button class="btn-sm outline" onclick="showPage('deferred',document.getElementById('bnav-deferred'))">← رجوع</button>
+      <span class="page-title">💵 سداد مبيعات</span>
     </div>
 
     <div class="card">
@@ -1385,9 +1458,9 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       </div>
 
       <!-- مديونية التاجر -->
-      <div id="sp-debt-box" style="display:none;background:var(--g5);border-radius:12px;padding:12px 14px;margin-bottom:10px;display:none;justify-content:space-between;align-items:center;">
-        <span style="font-size:0.85rem;font-weight:700;color:var(--muted);">إجمالي المديونية</span>
-        <span style="font-size:1.1rem;font-weight:900;color:var(--red);" id="sp-debt-val">0 ج</span>
+      <div id="sp-debt-box" style="display:none;" class="total-display red">
+        <span class="td-lbl">إجمالي المديونية</span>
+        <span class="td-val" id="sp-debt-val">0 ج</span>
       </div>
 
       <div class="form-row">
@@ -1413,14 +1486,18 @@ body.dark-mode .ss-option{color:#e0e0e0;}
 
     <!-- فلتر التاريخ - يظهر بس لما يتاختار تاجر -->
     <div id="sp-history-section" style="display:none;">
-      <div class="date-filter" style="margin-top:12px;">
-        <label>من:</label><input type="date" id="sp-from" onchange="renderSalesPayments()">
-        <label>إلى:</label><input type="date" id="sp-to" onchange="renderSalesPayments()">
-        <button class="clear-btn" onclick="clearSpFilter()">الكل</button>
+      <div class="filter-section" style="margin-top:12px;">
+        <div class="filter-row">
+          <span class="filter-label">من:</span>
+          <input type="date" id="sp-from" class="filter-input" onchange="renderSalesPayments()">
+          <span class="filter-label">إلى:</span>
+          <input type="date" id="sp-to" class="filter-input" onchange="renderSalesPayments()">
+          <button class="btn-sm outline" onclick="clearSpFilter()">الكل</button>
+        </div>
       </div>
-      <div style="background:var(--g5);border-radius:12px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:0.8rem;font-weight:700;color:var(--muted);">إجمالي المسدَّد</span>
-        <span style="font-size:0.95rem;font-weight:900;color:var(--g2);" id="sp-total-paid">0 ج</span>
+      <div class="total-display" style="margin-bottom:10px;">
+        <span class="td-lbl">إجمالي المسدَّد</span>
+        <span class="td-val" id="sp-total-paid">0 ج</span>
       </div>
       <div style="margin-bottom:8px;">
         <button id="sp-bulk-delete-btn" onclick="bulkDeleteSpPayments()" style="display:none;background:var(--red);color:#fff;border:none;padding:8px 16px;border-radius:10px;font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:800;cursor:pointer;">🗑️ حذف المحدد</button>
@@ -1431,9 +1508,9 @@ body.dark-mode .ss-option{color:#e0e0e0;}
 
   <!-- صفحة كشف الحساب -->
   <div class="page" id="page-account-statement">
-    <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px;padding:0 2px;">
-      <button class="btn-sm" style="background:var(--g5);color:var(--g2);border:1.5px solid var(--g3);" onclick="showPage('deferred',document.getElementById('bnav-deferred'))">← رجوع</button>
-      <span style="font-size:0.95rem;font-weight:900;color:#1a6fa8;">📋 كشف حساب</span>
+    <div class="page-actions">
+      <button class="btn-sm outline" onclick="showPage('deferred',document.getElementById('bnav-deferred'))">← رجوع</button>
+      <span class="page-title">📋 كشف حساب</span>
     </div>
 
     <div class="card">
@@ -1442,17 +1519,11 @@ body.dark-mode .ss-option{color:#e0e0e0;}
         <label>التاجر</label>
         <select id="as-trader"><option value="">-- اختار التاجر --</option></select>
       </div>
-      <div class="form-row">
-        <label>من</label>
-        <input type="date" id="as-from">
-      </div>
-      <div class="form-row">
-        <label>إلى</label>
-        <input type="date" id="as-to">
-      </div>
+      <div class="form-row"><label>من</label><input type="date" id="as-from"></div>
+      <div class="form-row"><label>إلى</label><input type="date" id="as-to"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;">
-        <button class="btn" style="background:#1a6fa8;color:#fff;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-weight:900;font-size:0.9rem;cursor:pointer;" onclick="showAccountStatement()">📋 كشف حساب</button>
-        <button class="btn" style="background:var(--g2);color:#fff;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-weight:900;font-size:0.9rem;cursor:pointer;" onclick="showDetailedStatement()">📊 كشف تفصيلي</button>
+        <button class="btn btn-g" onclick="showAccountStatement()">📋 كشف حساب</button>
+        <button class="btn btn-g" onclick="showDetailedStatement()">📊 كشف تفصيلي</button>
       </div>
     </div>
 
@@ -1474,11 +1545,15 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       <div class="form-row"><label>ملاحظات</label><textarea id="cap-notes" placeholder="مثال: بداية الموسم..."></textarea></div>
       <button class="btn btn-blue" onclick="addCapital()">💾 حفظ</button>
     </div>
-    <div class="date-filter">
-      <label>من:</label><input type="date" id="cap-from">
-      <label>إلى:</label><input type="date" id="cap-to">
-      <button class="filter-btn" onclick="renderCapitalList()">عرض</button>
-      <button class="clear-btn" onclick="clearCapFilter()">الكل</button>
+    <div class="filter-section">
+      <div class="filter-row">
+        <span class="filter-label">من:</span>
+        <input type="date" id="cap-from" class="filter-input">
+        <span class="filter-label">إلى:</span>
+        <input type="date" id="cap-to" class="filter-input">
+        <button class="btn-sm primary" onclick="renderCapitalList()">عرض</button>
+        <button class="btn-sm outline" onclick="clearCapFilter()">الكل</button>
+      </div>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:0 2px;">
       <div style="font-size:0.82rem;font-weight:800;color:var(--muted);">السجل</div>
@@ -1549,23 +1624,27 @@ body.dark-mode .ss-option{color:#e0e0e0;}
     </div>
 
     <!-- Filter -->
-    <div class="date-filter">
-      <label>من:</label><input type="date" id="vault-from">
-      <label>إلى:</label><input type="date" id="vault-to">
-      <button class="filter-btn" onclick="renderVaultList()">عرض</button>
-      <button class="clear-btn" onclick="clearVaultFilter()">الكل</button>
-    </div>
-    <div class="date-filter" style="padding-top:6px;">
-      <label>النوع:</label>
-      <select id="vault-filter-type" onchange="renderVaultList()" style="flex:1;padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
-        <option value="">الكل</option>
-        <option value="in">📥 قبض</option>
-        <option value="out">📤 صرف</option>
-        <option value="income_auto">💰 إيرادات</option>
-        <option value="expense_auto">💸 مصاريف</option>
-        <option value="capital_auto">📦 رأس مال</option>
-        <option value="opening">🏦 رصيد افتتاحي</option>
-      </select>
+    <div class="filter-section">
+      <div class="filter-row">
+        <span class="filter-label">من:</span>
+        <input type="date" id="vault-from" class="filter-input">
+        <span class="filter-label">إلى:</span>
+        <input type="date" id="vault-to" class="filter-input">
+        <button class="btn-sm primary" onclick="renderVaultList()">عرض</button>
+        <button class="btn-sm outline" onclick="clearVaultFilter()">الكل</button>
+      </div>
+      <div class="filter-row" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+        <span class="filter-label">النوع:</span>
+        <select id="vault-filter-type" class="filter-input" onchange="renderVaultList()">
+          <option value="">الكل</option>
+          <option value="in">📥 قبض</option>
+          <option value="out">📤 صرف</option>
+          <option value="income_auto">💰 إيرادات</option>
+          <option value="expense_auto">💸 مصاريف</option>
+          <option value="capital_auto">📦 رأس مال</option>
+          <option value="opening">🏦 رصيد افتتاحي</option>
+        </select>
+      </div>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:0 2px;">
       <div style="display:flex;align-items:center;gap:8px;">
@@ -1574,9 +1653,9 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       </div>
       <button id="vault-delete-selected-btn" style="display:none;" class="btn-sm btn-r" onclick="deleteSelectedVault()">🗑️ حذف المحدد (<span id="vault-sel-count">0</span>)</button>
     </div>
-    <div id="vault-total-bar" style="background:var(--g5);border-radius:10px;padding:8px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
-      <span style="font-size:0.8rem;font-weight:700;color:var(--g2);">إجمالي المعروض</span>
-      <span style="font-size:0.9rem;font-weight:900;color:var(--g2);" id="vault-total-val">0 ج</span>
+    <div class="total-display" style="margin-bottom:8px;">
+      <span class="td-lbl">إجمالي المعروض</span>
+      <span class="td-val" id="vault-total-val">0 ج</span>
     </div>
     <div id="vault-list"><div class="loading">⏳ جاري التحميل...</div></div>
   </div>
@@ -4555,28 +4634,25 @@ function renderDpItemsForm() {
     return;
   }
   el.innerHTML = _dpItems.map((item,i)=>`
-    <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:6px;margin-bottom:4px;align-items:center;">
-      <select onchange="_dpItems[${i}].name=this.value"
-        style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
+    <div class="inv-row inv-row-4">
+      <select class="inv-field" onchange="_dpItems[${i}].name=this.value">
         <option value="">-- اختار منتج --</option>
         ${_dpProducts.map(p=>`<option ${item.name===p?'selected':''}>${s(p)}</option>`).join('')}
       </select>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
-        <input type="text" inputmode="decimal" placeholder="الكمية" value="${item.qty||''}" oninput="_dpItems[${i}].qty=parseNum(this.value);calcDpTotal()"
-          style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;min-width:0;">
-        <select onchange="_dpItems[${i}].unit=this.value"
-          style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;min-width:0;">
+      <div class="inv-row-qty">
+        <input type="text" inputmode="decimal" placeholder="الكمية" value="${item.qty||''}" class="inv-field"
+          oninput="_dpItems[${i}].qty=parseNum(this.value);calcDpTotal()">
+        <select class="inv-field" onchange="_dpItems[${i}].unit=this.value">
           ${_dpUnits.map(u=>`<option ${item.unit===u?'selected':''}>${s(u)}</option>`).join('')}
         </select>
       </div>
-      <input type="text" inputmode="decimal" placeholder="السعر" value="${item.price||''}"
+      <input type="text" inputmode="decimal" placeholder="السعر ج" value="${item.price||''}" class="inv-field"
         oninput="_dpItems[${i}].price=parseNum(this.value);calcDpTotal()"
         onblur="if(_dpItems[${i}].name&&_dpItems[${i}].qty>0&&_dpItems[${i}].price>0&&${i}===_dpItems.length-1){_dpItems.push({name:'',qty:'',unit:_dpUnits[0]||'',price:0});renderDpItemsForm();}"
-        onkeydown="if(event.key==='Enter'&&_dpItems[${i}].name&&_dpItems[${i}].qty>0&&_dpItems[${i}].price>0){event.preventDefault();_dpItems.push({name:'',qty:'',unit:_dpUnits[0]||'',price:0});renderDpItemsForm();}"
-        style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
-      <button onclick="removeDpItem(${i})" style="background:var(--red-p,#ffebee);color:var(--red);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:0.85rem;">✕</button>
+        onkeydown="if(event.key==='Enter'&&_dpItems[${i}].name&&_dpItems[${i}].qty>0&&_dpItems[${i}].price>0){event.preventDefault();_dpItems.push({name:'',qty:'',unit:_dpUnits[0]||'',price:0});renderDpItemsForm();}">
+      <button class="inv-del" onclick="removeDpItem(${i})">✕</button>
     </div>
-    <div style="font-size:0.75rem;color:var(--muted);margin:0 0 8px;text-align:left;">إجمالي: ${fmt((item.qty||0)*(item.price||0))} ج</div>
+    <div class="inv-subtotal">${fmt((item.qty||0)*(item.price||0))} ج</div>
   `).join('');
 }
 function calcDpTotal() {
@@ -5607,28 +5683,25 @@ function renderDsProdItemsForm() {
     return;
   }
   el.innerHTML = _dsProdItems.map((item,i)=>`
-    <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:6px;margin-bottom:4px;align-items:center;">
-      <select onchange="_dsProdItems[${i}].name=this.value"
-        style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
+    <div class="inv-row inv-row-4">
+      <select class="inv-field" onchange="_dsProdItems[${i}].name=this.value">
         <option value="">-- اختار منتج --</option>
         ${_dsProdProducts.map(p=>`<option ${item.name===p?'selected':''}>${s(p)}</option>`).join('')}
       </select>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
-        <input type="text" inputmode="decimal" placeholder="الكمية" value="${item.qty||''}" oninput="_dsProdItems[${i}].qty=parseNum(this.value);calcDsProdTotal()"
-          style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;min-width:0;">
-        <select onchange="_dsProdItems[${i}].unit=this.value"
-          style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;min-width:0;">
+      <div class="inv-row-qty">
+        <input type="text" inputmode="decimal" placeholder="الكمية" value="${item.qty||''}" class="inv-field"
+          oninput="_dsProdItems[${i}].qty=parseNum(this.value);calcDsProdTotal()">
+        <select class="inv-field" onchange="_dsProdItems[${i}].unit=this.value">
           ${_dsProdUnits.map(u=>`<option ${item.unit===u?'selected':''}>${s(u)}</option>`).join('')}
         </select>
       </div>
-      <input type="text" inputmode="decimal" placeholder="السعر" value="${item.price||''}"
+      <input type="text" inputmode="decimal" placeholder="السعر ج" value="${item.price||''}" class="inv-field"
         oninput="_dsProdItems[${i}].price=parseNum(this.value);calcDsProdTotal()"
         onblur="if(_dsProdItems[${i}].name&&_dsProdItems[${i}].qty>0&&_dsProdItems[${i}].price>0&&${i}===_dsProdItems.length-1){_dsProdItems.push({name:'',qty:'',unit:_dsProdUnits[0]||'',price:0});renderDsProdItemsForm();}"
-        onkeydown="if(event.key==='Enter'&&_dsProdItems[${i}].name&&_dsProdItems[${i}].qty>0&&_dsProdItems[${i}].price>0){event.preventDefault();_dsProdItems.push({name:'',qty:'',unit:_dsProdUnits[0]||'',price:0});renderDsProdItemsForm();}"
-        style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;">
-      <button onclick="removeDsProdItem(${i})" style="background:var(--red-p,#ffebee);color:var(--red);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:0.85rem;">✕</button>
+        onkeydown="if(event.key==='Enter'&&_dsProdItems[${i}].name&&_dsProdItems[${i}].qty>0&&_dsProdItems[${i}].price>0){event.preventDefault();_dsProdItems.push({name:'',qty:'',unit:_dsProdUnits[0]||'',price:0});renderDsProdItemsForm();}">
+      <button class="inv-del" onclick="removeDsProdItem(${i})">✕</button>
     </div>
-    <div style="font-size:0.75rem;color:var(--muted);margin:0 0 8px;text-align:left;">إجمالي: ${fmt((item.qty||0)*(item.price||0))} ج</div>
+    <div class="inv-subtotal">${fmt((item.qty||0)*(item.price||0))} ج</div>
   `).join('');
 }
 function calcDsProdTotal() {
@@ -5837,25 +5910,21 @@ function renderDsCropItemsForm() {
     return;
   }
   el.innerHTML = _dsCropItems.map((item,i)=>`
-    <div style="display:grid;grid-template-columns:2fr 1.2fr 1fr 1.2fr auto;gap:5px;align-items:center;margin-bottom:6px;">
-      <select onchange="_dsCropItems[${i}].name=this.value"
-        style="padding:7px 4px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;color:var(--text);">
+    <div class="inv-row inv-row-5">
+      <select class="inv-field" onchange="_dsCropItems[${i}].name=this.value">
         <option value="">-- محصول --</option>
         ${_dsCropCrops.filter(c=>c!=='عام 🌍').map(c=>`<option ${item.name===c?'selected':''}>${c}</option>`).join('')}
       </select>
-      <input type="text" inputmode="decimal" placeholder="الكمية" value="${item.qty||''}"
-        oninput="_dsCropItems[${i}].qty=parseNum(this.value);calcDsCropTotal()"
-        style="padding:7px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;color:var(--text);text-align:center;">
-      <select onchange="_dsCropItems[${i}].unit=this.value"
-        style="padding:7px 2px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;color:var(--text);">
+      <input type="text" inputmode="decimal" placeholder="الكمية" value="${item.qty||''}" class="inv-field"
+        oninput="_dsCropItems[${i}].qty=parseNum(this.value);calcDsCropTotal()">
+      <select class="inv-field" onchange="_dsCropItems[${i}].unit=this.value">
         ${_dsCropUnits.map(u=>`<option ${item.unit===u?'selected':''}>${u}</option>`).join('')}
       </select>
-      <input type="text" inputmode="decimal" placeholder="السعر" value="${item.price||''}"
+      <input type="text" inputmode="decimal" placeholder="السعر ج" value="${item.price||''}" class="inv-field"
         oninput="_dsCropItems[${i}].price=parseNum(this.value);calcDsCropTotal()"
         onblur="if(_dsCropItems[${i}].name&&_dsCropItems[${i}].qty>0&&_dsCropItems[${i}].price>0&&${i}===_dsCropItems.length-1){_dsCropItems.push({name:'',qty:'',unit:_dsCropUnits[0]||'كيلو',price:0});renderDsCropItemsForm();}"
-        onkeydown="if(event.key==='Enter'&&_dsCropItems[${i}].name&&_dsCropItems[${i}].qty>0&&_dsCropItems[${i}].price>0){event.preventDefault();_dsCropItems.push({name:'',qty:'',unit:_dsCropUnits[0]||'كيلو',price:0});renderDsCropItemsForm();}"
-        style="padding:7px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;color:var(--text);text-align:center;">
-      <button onclick="removeDsCropItem(${i})" style="background:none;border:none;color:#e74c3c;font-size:1rem;cursor:pointer;padding:4px;">✕</button>
+        onkeydown="if(event.key==='Enter'&&_dsCropItems[${i}].name&&_dsCropItems[${i}].qty>0&&_dsCropItems[${i}].price>0){event.preventDefault();_dsCropItems.push({name:'',qty:'',unit:_dsCropUnits[0]||'كيلو',price:0});renderDsCropItemsForm();}">
+      <button class="inv-del" onclick="removeDsCropItem(${i})">✕</button>
     </div>`).join('');
 }
 function calcDsCropTotal() {
@@ -6122,23 +6191,19 @@ function renderDseItemsForm(crops, units) {
   const el = document.getElementById('dse-items-list');
   if(!el) return;
   el.innerHTML = window._dseItems.map((item,i)=>`
-    <div style="display:grid;grid-template-columns:2fr 1.2fr 1fr 1.2fr auto;gap:5px;align-items:center;margin-bottom:6px;">
-      <select onchange="window._dseItems[${i}].name=this.value"
-        style="padding:7px 4px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;color:var(--text);">
+    <div class="inv-row inv-row-5">
+      <select class="inv-field" onchange="window._dseItems[${i}].name=this.value">
         <option value="">-- محصول --</option>
         ${(crops||[]).filter(c=>c!=='عام 🌍').map(c=>`<option ${item.name===c?'selected':''}>${c}</option>`).join('')}
       </select>
-      <input type="text" inputmode="decimal" placeholder="الكمية" value="${item.qty||''}"
-        oninput="window._dseItems[${i}].qty=parseNum(this.value);calcDseTotal()"
-        style="padding:7px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;color:var(--text);text-align:center;">
-      <select onchange="window._dseItems[${i}].unit=this.value"
-        style="padding:7px 2px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;color:var(--text);">
+      <input type="text" inputmode="decimal" placeholder="الكمية" value="${item.qty||''}" class="inv-field"
+        oninput="window._dseItems[${i}].qty=parseNum(this.value);calcDseTotal()">
+      <select class="inv-field" onchange="window._dseItems[${i}].unit=this.value">
         ${(units||[]).map(u=>`<option ${item.unit===u?'selected':''}>${u}</option>`).join('')}
       </select>
-      <input type="text" inputmode="decimal" placeholder="السعر" value="${item.price||''}"
-        oninput="window._dseItems[${i}].price=parseNum(this.value);calcDseTotal()"
-        style="padding:7px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;color:var(--text);text-align:center;">
-      <button onclick="window._dseItems.splice(${i},1);renderDseItemsForm(_dsCropCrops,_dsCropUnits)" style="background:none;border:none;color:#e74c3c;font-size:1rem;cursor:pointer;padding:4px;">✕</button>
+      <input type="text" inputmode="decimal" placeholder="السعر ج" value="${item.price||''}" class="inv-field"
+        oninput="window._dseItems[${i}].price=parseNum(this.value);calcDseTotal()">
+      <button class="inv-del" onclick="window._dseItems.splice(${i},1);renderDseItemsForm(_dsCropCrops,_dsCropUnits)">✕</button>
     </div>`).join('');
   calcDseTotal();
 }
