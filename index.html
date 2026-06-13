@@ -950,6 +950,16 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       <div class="form-row"><label>المبلغ (جنيه)</label><input type="text" inputmode="decimal" id="inc-amt" placeholder="0"></div>
       <div class="form-row"><label>التاريخ</label><input type="date" id="inc-date"></div>
       <div class="form-row"><label>ملاحظات</label><textarea id="inc-notes" placeholder="أي تفاصيل..."></textarea></div>
+      <label style="font-size:0.72rem;font-weight:700;color:var(--muted);display:block;margin-bottom:8px;">💳 نوع الدفع</label>
+      <div class="pay-type-row">
+        <button id="inc-pay-full-btn"    class="pay-type-btn active" onclick="setIncPayType('full',this)">✅ كاش</button>
+        <button id="inc-pay-ajal-btn"    class="pay-type-btn"        onclick="setIncPayType('ajal',this)">⏳ آجل</button>
+        <button id="inc-pay-partial-btn" class="pay-type-btn"        onclick="setIncPayType('partial',this)">💵 جزئي</button>
+      </div>
+      <div id="inc-pay-partial-box" style="display:none;">
+        <div class="form-row"><label>المبلغ المقبوض الآن</label>
+          <input type="text" inputmode="decimal" id="inc-partial-amount" placeholder="0"></div>
+      </div>
       <button class="btn btn-g" onclick="addIncome()">➕ إضافة</button>
     </div>
     <div class="filter-section">
@@ -963,6 +973,13 @@ body.dark-mode .ss-option{color:#e0e0e0;}
         <select id="inc-filter-type" class="filter-input" onchange="renderIncomeList()"><option value="">كل الأنواع</option></select>
         <span class="filter-label">المحصول:</span>
         <select id="inc-filter-crop" class="filter-input" onchange="renderIncomeList()"><option value="">كل المحاصيل</option></select>
+        <span class="filter-label">الدفع:</span>
+        <select id="inc-filter-pay" class="filter-input" onchange="renderIncomeList()">
+          <option value="">الكل</option>
+          <option value="full">✅ كاش</option>
+          <option value="ajal">⏳ آجل</option>
+          <option value="partial">💵 جزئي</option>
+        </select>
       </div>
     </div>
     <div class="results-header">
@@ -996,6 +1013,16 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       </div>
       <div class="form-row"><label>التاريخ</label><input type="date" id="exp-date"></div>
       <div class="form-row"><label>ملاحظات</label><textarea id="exp-notes" placeholder="أي تفاصيل..."></textarea></div>
+      <label style="font-size:0.72rem;font-weight:700;color:var(--muted);display:block;margin-bottom:8px;">💳 نوع الدفع</label>
+      <div class="pay-type-row">
+        <button id="exp-pay-full-btn"    class="pay-type-btn active" onclick="setExpPayType('full',this)">✅ كاش</button>
+        <button id="exp-pay-ajal-btn"    class="pay-type-btn"        onclick="setExpPayType('ajal',this)">⏳ آجل</button>
+        <button id="exp-pay-partial-btn" class="pay-type-btn"        onclick="setExpPayType('partial',this)">💵 جزئي</button>
+      </div>
+      <div id="exp-pay-partial-box" style="display:none;">
+        <div class="form-row"><label>المبلغ المدفوع الآن</label>
+          <input type="text" inputmode="decimal" id="exp-partial-amount" placeholder="0"></div>
+      </div>
       <button class="btn btn-r" onclick="addExpense()">➕ إضافة</button>
     </div>
     <div class="filter-section">
@@ -1007,6 +1034,13 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       <div class="filter-row">
         <span class="filter-label">التصنيف:</span>
         <select id="exp-filter-cat" class="filter-input" onchange="renderExpenseList()"><option value="">كل التصنيفات</option></select>
+        <span class="filter-label">الدفع:</span>
+        <select id="exp-filter-pay" class="filter-input" onchange="renderExpenseList()">
+          <option value="">الكل</option>
+          <option value="full">✅ كاش</option>
+          <option value="ajal">⏳ آجل</option>
+          <option value="partial">💵 جزئي</option>
+        </select>
         <span class="filter-label">المحصول:</span>
         <select id="exp-filter-crop" class="filter-input" onchange="renderExpenseList()"><option value="">كل المحاصيل</option></select>
       </div>
@@ -2349,6 +2383,14 @@ async function renderHome() {
 }
 
 // ===== INCOME =====
+let _incPayType = 'full';
+function setIncPayType(t, btn){
+  _incPayType = t;
+  document.querySelectorAll('.pay-type-row .pay-type-btn').forEach(b=>{ if(b.closest('#page-income')) b.classList.remove('active'); });
+  if(btn) btn.classList.add('active');
+  const box = document.getElementById('inc-pay-partial-box');
+  if(box) box.style.display = t==='partial' ? 'block' : 'none';
+}
 async function addIncome() {
   const desc=document.getElementById('inc-desc').value.trim();
   const type=document.getElementById('inc-type').value;
@@ -2358,26 +2400,44 @@ async function addIncome() {
   const notes=document.getElementById('inc-notes').value;
   if(!desc||!amt) return showToast('❌ اكمل البيانات');
   if(amt<=0) return showToast('❌ المبلغ لازم يكون أكبر من صفر');
-  const {data:incRow,error}=await sb.from('income').insert({description:desc,category:type,crop:crop||null,amount:amt,date:date,notes:notes,user_id:currentUser.id}).select('id').single();
+  let paidAmt = null;
+  if(_incPayType==='partial'){
+    paidAmt = parseNum(document.getElementById('inc-partial-amount')?.value);
+    if(!paidAmt||paidAmt<=0) return showToast('❌ اكتب المبلغ المقبوض');
+    if(paidAmt>=amt) return showToast('❌ المبلغ الجزئي أكبر من أو يساوي الإجمالي — اختار كاش');
+  }
+  const {data:incRow,error}=await sb.from('income').insert({description:desc,category:type,crop:crop||null,amount:amt,date:date,notes:notes,user_id:currentUser.id,pay_type:_incPayType,paid_amount:paidAmt}).select('id').single();
   if(error) return showToast('❌ خطأ: '+error.message);
-  const {error:ve1}=await sb.from('vault').insert({type:'income_auto',description:'إيراد: '+desc,amount:amt,date:date,notes:notes||'',user_id:currentUser.id,ref_id:incRow?.id});
-  if(ve1) console.error('vault sync error:',ve1.message);
-  showToast('✅ تم تسجيل الوارد وإضافته للخزنة');
+  const vaultAmt = _incPayType==='full' ? amt : _incPayType==='partial' ? paidAmt : 0;
+  if(vaultAmt>0){
+    const {error:ve1}=await sb.from('vault').insert({type:'income_auto',description:'إيراد: '+desc,amount:vaultAmt,date:date,notes:notes||'',user_id:currentUser.id,ref_id:incRow?.id});
+    if(ve1) console.error('vault sync error:',ve1.message);
+  }
+  const toastMsg = _incPayType==='full'?'✅ تم تسجيل الوارد وإضافته للخزنة':_incPayType==='partial'?'✅ تم التسجيل — '+fmt(paidAmt)+' في الخزنة':'✅ تم تسجيل الوارد (آجل — لم يضاف للخزنة)';
+  showToast(toastMsg);
   logActivity('إضافة','income','وارد: '+desc+' - '+type, amt);
   document.getElementById('inc-desc').value='';
   document.getElementById('inc-amt').value='';
   document.getElementById('inc-notes').value='';
   document.getElementById('inc-crop').value='';
   document.getElementById('inc-date').value=today();
+  if(document.getElementById('inc-partial-amount')) document.getElementById('inc-partial-amount').value='';
+  setIncPayType('full', document.getElementById('inc-pay-full-btn'));
   renderIncomeList(); renderHome();
 }
 
+const _payBadge = {
+  full:    '<span style="font-size:0.65rem;font-weight:800;background:#d1fae5;color:#065f46;border-radius:5px;padding:1px 5px;">✅ كاش</span>',
+  ajal:    '<span style="font-size:0.65rem;font-weight:800;background:#fef3c7;color:#92400e;border-radius:5px;padding:1px 5px;">⏳ آجل</span>',
+  partial: '<span style="font-size:0.65rem;font-weight:800;background:#dbeafe;color:#1e40af;border-radius:5px;padding:1px 5px;">💵 جزئي</span>',
+};
 let incomeSelected = new Set();
 function clearIncFilter(){
   document.getElementById('inc-from').value='';
   document.getElementById('inc-to').value='';
   document.getElementById('inc-filter-type').value='';
   document.getElementById('inc-filter-crop').value='';
+  const fp=document.getElementById('inc-filter-pay'); if(fp) fp.value='';
   renderIncomeList();
 }
 async function renderIncomeList() {
@@ -2388,10 +2448,12 @@ async function renderIncomeList() {
   const to=document.getElementById('inc-to').value;
   const ftype=document.getElementById('inc-filter-type').value;
   const fcrop=document.getElementById('inc-filter-crop')?.value;
+  const fpay=document.getElementById('inc-filter-pay')?.value;
   if(from) q=q.gte('date',from);
   if(to) q=q.lte('date',to);
   if(ftype) q=q.eq('category',ftype);
   if(fcrop) q=q.eq('crop',fcrop);
+  if(fpay) q=q.eq('pay_type',fpay);
   const {data,error}=await q;
   const el=document.getElementById('income-list');
   if(error||!data?.length){el.innerHTML='<div class="empty">لا يوجد وارد 📭</div>';return;}
@@ -2400,8 +2462,8 @@ async function renderIncomeList() {
     <div class="item ${incomeSelected.has(x.id)?'selected':''}" id="inc-item-${x.id}">
       <input type="checkbox" class="item-check" onclick="event.stopPropagation();toggleIncSel('${x.id}')" ${incomeSelected.has(x.id)?'checked':''}>
       <div style="flex:1;cursor:pointer;" onclick="showDetail('income',${JSON.stringify(x).replace(/"/g,'&quot;')})">
-        <div class="i-desc">${s(x.description)}</div>
-        <div class="i-sub">${fmtDate(x.date)}${x.category?' · '+s(x.category):''}${x.crop?' 🌾 '+s(x.crop):''}</div>
+        <div class="i-desc">${s(x.description)} ${_payBadge[x.pay_type||'full']||''}</div>
+        <div class="i-sub">${fmtDate(x.date)}${x.category?' · '+s(x.category):''}${x.crop?' 🌾 '+s(x.crop):''}${x.pay_type==='partial'&&x.paid_amount?' · قبض '+fmt(x.paid_amount)+' / باقي '+fmt(x.amount-x.paid_amount):''}</div>
       </div>
       <div class="i-actions">
         <div class="i-amt">${fmt(x.amount)}</div>
@@ -2455,6 +2517,14 @@ async function deleteSelectedIncome(){
 }
 
 // ===== EXPENSE =====
+let _expPayType = 'full';
+function setExpPayType(t, btn){
+  _expPayType = t;
+  document.querySelectorAll('#page-expense .pay-type-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  const box = document.getElementById('exp-pay-partial-box');
+  if(box) box.style.display = t==='partial' ? 'block' : 'none';
+}
 async function addExpense() {
   const desc=document.getElementById('exp-desc').value.trim();
   const amt=parseNum(document.getElementById('exp-amt').value);
@@ -2464,17 +2534,29 @@ async function addExpense() {
   const notes=document.getElementById('exp-notes').value;
   if(!desc||!amt) return showToast('❌ اكمل البيانات');
   if(amt<=0) return showToast('❌ المبلغ لازم يكون أكبر من صفر');
-  const {data:expRow,error}=await sb.from('expenses').insert({description:desc+' - '+cat,amount:amt,category:cat,crop:crop||null,date:date,notes:notes,user_id:currentUser.id}).select('id').single();
+  let paidAmt = null;
+  if(_expPayType==='partial'){
+    paidAmt = parseNum(document.getElementById('exp-partial-amount')?.value);
+    if(!paidAmt||paidAmt<=0) return showToast('❌ اكتب المبلغ المدفوع');
+    if(paidAmt>=amt) return showToast('❌ المبلغ الجزئي أكبر من أو يساوي الإجمالي — اختار كاش');
+  }
+  const {data:expRow,error}=await sb.from('expenses').insert({description:desc+' - '+cat,amount:amt,category:cat,crop:crop||null,date:date,notes:notes,user_id:currentUser.id,pay_type:_expPayType,paid_amount:paidAmt}).select('id').single();
   if(error) return showToast('❌ خطأ: '+error.message);
-  const {error:ve2}=await sb.from('vault').insert({type:'expense_auto',description:'مصروف: '+desc+' - '+cat,amount:amt,date:date,notes:notes||'',user_id:currentUser.id,ref_id:expRow?.id});
-  if(ve2) console.error('vault sync error:',ve2.message);
-  showToast('✅ تم تسجيل الصادر وخصمه من الخزنة');
+  const vaultAmt = _expPayType==='full' ? amt : _expPayType==='partial' ? paidAmt : 0;
+  if(vaultAmt>0){
+    const {error:ve2}=await sb.from('vault').insert({type:'expense_auto',description:'مصروف: '+desc+' - '+cat,amount:vaultAmt,date:date,notes:notes||'',user_id:currentUser.id,ref_id:expRow?.id});
+    if(ve2) console.error('vault sync error:',ve2.message);
+  }
+  const toastMsg = _expPayType==='full'?'✅ تم تسجيل الصادر وخصمه من الخزنة':_expPayType==='partial'?'✅ تم التسجيل — '+fmt(paidAmt)+' من الخزنة':'✅ تم تسجيل الصادر (آجل — لم يخصم من الخزنة)';
+  showToast(toastMsg);
   logActivity('إضافة','expenses','صادر: '+desc+' - '+cat, amt);
   document.getElementById('exp-desc').value='';
   document.getElementById('exp-amt').value='';
   document.getElementById('exp-notes').value='';
   document.getElementById('exp-crop').value='';
   document.getElementById('exp-date').value=today();
+  if(document.getElementById('exp-partial-amount')) document.getElementById('exp-partial-amount').value='';
+  setExpPayType('full', document.getElementById('exp-pay-full-btn'));
   renderExpenseList(); renderHome();
 }
 
@@ -2484,6 +2566,7 @@ function clearExpFilter(){
   document.getElementById('exp-to').value='';
   document.getElementById('exp-filter-cat').value='';
   document.getElementById('exp-filter-crop').value='';
+  const fp=document.getElementById('exp-filter-pay'); if(fp) fp.value='';
   renderExpenseList();
 }
 async function renderExpenseList() {
@@ -2494,10 +2577,12 @@ async function renderExpenseList() {
   const to=document.getElementById('exp-to').value;
   const fcat=document.getElementById('exp-filter-cat').value;
   const fcrop=document.getElementById('exp-filter-crop')?.value;
+  const fpay=document.getElementById('exp-filter-pay')?.value;
   if(from) q=q.gte('date',from);
   if(to) q=q.lte('date',to);
   if(fcat) q=q.eq('category',fcat);
   if(fcrop) q=q.eq('crop',fcrop);
+  if(fpay) q=q.eq('pay_type',fpay);
   const {data,error}=await q;
   const el=document.getElementById('expense-list');
   if(error||!data?.length){el.innerHTML='<div class="empty">لا يوجد صادر 📭</div>';return;}
@@ -2506,8 +2591,8 @@ async function renderExpenseList() {
     <div class="item exp ${expSelected.has(x.id)?'selected':''}" id="exp-item-${x.id}">
       <input type="checkbox" class="item-check" onclick="event.stopPropagation();toggleExpSel('${x.id}')" ${expSelected.has(x.id)?'checked':''}>
       <div style="flex:1;cursor:pointer;" onclick="showDetail('expense',${JSON.stringify(x).replace(/"/g,'&quot;')})">
-        <div class="i-desc">${s(x.description)}</div>
-        <div class="i-sub">${fmtDate(x.date)}${x.category?' · '+s(x.category):''}${x.crop?' 🌾 '+s(x.crop):''}</div>
+        <div class="i-desc">${s(x.description)} ${_payBadge[x.pay_type||'full']||''}</div>
+        <div class="i-sub">${fmtDate(x.date)}${x.category?' · '+s(x.category):''}${x.crop?' 🌾 '+s(x.crop):''}${x.pay_type==='partial'&&x.paid_amount?' · دفع '+fmt(x.paid_amount)+' / باقي '+fmt(x.amount-x.paid_amount):''}</div>
       </div>
       <div class="i-actions">
         <div class="i-amt">${fmt(x.amount)}</div>
@@ -2753,13 +2838,23 @@ function showDetail(type, item) {
   let rows = [];
   let extraHtml = '';
   if(type==='income'||type==='expense') {
+    const payTypeLabel = {full:'✅ كاش (مدفوع بالكامل)', ajal:'⏳ آجل (لم يُدفع بعد)', partial:'💵 جزئي'};
+    const pt = item.pay_type||'full';
     rows = [
       ['الوصف', item.description||item.desc||'-'],
-      ['المبلغ', fmt(item.amount)],
+      ['إجمالي المبلغ', fmt(item.amount)],
       ['التاريخ', fmtDate(item.date)],
       ['التصنيف', item.category||'-'],
-      ['ملاحظات', item.notes||'-'],
+      ['حالة الدفع', payTypeLabel[pt]||pt],
     ];
+    if(pt==='partial'&&item.paid_amount!=null){
+      rows.push(['المبلغ المدفوع', fmt(item.paid_amount)]);
+      rows.push(['المبلغ المتبقي', fmt(item.amount - item.paid_amount)]);
+    }
+    if(pt==='ajal'){
+      rows.push(['الخزنة', '⚠️ لم يُضف للخزنة']);
+    }
+    if(item.notes) rows.push(['ملاحظات', item.notes]);
   } else if(type==='ajal') {
     rows = [
       ['الاسم', item.name],
