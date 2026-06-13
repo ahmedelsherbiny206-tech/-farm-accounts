@@ -7328,10 +7328,37 @@ async function openReturnModal(tableType, origId, trader, saleType, origTotal){
   const hasInv = invItems.length > 0;
   const isSale = tableType === 'sale';
 
+  // جيب اللي اتدفع فعلاً من الخزنة
+  const vCats = isSale ? ['سداد_مبيعات','سداد_مبيعات_منتج','تسوية_مبيعات','تسوية_مبيعات_منتج'] : ['سداد_مشتريات'];
+  const {data:vEntries} = await sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('ref_id',origId).in('category',vCats);
+  const totalPaid = (vEntries||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const remaining = origTotal - totalPaid;
+
+  const payStatusHtml = totalPaid===0
+    ? `<span style="background:#fef3c7;color:#92400e;border-radius:6px;padding:2px 8px;font-weight:800;font-size:0.75rem;">⏳ آجل — لم يُدفع بعد</span>`
+    : totalPaid>=origTotal
+      ? `<span style="background:#d1fae5;color:#065f46;border-radius:6px;padding:2px 8px;font-weight:800;font-size:0.75rem;">✅ مسدد بالكامل</span>`
+      : `<span style="background:#dbeafe;color:#1e40af;border-radius:6px;padding:2px 8px;font-weight:800;font-size:0.75rem;">💵 جزئي</span>`;
+
   document.getElementById('modal-title').textContent = isSale ? '🔄 مرتجع مبيعات' : '🔄 مرتجع مشتريات';
   document.getElementById('modal-body').innerHTML = `
-    <div style="background:var(--g5);border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:0.8rem;color:var(--muted);">
-      ${trader?`👤 ${s(trader)} · `:''}إجمالي الفاتورة: <strong>${Number(origTotal).toLocaleString('en-US')} ج</strong>
+    <div style="background:var(--g5);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:0.82rem;">
+      ${trader?`<div style="font-weight:700;color:var(--muted);margin-bottom:6px;">👤 ${s(trader)}</div>`:''}
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center;">
+        <div>
+          <div style="font-size:0.68rem;color:var(--muted);font-weight:700;">إجمالي الفاتورة</div>
+          <div style="font-size:0.9rem;font-weight:900;color:var(--text);">${Number(origTotal).toLocaleString('en-US')} ج</div>
+        </div>
+        <div>
+          <div style="font-size:0.68rem;color:var(--muted);font-weight:700;">${isSale?'تم تحصيله':'تم دفعه'}</div>
+          <div style="font-size:0.9rem;font-weight:900;color:#2d6a4f;">${Number(totalPaid).toLocaleString('en-US')} ج</div>
+        </div>
+        <div>
+          <div style="font-size:0.68rem;color:var(--muted);font-weight:700;">المتبقي</div>
+          <div style="font-size:0.9rem;font-weight:900;color:${remaining>0?'#c0392b':'#2d6a4f'};">${Number(remaining).toLocaleString('en-US')} ج</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;text-align:center;">${payStatusHtml}</div>
     </div>
     <div class="edit-modal-row"><label>مبلغ المرتجع</label>
       <input type="text" inputmode="decimal" id="ret-amount" placeholder="0" value="${origTotal}"></div>
