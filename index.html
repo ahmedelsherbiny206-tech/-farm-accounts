@@ -7929,12 +7929,12 @@ async function saveInvTransaction(type){
   });
   if(error) return showToast('❌ خطأ: '+error.message);
 
-  // لو صرف لمحصول → سجّل كمصروف في expenses
-  if(type==='usage'&&crop){
+  // صرف مخزن → دايماً يسجّل كمصروف في expenses
+  if(type==='usage'){
     await sb.from('expenses').insert({
       user_id:currentUser.id,
       description:'صرف مخزن: '+item+(notes?' - '+notes:''),
-      amount:total, category:'مستلزمات', crop:crop, date, notes:notes||null
+      amount:total, category:'مستلزمات', crop:crop||null, date, notes:notes||null
     });
   }
 
