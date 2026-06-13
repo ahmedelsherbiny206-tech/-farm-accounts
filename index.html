@@ -5914,7 +5914,7 @@ function renderDsCropItemsForm() {
     <div class="inv-row inv-row-5">
       <select class="inv-field" onchange="_dsCropItems[${i}].name=this.value">
         <option value="">-- محصول --</option>
-        ${_dsCropCrops.filter(c=>c!=='عام 🌍').map(c=>`<option ${item.name===c?'selected':''}>${c}</option>`).join('')}
+        ${_dsCropCrops.map(c=>`<option ${item.name===c?'selected':''}>${c}</option>`).join('')}
       </select>
       <input type="text" inputmode="decimal" placeholder="الكمية" value="${item.qty||''}" class="inv-field"
         oninput="_dsCropItems[${i}].qty=parseNum(this.value);calcDsCropTotal()">
