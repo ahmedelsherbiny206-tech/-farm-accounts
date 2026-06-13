@@ -6254,20 +6254,6 @@ async function addDeferredSale(){
     amount:(it.qty||0)*(it.price||0), date, notes:'بيعة آجل - '+itemsNote, ref_id:saleId
   })));
 
-  // خصم من المخزن لو بيع من المخزن
-  if(_dsSource==='storage'){
-    const stocks = window._invStocks || await calcAllStock();
-    for(const it of validItems){
-      const st = stocks.find(r=>r.item===it.name);
-      await sb.from('inventory_transactions').insert({
-        user_id:currentUser.id, item:it.name, unit:it.unit||'', type:'crop_out',
-        quantity:it.qty, unit_price:it.price, avg_cost:st?.avg_cost||0,
-        total:(it.qty||0)*(it.price||0), date, notes:'بيع محصول مخزن: '+desc, crop:it.storage_crop||it.name
-      });
-    }
-    window._invStocks = await calcAllStock();
-  }
-
   // vault entry for full or partial payment
   if(_dsPayType==='full'||_dsPayType==='partial'){
     const vAmount = _dsPayType==='full' ? total : partialAmt;
