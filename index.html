@@ -2057,7 +2057,9 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 function setDateInputs() {
-  document.querySelectorAll('input[type=date]').forEach(el => { if(!el.value) el.value = today(); });
+  document.querySelectorAll('input[type=date]').forEach(el => {
+    if(!el.value && !el.id.endsWith('-from') && !el.id.endsWith('-to')) el.value = today();
+  });
 }
 
 // ===== GOOGLE AUTH =====
