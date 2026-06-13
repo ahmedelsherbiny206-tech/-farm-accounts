@@ -2487,7 +2487,7 @@ async function saveIncPay(id, total, paidSoFar){
 async function renderIncomeList() {
   incomeSelected.clear();
   updateIncSelBtn();
-  let q = sb.from('income').select('*').eq('user_id',currentUser.id).order('date',{ascending:false});
+  let q = sb.from('income').select('*').eq('user_id',currentUser.id).neq('category','مبيعات آجل').order('date',{ascending:false});
   const from=document.getElementById('inc-from').value;
   const to=document.getElementById('inc-to').value;
   const ftype=document.getElementById('inc-filter-type').value;
@@ -2666,7 +2666,7 @@ async function saveExpPay(id, total, paidSoFar){
 async function renderExpenseList() {
   expSelected.clear();
   updateExpSelBtn();
-  let q=sb.from('expenses').select('*').eq('user_id',currentUser.id).order('date',{ascending:false});
+  let q=sb.from('expenses').select('*').eq('user_id',currentUser.id).neq('category','مشتريات آجل').order('date',{ascending:false});
   const from=document.getElementById('exp-from').value;
   const to=document.getElementById('exp-to').value;
   const fcat=document.getElementById('exp-filter-cat').value;
@@ -3801,7 +3801,7 @@ async function populateCatSelects(){
   if(incSel){ incSel.innerHTML='<option value="">-- اختار النوع --</option>'+incCats.map(c=>`<option>${s(c)}</option>`).join(''); }
   // Income filter type
   const incFilt = document.getElementById('inc-filter-type');
-  if(incFilt){ incFilt.innerHTML='<option value="">كل الأنواع</option>'+incCats.map(c=>`<option>${s(c)}</option>`).join(''); }
+  if(incFilt){ incFilt.innerHTML='<option value="">كل الأنواع</option>'+incCats.filter(c=>c!=='مبيعات آجل').map(c=>`<option>${s(c)}</option>`).join(''); }
   // Income crop select
   const incCrop = document.getElementById('inc-crop');
   if(incCrop){ incCrop.innerHTML='<option value="">-- اختار المحصول --</option>'+crops.map(c=>`<option>${s(c)}</option>`).join(''); }
@@ -3813,7 +3813,7 @@ async function populateCatSelects(){
   if(expSel){ expSel.innerHTML='<option value="">-- اختار التصنيف --</option>'+expCats.map(c=>`<option>${s(c)}</option>`).join(''); }
   // Expense filter cat
   const expFilt = document.getElementById('exp-filter-cat');
-  if(expFilt){ expFilt.innerHTML='<option value="">كل التصنيفات</option>'+expCats.map(c=>`<option>${s(c)}</option>`).join(''); }
+  if(expFilt){ expFilt.innerHTML='<option value="">كل التصنيفات</option>'+expCats.filter(c=>c!=='مشتريات آجل').map(c=>`<option>${s(c)}</option>`).join(''); }
   // Expense crop select
   const expCrop = document.getElementById('exp-crop');
   if(expCrop){ expCrop.innerHTML='<option value="">-- اختار المحصول --</option>'+crops.map(c=>`<option>${s(c)}</option>`).join(''); }
