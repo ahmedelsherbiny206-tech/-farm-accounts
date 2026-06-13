@@ -4804,11 +4804,11 @@ async function saveDpTraders(list) {
   await sb.from('user_categories').upsert({user_id:currentUser.id,type:'dp_traders',categories:filtered},{onConflict:'user_id,type'});
 }
 async function getDpProducts() {
-  const {data} = await sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','dp_products').maybeSingle();
+  const {data} = await sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','inventory_items').maybeSingle();
   return data?.categories || [];
 }
 async function saveDpProducts(list) {
-  await sb.from('user_categories').upsert({user_id:currentUser.id,type:'dp_products',categories:list},{onConflict:'user_id,type'});
+  await saveInvItems(list);
 }
 
 let _dpItems = [];
@@ -4907,38 +4907,7 @@ async function openDpUnitManager() {
 }
 
 async function openDpProductManager() {
-  let products = await getDpProducts();
-  document.getElementById('modal-title').textContent='📦 إدارة المنتجات';
-  const renderList = () => `
-    <div id="dp-prod-list">${products.map((p,i)=>`
-      <div class="cat-item"><span>${s(p)}</span>
-        <button class="btn-sm btn-r" onclick="window._dpProdDel(${i})">🗑️</button>
-      </div>`).join('')}</div>
-    <div style="display:flex;gap:8px;margin-top:12px;">
-      <input id="new-dp-prod" placeholder="اسم المنتج" style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.88rem;">
-      <button class="btn-sm btn-g" onclick="window._dpProdAdd()" style="padding:10px 16px;">➕</button>
-    </div>`;
-  document.getElementById('modal-body').innerHTML = renderList();
-  const refresh = () => { document.getElementById('dp-prod-list').outerHTML = `<div id="dp-prod-list">${products.map((p,j)=>`<div class="cat-item"><span>${s(p)}</span><button class="btn-sm btn-r" onclick="window._dpProdDel(${j})">🗑️</button></div>`).join('')}</div>`; };
-  window._dpProdAdd = async () => {
-    const inp = document.getElementById('new-dp-prod');
-    const name = inp?.value.trim();
-    if(!name) return showToast('❌ اكتب الاسم');
-    if(products.includes(name)) return showToast('❌ موجود بالفعل');
-    products.push(name);
-    await saveDpProducts(products);
-    _dpProducts = products;
-    inp.value='';
-    refresh();
-    showToast('✅ تمت الإضافة');
-  };
-  window._dpProdDel = async (i) => {
-    products.splice(i,1);
-    await saveDpProducts(products);
-    _dpProducts = products;
-    refresh();
-  };
-  document.getElementById('detail-overlay').classList.add('open');
+  openInvItemManager();
 }
 
 async function addDeferredPurchase() {
@@ -5830,11 +5799,10 @@ function setDsSaleType(type) {
 }
 
 async function getDsProducts() {
-  const {data} = await sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','ds_products').maybeSingle();
-  return data?.categories || [];
+  return getInvItems();
 }
 async function saveDsProducts(list) {
-  await sb.from('user_categories').upsert({user_id:currentUser.id,type:'ds_products',categories:list},{onConflict:'user_id,type'});
+  await saveInvItems(list);
 }
 async function getDsProdTraders() {
   const {data} = await sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','ds_prod_traders').maybeSingle();
@@ -5996,23 +5964,7 @@ async function addDeferredSaleProd() {
 }
 
 async function openDsProductManager() {
-  let products = await getDsProducts();
-  document.getElementById('modal-title').textContent='📦 إدارة منتجات المبيعات';
-  const refresh = () => { document.getElementById('ds-prod-mgr-list').outerHTML=`<div id="ds-prod-mgr-list">${products.map((p,j)=>`<div class="cat-item"><span>${s(p)}</span><button class="btn-sm btn-r" onclick="window._dsProdMgrDel(${j})">🗑️</button></div>`).join('')}</div>`; };
-  document.getElementById('modal-body').innerHTML=`
-    <div id="ds-prod-mgr-list">${products.map((p,i)=>`<div class="cat-item"><span>${s(p)}</span><button class="btn-sm btn-r" onclick="window._dsProdMgrDel(${i})">🗑️</button></div>`).join('')}</div>
-    <div style="display:flex;gap:8px;margin-top:12px;">
-      <input id="new-ds-prod" placeholder="اسم المنتج" style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.88rem;">
-      <button class="btn-sm btn-g" onclick="window._dsProdMgrAdd()" style="padding:10px 16px;">➕</button>
-    </div>`;
-  window._dsProdMgrAdd = async () => {
-    const inp=document.getElementById('new-ds-prod'); const name=inp?.value.trim();
-    if(!name) return showToast('❌ اكتب الاسم');
-    if(products.includes(name)) return showToast('❌ موجود بالفعل');
-    products.push(name); await saveDsProducts(products); _dsProdProducts=products; inp.value=''; refresh(); showToast('✅ تمت الإضافة');
-  };
-  window._dsProdMgrDel = async (i) => { products.splice(i,1); await saveDsProducts(products); _dsProdProducts=products; refresh(); };
-  document.getElementById('detail-overlay').classList.add('open');
+  openInvItemManager();
 }
 
 async function openDsUnitManager() {
@@ -6042,11 +5994,7 @@ async function initDeferredSalesPage(){
     getDsProdTraders()
   ]);
 
-  // دمج منتجات المخزن مع قائمة المنتجات المحفوظة
-  const {data: invItems} = await sb.from('inventory_transactions').select('item').eq('user_id',currentUser.id);
-  const invNames = [...new Set((invItems||[]).map(r=>r.item).filter(Boolean))];
-  const mergedProds = [...new Set([...dsProds, ...invNames])];
-  _dsProdProducts = mergedProds;
+  _dsProdProducts = dsProds;
   _dsProdUnits = dsProdUnitsData?.data?.categories?.length ? dsProdUnitsData.data.categories : [...DP_DEFAULT_UNITS];
   _dsCropCrops = crops;
   _dsCropUnits = units;
@@ -7624,6 +7572,36 @@ async function saveReturn(){
 async function getInvItems(){ const {data}=await sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','inventory_items').limit(1); return data?.[0]?.categories||[]; }
 async function saveInvItems(list){ await sb.from('user_categories').upsert({user_id:currentUser.id,type:'inventory_items',categories:list},{onConflict:'user_id,type'}); }
 
+async function itemHasUsage(name){
+  const [{data:t},{data:dp},{data:ds}] = await Promise.all([
+    sb.from('inventory_transactions').select('id').eq('user_id',currentUser.id).eq('item',name).limit(1),
+    sb.from('deferred_purchases').select('items').eq('user_id',currentUser.id),
+    sb.from('deferred_sales').select('items').eq('user_id',currentUser.id),
+  ]);
+  if(t?.length) return true;
+  if((dp||[]).some(r=>(r.items||[]).some(x=>x.name===name))) return true;
+  if((ds||[]).some(r=>(r.items||[]).some(x=>x.name===name))) return true;
+  return false;
+}
+
+async function renameItem(oldName, newName){
+  const items = await getInvItems();
+  const idx = items.indexOf(oldName);
+  if(idx>-1){ items[idx]=newName; await saveInvItems(items); }
+  await sb.from('inventory_transactions').update({item:newName}).eq('user_id',currentUser.id).eq('item',oldName);
+  const {data:dp} = await sb.from('deferred_purchases').select('id,items').eq('user_id',currentUser.id);
+  for(const r of (dp||[])){
+    const ni=(r.items||[]).map(x=>x.name===oldName?{...x,name:newName}:x);
+    if(JSON.stringify(ni)!==JSON.stringify(r.items)) await sb.from('deferred_purchases').update({items:ni}).eq('id',r.id).eq('user_id',currentUser.id);
+  }
+  const {data:ds} = await sb.from('deferred_sales').select('id,items').eq('user_id',currentUser.id);
+  for(const r of (ds||[])){
+    const ni=(r.items||[]).map(x=>x.name===oldName?{...x,name:newName}:x);
+    if(JSON.stringify(ni)!==JSON.stringify(r.items)) await sb.from('deferred_sales').update({items:ni}).eq('id',r.id).eq('user_id',currentUser.id);
+  }
+  return items;
+}
+
 async function initInventoryPage(){
   await renderInvStock();
   await renderInvHistory();
@@ -7948,12 +7926,18 @@ async function saveInvTransaction(type){
 
 async function openInvItemManager(){
   let items = await getInvItems();
+  const renderItemRow=(t,j)=>`<div class="cat-item" id="inv-item-row-${j}">
+    <span>${s(t)}</span>
+    <div style="display:flex;gap:6px;">
+      <button class="btn-sm" style="background:var(--primary-bg);color:var(--primary);border:1.5px solid var(--primary-border);border-radius:8px;padding:3px 10px;font-family:Cairo,sans-serif;cursor:pointer;" onclick="window._invItemRename(${j})">✏️</button>
+      <button class="btn-sm btn-r" onclick="window._invItemDel(${j})">🗑️</button>
+    </div></div>`;
   const refresh=()=>{
-    document.getElementById('inv-item-list').outerHTML=`<div id="inv-item-list">${items.map((t,j)=>`<div class="cat-item"><span>${s(t)}</span><button class="btn-sm btn-r" onclick="window._invItemDel(${j})">🗑️</button></div>`).join('')}</div>`;
+    document.getElementById('inv-item-list').outerHTML=`<div id="inv-item-list">${items.map((t,j)=>renderItemRow(t,j)).join('')}</div>`;
   };
   document.getElementById('modal-title').textContent='⚙️ إدارة الأصناف';
   document.getElementById('modal-body').innerHTML=`
-    <div id="inv-item-list">${items.map((t,i)=>`<div class="cat-item"><span>${s(t)}</span><button class="btn-sm btn-r" onclick="window._invItemDel(${i})">🗑️</button></div>`).join('')}</div>
+    <div id="inv-item-list">${items.map((t,i)=>renderItemRow(t,i)).join('')}</div>
     <div style="display:flex;gap:8px;margin-top:10px;">
       <input id="new-inv-item" placeholder="اسم صنف جديد" style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.88rem;">
       <button class="btn-sm btn-g" onclick="window._invItemAdd()" style="padding:10px 16px;">➕</button>
@@ -7962,13 +7946,38 @@ async function openInvItemManager(){
     const inp=document.getElementById('new-inv-item');const name=inp?.value.trim();
     if(!name)return;if(items.includes(name))return showToast('❌ موجود مسبقاً');
     items.push(name);await saveInvItems(items);inp.value='';refresh();
+    _dpProducts=[...items];_dsProdProducts=[...items];
     const sel=document.getElementById('inv-filter-item');
     if(sel) sel.innerHTML='<option value="">كل الأصناف</option>'+items.map(i=>`<option>${s(i)}</option>`).join('');
   };
   window._invItemDel=async(i)=>{
+    const name=items[i];
+    const used=await itemHasUsage(name);
+    if(used) return showToast('⚠️ الصنف له عمليات — استخدم تعديل الاسم');
     items.splice(i,1);await saveInvItems(items);refresh();
     const sel=document.getElementById('inv-filter-item');
     if(sel) sel.innerHTML='<option value="">كل الأصناف</option>'+items.map(i=>`<option>${s(i)}</option>`).join('');
+  };
+  window._invItemRename=async(i)=>{
+    const oldName=items[i];
+    const row=document.getElementById(`inv-item-row-${i}`);
+    if(!row) return;
+    row.innerHTML=`<input id="rename-inp-${i}" value="${s(oldName)}" style="flex:1;padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.88rem;">
+      <div style="display:flex;gap:6px;">
+        <button class="btn-sm btn-g" onclick="window._invItemRenameSave(${i},'${s(oldName).replace(/'/g,"\\'")}')">✅</button>
+        <button class="btn-sm" onclick="window._invItemRenameCancel()" style="background:var(--g5);color:var(--text);border:1.5px solid var(--border);border-radius:8px;padding:3px 10px;font-family:Cairo,sans-serif;cursor:pointer;">✖️</button>
+      </div>`;
+  };
+  window._invItemRenameCancel=()=>refresh();
+  window._invItemRenameSave=async(i,oldName)=>{
+    const newName=document.getElementById(`rename-inp-${i}`)?.value.trim();
+    if(!newName||newName===oldName) return refresh();
+    if(items.includes(newName)) return showToast('❌ الاسم موجود مسبقاً');
+    showToast('⏳ جاري التعديل...');
+    items=await renameItem(oldName,newName);
+    _dpProducts=[...items];_dsProdProducts=[...items];
+    refresh();
+    showToast('✅ تم تعديل الاسم في كل مكان');
   };
   document.getElementById('detail-overlay').classList.add('open');
 }
