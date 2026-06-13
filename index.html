@@ -2217,7 +2217,7 @@ async function initApp(user) {
   document.getElementById('user-badge').textContent = '👤 ' + shortName;
   document.getElementById('hdr-date').textContent = new Date().toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   checkBackupInfo();
-  await populateCatSelects();
+  populateCatSelects();
   renderHome();
   checkAjalAlerts();
   await loadFarmSettings();
@@ -3879,10 +3879,10 @@ async function addCat(){
   const cats = catManagerType==='income' ? await getIncCats() : await getExpCats();
   if(cats.includes(val)) return showToast('❌ التصنيف موجود بالفعل');
   cats.push(val);
-  catManagerType==='income' ? await saveIncCats(cats) : await saveExpCats(cats);
+  catManagerType==="income" ? saveIncCats(cats) : saveExpCats(cats);
   document.getElementById('cat-list').innerHTML = renderCatList(cats);
   document.getElementById('new-cat-input').value='';
-  await populateCatSelects();
+  populateCatSelects();
   showToast('✅ تم الإضافة');
 }
 
@@ -3901,9 +3901,9 @@ async function saveEditCat(i){
   if(!newVal) return showToast('❌ اكتب الاسم');
   const cats = catManagerType==='income' ? await getIncCats() : await getExpCats();
   cats[i] = newVal;
-  catManagerType==='income' ? await saveIncCats(cats) : await saveExpCats(cats);
+  catManagerType==="income" ? saveIncCats(cats) : saveExpCats(cats);
   document.getElementById('cat-list').innerHTML = renderCatList(cats);
-  await populateCatSelects();
+  populateCatSelects();
   showToast('✅ تم التعديل');
 }
 
@@ -3923,9 +3923,9 @@ async function deleteCat(i){
 
   if(!await showConfirm(msg, hasData ? '⚠️' : '🗑️')) return;
   cats.splice(i,1);
-  catManagerType==='income' ? await saveIncCats(cats) : await saveExpCats(cats);
+  catManagerType==="income" ? saveIncCats(cats) : saveExpCats(cats);
   document.getElementById('cat-list').innerHTML = renderCatList(cats);
-  await populateCatSelects();
+  populateCatSelects();
   showToast('🗑️ تم الحذف');
 }
 
@@ -4067,10 +4067,10 @@ async function addCropItem(){
   const crops = await getCrops();
   if(crops.includes(val)) return showToast('❌ المحصول موجود بالفعل');
   crops.push(val);
-  await saveCrops(crops);
+  saveCrops(crops);
   document.getElementById('crop-list').innerHTML = renderCropList(crops);
   document.getElementById('new-crop-input').value='';
-  await populateCatSelects();
+  populateCatSelects();
   showToast('✅ تم إضافة المحصول');
 }
 
@@ -4089,9 +4089,9 @@ async function saveEditCrop(i){
   if(!newVal) return showToast('❌ اكتب الاسم');
   const crops = await getCrops();
   crops[i] = newVal;
-  await saveCrops(crops);
+  saveCrops(crops);
   document.getElementById('crop-list').innerHTML = renderCropList(crops);
-  await populateCatSelects();
+  populateCatSelects();
   showToast('✅ تم التعديل');
 }
 
@@ -4113,9 +4113,9 @@ async function deleteCropItem(i){
 
   if(!await showConfirm(msg, hasData ? '⚠️' : '🗑️')) return;
   crops.splice(i,1);
-  await saveCrops(crops);
+  saveCrops(crops);
   document.getElementById('crop-list').innerHTML = renderCropList(crops);
-  await populateCatSelects();
+  populateCatSelects();
   showToast('🗑️ تم الحذف');
 }
 
@@ -4910,14 +4910,14 @@ async function openDpUnitManager() {
     if(!name) return showToast('❌ اكتب الوحدة');
     if(units.includes(name)) return showToast('❌ موجودة بالفعل');
     units.push(name);
-    await saveDpUnits(units);
+    saveDpUnits(units);
     _dpUnits = units;
     inp.value='';
     refresh();
   };
   window._dpUnitDel = async (i) => {
     units.splice(i,1);
-    await saveDpUnits(units);
+    saveDpUnits(units);
     _dpUnits = units;
     refresh();
   };
@@ -5188,7 +5188,7 @@ window.addDpTrader = async function() {
   if(!name) return showToast('❌ اكتب الاسم');
   if(window._dpTradersEdit.includes(name)) return showToast('❌ موجود بالفعل');
   window._dpTradersEdit.push(name);
-  await saveDpTraders(window._dpTradersEdit);
+  saveDpTraders(window._dpTradersEdit);
   input.value='';
   document.getElementById('dp-traders-list').outerHTML = `<div id="dp-traders-list">${window._dpTradersEdit.map((t,i)=>`<div class="cat-item"><span>${s(t)}</span><button class="btn-sm btn-r" onclick="deleteDpTrader(${i})">🗑️</button></div>`).join('')}</div>`;
   showToast('✅ تمت الإضافة');
@@ -5197,7 +5197,7 @@ window.addDpTrader = async function() {
 window.deleteDpTrader = async function(i) {
   if(window._dpTradersEdit[i]===DEFAULT_TRADER) return showToast('🔒 التاجر الافتراضي لا يمكن حذفه');
   window._dpTradersEdit.splice(i,1);
-  await saveDpTraders(window._dpTradersEdit);
+  saveDpTraders(window._dpTradersEdit);
   document.getElementById('dp-traders-list').outerHTML = `<div id="dp-traders-list">${window._dpTradersEdit.map((t,j)=>`<div class="cat-item"><span>${s(t)}</span><button class="btn-sm btn-r" onclick="deleteDpTrader(${j})">🗑️</button></div>`).join('')}</div>`;
   initDeferredPurchasesPage();
 };
@@ -5745,7 +5745,7 @@ async function addVariety(){
   if(!val) return showToast('❌ اكتب اسم الصنف');
   if(_varietiesCache.includes(val)) return showToast('❌ الصنف موجود');
   try {
-    await saveVarieties([..._varietiesCache, val]);
+    saveVarieties([..._varietiesCache, val]);
     window._renderVarietyModal?.();
     initDeferredSalesPage();
   } catch(e){ showToast('❌ خطأ في الحفظ'); }
@@ -5753,7 +5753,7 @@ async function addVariety(){
 async function deleteVariety(i){
   const updated = _varietiesCache.filter((_,idx)=>idx!==i);
   try {
-    await saveVarieties(updated);
+    saveVarieties(updated);
     window._renderVarietyModal?.();
     initDeferredSalesPage();
   } catch(e){ showToast('❌ خطأ في الحذف'); }
@@ -5875,14 +5875,14 @@ async function openDsProdTraderManager() {
     const inp=document.getElementById('new-ds-prod-trader'); const name=inp?.value.trim();
     if(!name) return showToast('❌ اكتب الاسم');
     if(traders.includes(name)) return showToast('❌ موجود بالفعل');
-    traders.push(name); await saveDsProdTraders(traders); inp.value=''; refresh();
+    traders.push(name); saveDsProdTraders(traders); inp.value=''; refresh();
     const sel=document.getElementById('ds-prod-trader'); if(sel) sel.innerHTML='<option value="">-- اختار التاجر --</option>'+traders.map(t=>`<option>${s(t)}</option>`).join('');
     const fSel=document.getElementById('ds-filter-prod-trader'); if(fSel) fSel.innerHTML='<option value="">كل التجار</option>'+traders.map(t=>`<option>${s(t)}</option>`).join('');
     showToast('✅ تمت الإضافة');
   };
   window._dsProdTrDel = async (i) => {
     if(traders[i]===DEFAULT_TRADER) return showToast('🔒 التاجر الافتراضي لا يمكن حذفه');
-    traders.splice(i,1); await saveDsProdTraders(traders); refresh();
+    traders.splice(i,1); saveDsProdTraders(traders); refresh();
     const sel=document.getElementById('ds-prod-trader'); if(sel) sel.innerHTML='<option value="">-- اختار التاجر --</option>'+traders.map(t=>`<option>${s(t)}</option>`).join('');
     const fSel=document.getElementById('ds-filter-prod-trader'); if(fSel) fSel.innerHTML='<option value="">كل التجار</option>'+traders.map(t=>`<option>${s(t)}</option>`).join('');
   };
@@ -6618,7 +6618,7 @@ async function addUnit(){
   if(units.includes(val)) return showToast('❌ الوحدة موجودة');
   units.push(val);
   try {
-    await saveUnits(units);
+    saveUnits(units);
   } catch(e) {
     units.pop();
     return showToast('❌ خطأ في الحفظ: ' + (e.message||e));
@@ -6636,7 +6636,7 @@ async function deleteUnit(i){
   const msg = data?.length?'⚠️ حذف هذه الوحدة قد يؤثر على البيانات المُسجلة مسبقاً - متأكد؟':'هتحذف "'+units[i]+'"؟';
   if(!await showConfirm(msg,data?.length?'⚠️':'🗑️')) return;
   units.splice(i,1);
-  await saveUnits(units);
+  saveUnits(units);
   document.getElementById('units-list').innerHTML=renderUnitsList(units);
   const unitSel=document.getElementById('ds-unit');
   if(unitSel) unitSel.innerHTML=units.map(u=>`<option>${u}</option>`).join('');
@@ -6672,7 +6672,7 @@ async function addTrader(){
   if(traders.includes(val)) return showToast('❌ التاجر موجود');
   traders.push(val);
   try {
-    await saveTraders(traders);
+    saveTraders(traders);
   } catch(e) {
     traders.pop();
     return showToast('❌ خطأ في الحفظ: ' + (e.message||e));
@@ -6692,7 +6692,7 @@ async function deleteTrader(i){
   const msg = data?.length?'⚠️ حذف هذا التاجر سيؤثر على البيانات المُسجلة مسبقاً - متأكد؟':'هتحذف التاجر "'+traders[i]+'"؟';
   if(!await showConfirm(msg,data?.length?'⚠️':'🗑️')) return;
   traders.splice(i,1);
-  await saveTraders(traders);
+  saveTraders(traders);
   document.getElementById('traders-list').innerHTML=renderTradersList(traders);
   const traderSel=document.getElementById('ds-trader');
   if(traderSel) traderSel.innerHTML='<option value="">-- اختار التاجر --</option>'+traders.map(t=>`<option>${t}</option>`).join('');
@@ -7783,7 +7783,7 @@ async function itemHasUsage(name){
 async function renameItem(oldName, newName){
   const items = await getInvItems();
   const idx = items.indexOf(oldName);
-  if(idx>-1){ items[idx]=newName; await saveInvItems(items); }
+  if(idx>-1){ items[idx]=newName; saveInvItems(items); }
   await sb.from('inventory_transactions').update({item:newName}).eq('user_id',currentUser.id).eq('item',oldName);
   const {data:dp} = await sb.from('deferred_purchases').select('id,items').eq('user_id',currentUser.id);
   for(const r of (dp||[])){
@@ -8192,7 +8192,7 @@ async function openInvItemManager(){
   window._invItemAdd=async()=>{
     const inp=document.getElementById('new-inv-item');const name=inp?.value.trim();
     if(!name)return;if(items.includes(name))return showToast('❌ موجود مسبقاً');
-    items.push(name);await saveInvItems(items);inp.value='';refresh();
+    items.push(name);saveInvItems(items);inp.value='';refresh();
     _dpProducts=[...items];_dsProdProducts=[...items];
     const sel=document.getElementById('inv-filter-item');
     if(sel) sel.innerHTML='<option value="">كل الأصناف</option>'+items.map(i=>`<option>${s(i)}</option>`).join('');
@@ -8201,7 +8201,7 @@ async function openInvItemManager(){
     const name=items[i];
     const used=await itemHasUsage(name);
     if(used) return showToast('⚠️ الصنف له عمليات — استخدم تعديل الاسم');
-    items.splice(i,1);await saveInvItems(items);refresh();
+    items.splice(i,1);saveInvItems(items);refresh();
     const sel=document.getElementById('inv-filter-item');
     if(sel) sel.innerHTML='<option value="">كل الأصناف</option>'+items.map(i=>`<option>${s(i)}</option>`).join('');
   };
