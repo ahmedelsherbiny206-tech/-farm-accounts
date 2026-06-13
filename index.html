@@ -1186,7 +1186,7 @@ body.dark-mode .ss-option{color:#e0e0e0;}
           </div>
 
           <div class="form-row"><label>المحصول / التوزيع</label>
-            <select id="ds-prod-crop"><option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option></select>
+            <select id="ds-prod-crop"><option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option><option value="المخزن 🏪">📦 البيع من المخزن</option></select>
           </div>
 
           <div class="section-lbl">
@@ -3840,10 +3840,10 @@ async function populateCatSelects(){
   if(expFiltCrop){ expFiltCrop.innerHTML='<option value="">كل المحاصيل</option>'+crops.map(c=>`<option>${s(c)}</option>`).join(''); }
   // مبيعات منتج - crop selector
   const dsProdCrop = document.getElementById('ds-prod-crop');
-  if(dsProdCrop){ dsProdCrop.innerHTML='<option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option><option value="المخزن 🏪">المخزن 🏪 (يتسجل في المخزن تلقائياً)</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${s(c)}</option>`).join(''); }
+  if(dsProdCrop){ dsProdCrop.innerHTML='<option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option><option value="المخزن 🏪">📦 البيع من المخزن</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${s(c)}</option>`).join(''); }
   // مشتريات آجل - crop selector
   const dpCrop = document.getElementById('dp-crop');
-  if(dpCrop){ dpCrop.innerHTML='<option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option><option value="المخزن 🏪">المخزن 🏪 (يتسجل في المخزن تلقائياً)</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${s(c)}</option>`).join(''); }
+  if(dpCrop){ dpCrop.innerHTML='<option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option><option value="المخزن 🏪">📦 البيع من المخزن</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${s(c)}</option>`).join(''); }
 }
 
 let catManagerType = '';
