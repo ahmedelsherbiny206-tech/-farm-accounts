@@ -2280,8 +2280,8 @@ function showPage(name, btn) {
   (filterMap[name]||[]).forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
 
   if(name==='home') renderHome();
-  if(name==='income') renderIncomeList();
-  if(name==='expense') renderExpenseList();
+  if(name==='income') { renderIncomeList(); populateCatSelects(); }
+  if(name==='expense') { renderExpenseList(); populateCatSelects(); }
   if(name==='ajal') renderAjalLists();
   if(name==='deferred') initDeferredSalesPage();
   if(name==='deferred-purchases') initDeferredPurchasesPage();
@@ -4882,13 +4882,15 @@ async function initDeferredPurchasesPage() {
   _dpItems = [{name:'', qty:'', unit:_dpUnits[0]||'', price:0}];
   renderDpItemsForm();
   calcDpTotal();
-  const traders = await getDpTraders();
+  const [traders, crops] = await Promise.all([getDpTraders(), getCrops()]);
   const sel = document.getElementById('dp-trader');
   if(sel) sel.innerHTML = '<option value="">-- اختار التاجر --</option>'+traders.map(t=>`<option>${s(t)}</option>`).join('');
   const fSel = document.getElementById('dp-filter-trader');
   if(fSel) fSel.innerHTML = '<option value="">كل التجار</option>'+traders.map(t=>`<option>${s(t)}</option>`).join('');
   const fProd = document.getElementById('dp-filter-product');
   if(fProd) fProd.innerHTML = '<option value="">كل المنتجات</option>'+_dpProducts.map(p=>`<option>${s(p)}</option>`).join('');
+  const dpCropSel = document.getElementById('dp-crop');
+  if(dpCropSel) dpCropSel.innerHTML='<option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${s(c)}</option>`).join('');
   const dpDate = document.getElementById('dp-date');
   if(dpDate && !dpDate.value) dpDate.value = today();
   renderDeferredPurchases();
@@ -6060,6 +6062,8 @@ async function initDeferredSalesPage(){
 
   const fCrop = document.getElementById('ds-filter-crop');
   if(fCrop) fCrop.innerHTML = '<option value="">كل المحاصيل</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${c}</option>`).join('');
+  const dsProdCropSel = document.getElementById('ds-prod-crop');
+  if(dsProdCropSel) dsProdCropSel.innerHTML='<option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option><option value="المخزن 🏪">📦 البيع من المخزن</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${s(c)}</option>`).join('');
 
   const fTrader = document.getElementById('ds-filter-trader');
   if(fTrader) fTrader.innerHTML = '<option value="">كل التجار</option>'+traders.map(t=>`<option>${t}</option>`).join('');
