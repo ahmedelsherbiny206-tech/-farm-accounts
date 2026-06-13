@@ -2239,6 +2239,7 @@ async function handleAuthRedirect() {
   // Normal session check
   const {data:{session}} = await sb.auth.getSession();
   if(session) initApp(session.user);
+  else document.getElementById('auth-screen').style.display = 'flex';
 }
 handleAuthRedirect();
 
