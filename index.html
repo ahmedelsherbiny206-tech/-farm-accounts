@@ -2440,6 +2440,50 @@ function clearIncFilter(){
   const fp=document.getElementById('inc-filter-pay'); if(fp) fp.value='';
   renderIncomeList();
 }
+function openIncPayModal(id, desc, total, paidSoFar){
+  const remaining = total - paidSoFar;
+  document.getElementById('modal-title').textContent = '💵 تحصيل وارد';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="total-display" style="margin-bottom:14px;flex-direction:column;align-items:flex-start;gap:4px;">
+      <div style="font-size:0.78rem;font-weight:700;color:var(--muted);">${s(desc)}</div>
+      <div style="display:flex;gap:16px;width:100%;margin-top:4px;">
+        <div><div style="font-size:0.68rem;color:var(--muted);">إجمالي</div><div style="font-weight:900;color:var(--text);">${fmt(total)}</div></div>
+        <div><div style="font-size:0.68rem;color:var(--muted);">تم تحصيله</div><div style="font-weight:900;color:#2d6a4f;">${fmt(paidSoFar)}</div></div>
+        <div><div style="font-size:0.68rem;color:var(--muted);">المتبقي</div><div style="font-weight:900;color:#c0392b;">${fmt(remaining)}</div></div>
+      </div>
+    </div>
+    <div class="edit-modal-row"><label>المبلغ المحصَّل الآن</label>
+      <input type="text" inputmode="decimal" id="incpay-amt" placeholder="0" value="${remaining}"></div>
+    <div class="edit-modal-row"><label>التاريخ</label>
+      <input type="date" id="incpay-date" value="${today()}"></div>
+    <div class="edit-modal-row"><label>ملاحظات</label>
+      <input type="text" id="incpay-notes" placeholder="اختياري..."></div>
+    <button class="btn btn-g" style="margin-top:4px;" onclick="saveIncPay('${id}',${total},${paidSoFar})">💾 تسجيل التحصيل</button>`;
+  document.getElementById('detail-overlay').classList.add('open');
+}
+async function saveIncPay(id, total, paidSoFar){
+  const newAmt = parseNum(document.getElementById('incpay-amt')?.value);
+  const date   = document.getElementById('incpay-date')?.value || today();
+  const notes  = document.getElementById('incpay-notes')?.value||'';
+  const remaining = total - paidSoFar;
+  if(!newAmt||newAmt<=0) return showToast('❌ اكتب المبلغ');
+  if(newAmt > remaining + 0.001) return showToast('❌ المبلغ أكبر من المتبقي ('+fmt(remaining)+')');
+  const newPaid = paidSoFar + newAmt;
+  const isFullyPaid = newPaid >= total - 0.001;
+  const {error} = await sb.from('income').update({
+    pay_type: isFullyPaid ? 'full' : 'partial',
+    paid_amount: isFullyPaid ? null : newPaid
+  }).eq('id',id).eq('user_id',currentUser.id);
+  if(error) return showToast('❌ خطأ: '+error.message);
+  await sb.from('vault').insert({
+    type:'income_auto', description:'تحصيل وارد آجل', amount:newAmt,
+    date, notes:notes||null, user_id:currentUser.id, ref_id:id
+  });
+  document.getElementById('detail-overlay').classList.remove('open');
+  showToast(isFullyPaid ? '✅ تم التحصيل الكامل وإضافته للخزنة' : '✅ تم تسجيل الدفعة ('+fmt(newAmt)+')');
+  renderIncomeList(); renderHome();
+}
+
 async function renderIncomeList() {
   incomeSelected.clear();
   updateIncSelBtn();
@@ -2458,19 +2502,25 @@ async function renderIncomeList() {
   const el=document.getElementById('income-list');
   if(error||!data?.length){el.innerHTML='<div class="empty">لا يوجد وارد 📭</div>';return;}
   updateIncTotal(data);
-  el.innerHTML=data.map(x=>`
+  el.innerHTML=data.map(x=>{
+    const pt=x.pay_type||'full';
+    const paidSoFar=Number(x.paid_amount||0);
+    const remaining=Number(x.amount)-paidSoFar;
+    const needsPay=(pt==='ajal'||pt==='partial')&&remaining>0;
+    return `
     <div class="item ${incomeSelected.has(x.id)?'selected':''}" id="inc-item-${x.id}">
       <input type="checkbox" class="item-check" onclick="event.stopPropagation();toggleIncSel('${x.id}')" ${incomeSelected.has(x.id)?'checked':''}>
       <div style="flex:1;cursor:pointer;" onclick="showDetail('income',${JSON.stringify(x).replace(/"/g,'&quot;')})">
-        <div class="i-desc">${s(x.description)} ${_payBadge[x.pay_type||'full']||''}</div>
-        <div class="i-sub">${fmtDate(x.date)}${x.category?' · '+s(x.category):''}${x.crop?' 🌾 '+s(x.crop):''}${x.pay_type==='partial'&&x.paid_amount?' · قبض '+fmt(x.paid_amount)+' / باقي '+fmt(x.amount-x.paid_amount):''}</div>
+        <div class="i-desc">${s(x.description)} ${_payBadge[pt]||''}</div>
+        <div class="i-sub">${fmtDate(x.date)}${x.category?' · '+s(x.category):''}${x.crop?' 🌾 '+s(x.crop):''}${pt==='partial'&&paidSoFar?' · قبض '+fmt(paidSoFar)+' / باقي '+fmt(remaining):pt==='ajal'?' · لم يُحصَّل بعد':''}</div>
       </div>
       <div class="i-actions">
         <div class="i-amt">${fmt(x.amount)}</div>
+        ${needsPay?`<button class="btn-sm" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;" onclick="event.stopPropagation();openIncPayModal('${x.id}','${s(x.description).replace(/'/g,"\\'")}',${x.amount},${paidSoFar})">💵 تحصيل</button>`:''}
         <button class="btn-sm" style="background:var(--blue-p);color:var(--blue);" onclick="event.stopPropagation();editItem('income',${JSON.stringify(x).replace(/"/g,'&quot;')})">✏️</button>
         <button class="del-btn" onclick="event.stopPropagation();delItem('income','${x.id}')">✕</button>
       </div>
-    </div>`).join('');
+    </div>`;}).join('');
 }
 function toggleSelectAllIncome(cb){
   const items = document.querySelectorAll('#income-list .item');
@@ -2569,6 +2619,50 @@ function clearExpFilter(){
   const fp=document.getElementById('exp-filter-pay'); if(fp) fp.value='';
   renderExpenseList();
 }
+function openExpPayModal(id, desc, total, paidSoFar){
+  const remaining = total - paidSoFar;
+  document.getElementById('modal-title').textContent = '💵 سداد صادر';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="total-display red" style="margin-bottom:14px;flex-direction:column;align-items:flex-start;gap:4px;">
+      <div style="font-size:0.78rem;font-weight:700;color:var(--red);">${s(desc)}</div>
+      <div style="display:flex;gap:16px;width:100%;margin-top:4px;">
+        <div><div style="font-size:0.68rem;color:var(--muted);">إجمالي</div><div style="font-weight:900;color:var(--text);">${fmt(total)}</div></div>
+        <div><div style="font-size:0.68rem;color:var(--muted);">تم دفعه</div><div style="font-weight:900;color:#2d6a4f;">${fmt(paidSoFar)}</div></div>
+        <div><div style="font-size:0.68rem;color:var(--muted);">المتبقي</div><div style="font-weight:900;color:#c0392b;">${fmt(remaining)}</div></div>
+      </div>
+    </div>
+    <div class="edit-modal-row"><label>المبلغ المدفوع الآن</label>
+      <input type="text" inputmode="decimal" id="exppay-amt" placeholder="0" value="${remaining}"></div>
+    <div class="edit-modal-row"><label>التاريخ</label>
+      <input type="date" id="exppay-date" value="${today()}"></div>
+    <div class="edit-modal-row"><label>ملاحظات</label>
+      <input type="text" id="exppay-notes" placeholder="اختياري..."></div>
+    <button class="btn btn-r" style="margin-top:4px;" onclick="saveExpPay('${id}',${total},${paidSoFar})">💾 تسجيل السداد</button>`;
+  document.getElementById('detail-overlay').classList.add('open');
+}
+async function saveExpPay(id, total, paidSoFar){
+  const newAmt = parseNum(document.getElementById('exppay-amt')?.value);
+  const date   = document.getElementById('exppay-date')?.value || today();
+  const notes  = document.getElementById('exppay-notes')?.value||'';
+  const remaining = total - paidSoFar;
+  if(!newAmt||newAmt<=0) return showToast('❌ اكتب المبلغ');
+  if(newAmt > remaining + 0.001) return showToast('❌ المبلغ أكبر من المتبقي ('+fmt(remaining)+')');
+  const newPaid = paidSoFar + newAmt;
+  const isFullyPaid = newPaid >= total - 0.001;
+  const {error} = await sb.from('expenses').update({
+    pay_type: isFullyPaid ? 'full' : 'partial',
+    paid_amount: isFullyPaid ? null : newPaid
+  }).eq('id',id).eq('user_id',currentUser.id);
+  if(error) return showToast('❌ خطأ: '+error.message);
+  await sb.from('vault').insert({
+    type:'expense_auto', description:'سداد صادر آجل', amount:newAmt,
+    date, notes:notes||null, user_id:currentUser.id, ref_id:id
+  });
+  document.getElementById('detail-overlay').classList.remove('open');
+  showToast(isFullyPaid ? '✅ تم السداد الكامل وخصمه من الخزنة' : '✅ تم تسجيل الدفعة ('+fmt(newAmt)+')');
+  renderExpenseList(); renderHome();
+}
+
 async function renderExpenseList() {
   expSelected.clear();
   updateExpSelBtn();
@@ -2587,19 +2681,25 @@ async function renderExpenseList() {
   const el=document.getElementById('expense-list');
   if(error||!data?.length){el.innerHTML='<div class="empty">لا يوجد صادر 📭</div>';return;}
   updateExpTotal(data);
-  el.innerHTML=data.map(x=>`
+  el.innerHTML=data.map(x=>{
+    const pt=x.pay_type||'full';
+    const paidSoFar=Number(x.paid_amount||0);
+    const remaining=Number(x.amount)-paidSoFar;
+    const needsPay=(pt==='ajal'||pt==='partial')&&remaining>0;
+    return `
     <div class="item exp ${expSelected.has(x.id)?'selected':''}" id="exp-item-${x.id}">
       <input type="checkbox" class="item-check" onclick="event.stopPropagation();toggleExpSel('${x.id}')" ${expSelected.has(x.id)?'checked':''}>
       <div style="flex:1;cursor:pointer;" onclick="showDetail('expense',${JSON.stringify(x).replace(/"/g,'&quot;')})">
-        <div class="i-desc">${s(x.description)} ${_payBadge[x.pay_type||'full']||''}</div>
-        <div class="i-sub">${fmtDate(x.date)}${x.category?' · '+s(x.category):''}${x.crop?' 🌾 '+s(x.crop):''}${x.pay_type==='partial'&&x.paid_amount?' · دفع '+fmt(x.paid_amount)+' / باقي '+fmt(x.amount-x.paid_amount):''}</div>
+        <div class="i-desc">${s(x.description)} ${_payBadge[pt]||''}</div>
+        <div class="i-sub">${fmtDate(x.date)}${x.category?' · '+s(x.category):''}${x.crop?' 🌾 '+s(x.crop):''}${pt==='partial'&&paidSoFar?' · دفع '+fmt(paidSoFar)+' / باقي '+fmt(remaining):pt==='ajal'?' · لم يُدفع بعد':''}</div>
       </div>
       <div class="i-actions">
         <div class="i-amt">${fmt(x.amount)}</div>
+        ${needsPay?`<button class="btn-sm" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;" onclick="event.stopPropagation();openExpPayModal('${x.id}','${s(x.description).replace(/'/g,"\\'")}',${x.amount},${paidSoFar})">💵 سداد</button>`:''}
         <button class="btn-sm" style="background:var(--blue-p);color:var(--blue);" onclick="event.stopPropagation();editItem('expense',${JSON.stringify(x).replace(/"/g,'&quot;')})">✏️</button>
         <button class="del-btn" onclick="event.stopPropagation();delItem('expenses','${x.id}')">✕</button>
       </div>
-    </div>`).join('');
+    </div>`;}).join('');
 }
 function toggleSelectAllExpense(cb){
   const items = document.querySelectorAll('#expense-list .item');
