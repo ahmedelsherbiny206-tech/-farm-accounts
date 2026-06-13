@@ -1118,15 +1118,33 @@ body.dark-mode .ss-option{color:#e0e0e0;}
             <select id="ds-trader"><option value="">-- اختار التاجر --</option></select>
           </div>
 
-          <div class="section-lbl">
-            <span>🌾 المحاصيل</span>
-            <div class="lbl-actions">
-              <button onclick="openCropManager()">🌾 إدارة</button>
-              <button onclick="openUnitManager()">⚙️ الوحدات</button>
-            </div>
+          <!-- مصدر البيع -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;">
+            <button id="ds-src-harvest-btn" onclick="setDsSource('harvest')"
+              style="padding:8px;border-radius:10px;border:2px solid var(--g3);background:var(--g3);color:#fff;font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:900;cursor:pointer;">🌾 حصاد جديد</button>
+            <button id="ds-src-storage-btn" onclick="setDsSource('storage')"
+              style="padding:8px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:900;cursor:pointer;">📦 من المخزن</button>
           </div>
-          <div id="ds-crop-items-list"></div>
-          <button class="btn-sm excel" style="margin-bottom:12px;" onclick="addDsCropItem()">➕ إضافة محصول</button>
+
+          <!-- حصاد جديد -->
+          <div id="ds-src-harvest-form">
+            <div class="section-lbl">
+              <span>🌾 المحاصيل</span>
+              <div class="lbl-actions">
+                <button onclick="openCropManager()">🌾 إدارة</button>
+                <button onclick="openUnitManager()">⚙️ الوحدات</button>
+              </div>
+            </div>
+            <div id="ds-crop-items-list"></div>
+            <button class="btn-sm excel" style="margin-bottom:12px;" onclick="addDsCropItem()">➕ إضافة محصول</button>
+          </div>
+
+          <!-- من المخزن -->
+          <div id="ds-src-storage-form" style="display:none;">
+            <div class="section-lbl"><span>📦 المحصول المخزن</span></div>
+            <div id="ds-storage-items-list"></div>
+            <button class="btn-sm excel" style="margin-bottom:12px;" onclick="addDsStorageItem()">➕ إضافة صنف</button>
+          </div>
 
           <div class="total-display" style="margin-bottom:12px;">
             <span class="td-lbl">الإجمالي</span>
@@ -1432,8 +1450,9 @@ body.dark-mode .ss-option{color:#e0e0e0;}
     </div>
 
     <!-- أزرار العمليات -->
-    <div style="margin-bottom:12px;">
-      <button onclick="openInvModal('usage')" class="btn btn-g" style="font-size:0.82rem;padding:12px;width:100%;">🔧 صرف</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+      <button onclick="openInvModal('usage')" class="btn btn-g" style="font-size:0.82rem;padding:12px;">🔧 صرف</button>
+      <button onclick="openCropStorage()" class="btn" style="font-size:0.82rem;padding:12px;background:#e65100;color:#fff;border:none;border-radius:14px;font-family:Cairo,sans-serif;font-weight:900;cursor:pointer;">📦 تخزين محصول</button>
     </div>
 
     <!-- الجرد الحالي -->
@@ -5757,6 +5776,8 @@ async function saveTraders(t){
 // ===== DS SALE TYPE TOGGLE =====
 let _dsSaleType = 'crop';
 let _dsPayType  = 'ajal';
+let _dsSource   = 'harvest'; // 'harvest' | 'storage'
+let _dsStorageItems = []; // [{item,crop,qty,unit,price,avail}]
 let _dspPayType = 'ajal';
 let _dpPayType  = 'ajal';
 
@@ -6084,9 +6105,66 @@ function renderDsCropItemsForm() {
     </div>`).join('');
 }
 function calcDsCropTotal() {
-  const total = _dsCropItems.reduce((s,x)=>s+(x.qty||0)*(x.price||0),0);
+  const total = _dsSource==='storage'
+    ? _dsStorageItems.reduce((s,x)=>s+(x.qty||0)*(x.price||0),0)
+    : _dsCropItems.reduce((s,x)=>s+(x.qty||0)*(x.price||0),0);
   const el = document.getElementById('ds-total-display');
   if(el) el.textContent = Number(total).toLocaleString('en-US')+' ج';
+}
+
+function setDsSource(src){
+  _dsSource = src;
+  document.getElementById('ds-src-harvest-btn').style.cssText = src==='harvest'
+    ? 'padding:8px;border-radius:10px;border:2px solid var(--g3);background:var(--g3);color:#fff;font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:900;cursor:pointer;'
+    : 'padding:8px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:900;cursor:pointer;';
+  document.getElementById('ds-src-storage-btn').style.cssText = src==='storage'
+    ? 'padding:8px;border-radius:10px;border:2px solid #e65100;background:#e65100;color:#fff;font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:900;cursor:pointer;'
+    : 'padding:8px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:900;cursor:pointer;';
+  document.getElementById('ds-src-harvest-form').style.display = src==='harvest'?'':'none';
+  document.getElementById('ds-src-storage-form').style.display = src==='storage'?'':'none';
+  if(src==='storage'&&!_dsStorageItems.length) addDsStorageItem();
+  calcDsCropTotal();
+}
+
+async function addDsStorageItem(){
+  const stocks = window._invStocks || await calcAllStock();
+  // فلتر محاصيل مخزنة فقط (crop_in)
+  const {data:cropTxns} = await sb.from('inventory_transactions')
+    .select('item,crop').eq('user_id',currentUser.id).eq('type','crop_in');
+  const cropItems = [...new Set((cropTxns||[]).map(r=>r.item).filter(Boolean))];
+  const availStocks = stocks.filter(r=>cropItems.includes(r.item)&&r.qty>0.001);
+  _dsStorageItems.push({item:'',crop:'',qty:'',unit:'',price:0,avail:0});
+  renderDsStorageItemsForm(availStocks);
+}
+
+function renderDsStorageItemsForm(availStocks){
+  const el = document.getElementById('ds-storage-items-list');
+  if(!el) return;
+  if(!_dsStorageItems.length){
+    el.innerHTML='<div style="color:var(--muted);font-size:0.8rem;margin-bottom:8px;">لا يوجد — اضغط إضافة</div>';
+    return;
+  }
+  el.innerHTML = _dsStorageItems.map((item,i)=>`
+    <div class="inv-row inv-row-4" style="margin-bottom:6px;">
+      <select class="inv-field" onchange="(async()=>{
+        _dsStorageItems[${i}].item=this.value;
+        const st=(window._invStocks||[]).find(r=>r.item===this.value);
+        _dsStorageItems[${i}].avail=st?.qty||0;
+        _dsStorageItems[${i}].unit=st?.unit||'';
+        const {data:ct}=await sb.from('inventory_transactions').select('crop').eq('user_id',currentUser.id).eq('type','crop_in').eq('item',this.value).limit(1);
+        _dsStorageItems[${i}].crop=ct?.[0]?.crop||this.value;
+        this.parentElement.querySelector('.avail-lbl').textContent='متاح: '+(st?.qty||0).toLocaleString('en-US')+' '+(st?.unit||'');
+      })()">
+        <option value="">-- محصول --</option>
+        ${(availStocks||[]).map(st=>`<option value="${s(st.item)}" ${item.item===st.item?'selected':''}>${s(st.item)} (${Number(st.qty).toLocaleString('en-US')} ${s(st.unit)})</option>`).join('')}
+      </select>
+      <input type="text" inputmode="decimal" placeholder="الكمية" value="${item.qty||''}" class="inv-field"
+        oninput="_dsStorageItems[${i}].qty=parseNum(this.value);calcDsCropTotal()">
+      <input type="text" inputmode="decimal" placeholder="السعر ج" value="${item.price||''}" class="inv-field"
+        oninput="_dsStorageItems[${i}].price=parseNum(this.value);calcDsCropTotal()">
+      <button class="inv-del" onclick="_dsStorageItems.splice(${i},1);renderDsStorageItemsForm(${JSON.stringify(availStocks)})">✕</button>
+    </div>
+    <div class="avail-lbl" style="font-size:0.7rem;color:var(--muted);margin-bottom:6px;margin-top:-4px;">${item.item?'متاح: '+Number(item.avail).toLocaleString('en-US')+' '+s(item.unit):''}</div>`).join('');
 }
 
 async function addDeferredSale(){
@@ -6099,11 +6177,26 @@ async function addDeferredSale(){
   if(!desc) return showToast('❌ اكتب الوصف');
   if(!date) return showToast('❌ اختار التاريخ');
 
-  const validItems = _dsCropItems.filter(x=>x.name&&x.qty>0&&x.price>0);
-  if(!validItems.length) return showToast('❌ أضف محصول واحد على الأقل');
+  // تحديد الأصناف حسب المصدر
+  let validItems;
+  if(_dsSource==='storage'){
+    validItems = _dsStorageItems.filter(x=>x.item&&x.qty>0&&x.price>0);
+    if(!validItems.length) return showToast('❌ أضف صنف واحد على الأقل');
+    // تحقق من الكمية المتاحة
+    const stocks = window._invStocks || await calcAllStock();
+    for(const it of validItems){
+      const st = stocks.find(r=>r.item===it.item);
+      if((st?.qty||0) < it.qty) return showToast(`❌ الكمية المتاحة من ${it.item} هي ${st?.qty||0} فقط`);
+    }
+    // تحويل للصيغة المعتادة
+    validItems = validItems.map(x=>({name:x.item, qty:x.qty, unit:x.unit||'', price:x.price, from_storage:true, storage_crop:x.crop||x.item}));
+  } else {
+    validItems = _dsCropItems.filter(x=>x.name&&x.qty>0&&x.price>0);
+    if(!validItems.length) return showToast('❌ أضف محصول واحد على الأقل');
+  }
 
   const total = validItems.reduce((s,x)=>s+(x.qty||0)*(x.price||0),0);
-  const firstCrop = validItems[0]?.name||null;
+  const firstCrop = validItems[0]?.storage_crop || validItems[0]?.name || null;
 
   let partialAmt = 0;
   if(_dsPayType==='partial'){
@@ -6127,9 +6220,23 @@ async function addDeferredSale(){
   await sb.from('income').insert(validItems.map(it=>({
     user_id:currentUser.id,
     description:'بيع آجل: '+desc+(trader?' - '+trader:''),
-    category:'مبيعات آجل', crop:it.name||null,
+    category:'مبيعات آجل', crop:it.storage_crop||it.name||null,
     amount:(it.qty||0)*(it.price||0), date, notes:'بيعة آجل - '+itemsNote, ref_id:saleId
   })));
+
+  // خصم من المخزن لو بيع من المخزن
+  if(_dsSource==='storage'){
+    const stocks = window._invStocks || await calcAllStock();
+    for(const it of validItems){
+      const st = stocks.find(r=>r.item===it.name);
+      await sb.from('inventory_transactions').insert({
+        user_id:currentUser.id, item:it.name, unit:it.unit||'', type:'crop_out',
+        quantity:it.qty, unit_price:it.price, avg_cost:st?.avg_cost||0,
+        total:(it.qty||0)*(it.price||0), date, notes:'بيع محصول مخزن: '+desc, crop:it.storage_crop||it.name
+      });
+    }
+    window._invStocks = await calcAllStock();
+  }
 
   // vault entry for full or partial payment
   if(_dsPayType==='full'||_dsPayType==='partial'){
@@ -6150,6 +6257,9 @@ async function addDeferredSale(){
   document.getElementById('ds-date').value=today();
   if(document.getElementById('ds-partial-amount')) document.getElementById('ds-partial-amount').value='';
   _dsCropItems = [{name:'', qty:'', unit:_dsCropUnits[0]||'كيلو', price:0}];
+  _dsStorageItems = [];
+  _dsSource = 'harvest';
+  setDsSource('harvest');
   renderDsCropItemsForm();
   renderDeferredSales();
   renderHome();
@@ -7617,7 +7727,7 @@ async function calcAllStock(){
   const map = {};
   (data||[]).forEach(r=>{
     if(!map[r.item]) map[r.item]={item:r.item,unit:r.unit||'',qty:0,avg_cost:0};
-    if(r.type==='in'){
+    if(r.type==='in'||r.type==='crop_in'){
       map[r.item].avg_cost = r.avg_cost||0;
       map[r.item].qty += Number(r.quantity||0);
     } else if(r.type==='adjust'){
@@ -7634,7 +7744,7 @@ async function calcItemStock(item){
   const {data} = await sb.from('inventory_transactions').select('type,quantity,avg_cost').eq('user_id',currentUser.id).eq('item',item).order('created_at',{ascending:true});
   let qty=0, avg=0;
   (data||[]).forEach(r=>{
-    if(r.type==='in'){
+    if(r.type==='in'||r.type==='crop_in'){
       const newQty = Number(r.quantity||0);
       avg = (qty*avg + newQty*Number(r.avg_cost||0)) / (qty+newQty||1);
       qty += newQty;
@@ -7698,10 +7808,10 @@ async function renderInvHistory(){
   const {data,error}=await q;
   if(error||!data?.length){el.innerHTML='<div class="empty">لا يوجد حركات</div>';return;}
   const dirLabel={
-    'in':'📥 وارد','sale':'📤 صادر','usage':'📤 صادر',
+    'in':'📥 وارد','sale':'📤 صادر','usage':'📤 صادر','crop_in':'🌾 تخزين محصول','crop_out':'💰 بيع من المخزن',
   };
-  const dirColor={'in':'#2d6a4f','sale':'#c0392b','usage':'#c0392b','adjust':'#1565C0'};
-  const subLabel={'in':'استلام','sale':'بيع','usage':'صرف','adjust':'تسوية'};
+  const dirColor={'in':'#2d6a4f','sale':'#c0392b','usage':'#c0392b','adjust':'#1565C0','crop_in':'#e65100','crop_out':'#2d6a4f'};
+  const subLabel={'in':'استلام','sale':'بيع','usage':'صرف','adjust':'تسوية','crop_in':'تخزين','crop_out':'بيع محصول'};
   const getDirLabel=(r)=> r.type==='adjust' ? (Number(r.quantity)>=0?'⚖️ تسوية +':'⚖️ تسوية −') : (dirLabel[r.type]||r.type);
   el.innerHTML=data.map(r=>`
     <div class="item" style="padding:10px 14px;border-bottom:1px solid var(--border);">
@@ -7720,7 +7830,7 @@ async function renderInvHistory(){
           ${r.notes?`<div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">${s(r.notes)}</div>`:''}
         </div>
         <div style="text-align:left;white-space:nowrap;">
-          <div style="font-size:0.9rem;font-weight:900;color:${dirColor[r.type]};">${r.type==='in'||(r.type==='adjust'&&Number(r.quantity)>=0)?'+':'−'}${Math.abs(Number(r.quantity)).toLocaleString('en-US')} ${s(r.unit||'')}</div>
+          <div style="font-size:0.9rem;font-weight:900;color:${dirColor[r.type]};">${(r.type==='in'||r.type==='crop_in'||(r.type==='adjust'&&Number(r.quantity)>=0))?'+':'−'}${Math.abs(Number(r.quantity)).toLocaleString('en-US')} ${s(r.unit||'')}</div>
           <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;">${fmtDate(r.date)}</div>
         </div>
       </div>
@@ -7920,6 +8030,56 @@ async function saveInvTransaction(type){
   showToast(type==='in'?'✅ تم الاستلام':type==='sale'?'✅ تم البيع':'✅ تم الصرف');
   closeModal();
   // تحديث الـ stocks cache
+  window._invStocks = await calcAllStock();
+  renderInvStock();
+  renderInvHistory();
+}
+
+async function openCropStorage(){
+  const crops = await getCrops();
+  const units = await getUnits();
+  const cropOpts = crops.map(c=>`<option>${s(c)}</option>`).join('');
+  const unitOpts = units.map(u=>`<option>${s(u)}</option>`).join('');
+  document.getElementById('modal-title').textContent='🌾 تخزين محصول';
+  document.getElementById('modal-body').innerHTML=`
+    <div class="edit-modal-row"><label>المحصول</label>
+      <select id="cs-crop" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.88rem;">
+        <option value="">-- اختار المحصول --</option>${cropOpts}
+      </select></div>
+    <div class="edit-modal-row"><label>الكمية</label>
+      <input type="text" inputmode="decimal" id="cs-qty" placeholder="0" oninput="document.getElementById('cs-total').textContent=(parseFloat(document.getElementById('cs-qty').value||0)*parseFloat(document.getElementById('cs-cost').value||0)).toLocaleString('en-US')+' ج'"></div>
+    <div class="edit-modal-row"><label>الوحدة</label>
+      <select id="cs-unit" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.88rem;">${unitOpts}</select></div>
+    <div class="edit-modal-row"><label>تكلفة الوحدة (اختياري)</label>
+      <input type="text" inputmode="decimal" id="cs-cost" placeholder="0" oninput="document.getElementById('cs-total').textContent=(parseFloat(document.getElementById('cs-qty').value||0)*parseFloat(document.getElementById('cs-cost').value||0)).toLocaleString('en-US')+' ج'"></div>
+    <div style="background:var(--g5);border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:0.88rem;font-weight:900;color:#e65100;text-align:center;">الإجمالي: <span id="cs-total">0</span> ج</div>
+    <div class="edit-modal-row"><label>التاريخ</label>
+      <input type="date" id="cs-date" value="${today()}"></div>
+    <div class="edit-modal-row"><label>ملاحظات</label>
+      <input type="text" id="cs-notes" placeholder="اختياري..."></div>
+    <button class="btn" style="width:100%;margin-top:12px;background:#e65100;color:#fff;border:none;border-radius:14px;font-family:Cairo,sans-serif;font-size:0.9rem;font-weight:900;cursor:pointer;padding:12px;" onclick="saveCropStorage()">💾 تخزين</button>`;
+  document.getElementById('detail-overlay').classList.add('open');
+}
+
+async function saveCropStorage(){
+  const crop  = document.getElementById('cs-crop')?.value;
+  const qty   = parseNum(document.getElementById('cs-qty')?.value||'0');
+  const unit  = document.getElementById('cs-unit')?.value||'';
+  const cost  = parseNum(document.getElementById('cs-cost')?.value||'0');
+  const date  = document.getElementById('cs-date')?.value;
+  const notes = document.getElementById('cs-notes')?.value.trim()||'';
+  if(!crop) return showToast('❌ اختار المحصول');
+  if(!qty||qty<=0) return showToast('❌ اكتب الكمية');
+  if(!date) return showToast('❌ اختار التاريخ');
+  const total = qty * (cost||0);
+  const {error} = await sb.from('inventory_transactions').insert({
+    user_id:currentUser.id, item:crop, unit, type:'crop_in',
+    quantity:qty, unit_price:cost||0, avg_cost:cost||0, total, date,
+    notes:notes||null, crop
+  });
+  if(error) return showToast('❌ خطأ: '+error.message);
+  showToast('✅ تم تخزين المحصول');
+  closeModal();
   window._invStocks = await calcAllStock();
   renderInvStock();
   renderInvHistory();
