@@ -4601,10 +4601,12 @@ async function saveDpUnits(list) {
 
 async function getDpTraders() {
   const {data} = await sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','dp_traders').maybeSingle();
-  return data?.categories || [];
+  const list = data?.categories || [];
+  return list.includes(DEFAULT_TRADER) ? list : [DEFAULT_TRADER, ...list];
 }
 async function saveDpTraders(list) {
-  await sb.from('user_categories').upsert({user_id:currentUser.id,type:'dp_traders',categories:list},{onConflict:'user_id,type'});
+  const filtered = list.filter(x=>x!==DEFAULT_TRADER);
+  await sb.from('user_categories').upsert({user_id:currentUser.id,type:'dp_traders',categories:filtered},{onConflict:'user_id,type'});
 }
 async function getDpProducts() {
   const {data} = await sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','dp_products').maybeSingle();
@@ -4985,8 +4987,10 @@ async function openDpTraderManager() {
   document.getElementById('modal-title').textContent='👤 إدارة تجار المشتريات';
   const render = (list) => `
     <div id="dp-traders-list">${list.map((t,i)=>`
-      <div class="cat-item"><span>${s(t)}</span>
-        <button class="btn-sm btn-r" onclick="deleteDpTrader(${i})">🗑️</button>
+      <div class="cat-item"><span>👤 ${s(t)}</span>
+        ${t===DEFAULT_TRADER
+          ? '<span style="font-size:0.7rem;color:var(--muted);font-weight:700;">🔒 افتراضي</span>'
+          : `<button class="btn-sm btn-r" onclick="deleteDpTrader(${i})">🗑️</button>`}
       </div>`).join('')}</div>
     <div style="display:flex;gap:8px;margin-top:12px;">
       <input id="new-dp-trader" placeholder="اسم تاجر جديد" style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.88rem;">
@@ -5009,6 +5013,7 @@ window.addDpTrader = async function() {
   initDeferredPurchasesPage();
 };
 window.deleteDpTrader = async function(i) {
+  if(window._dpTradersEdit[i]===DEFAULT_TRADER) return showToast('🔒 التاجر الافتراضي لا يمكن حذفه');
   window._dpTradersEdit.splice(i,1);
   await saveDpTraders(window._dpTradersEdit);
   document.getElementById('dp-traders-list').outerHTML = `<div id="dp-traders-list">${window._dpTradersEdit.map((t,j)=>`<div class="cat-item"><span>${s(t)}</span><button class="btn-sm btn-r" onclick="deleteDpTrader(${j})">🗑️</button></div>`).join('')}</div>`;
@@ -5567,17 +5572,20 @@ async function saveUnits(u){
 }
 
 // جيب التجار
+const DEFAULT_TRADER = 'تاجر افتراضي';
 async function getTraders(){
   if(_tradersCache) return _tradersCache;
   try {
     const {data} = await sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','traders').limit(1);
-    _tradersCache = data?.length ? data[0].categories : [];
-  } catch(e){ _tradersCache = []; }
+    const list = data?.length ? data[0].categories : [];
+    _tradersCache = list.includes(DEFAULT_TRADER) ? list : [DEFAULT_TRADER, ...list];
+  } catch(e){ _tradersCache = [DEFAULT_TRADER]; }
   return _tradersCache;
 }
 async function saveTraders(t){
-  _tradersCache = t;
-  const {error} = await sb.from('user_categories').upsert({user_id:currentUser.id,type:'traders',categories:t},{onConflict:'user_id,type'});
+  const filtered = t.filter(x=>x!==DEFAULT_TRADER);
+  _tradersCache = [DEFAULT_TRADER, ...filtered];
+  const {error} = await sb.from('user_categories').upsert({user_id:currentUser.id,type:'traders',categories:filtered},{onConflict:'user_id,type'});
   if(error) throw error;
 }
 
@@ -5635,17 +5643,20 @@ async function saveDsProducts(list) {
 }
 async function getDsProdTraders() {
   const {data} = await sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','ds_prod_traders').maybeSingle();
-  return data?.categories || [];
+  const list = data?.categories || [];
+  return list.includes(DEFAULT_TRADER) ? list : [DEFAULT_TRADER, ...list];
 }
 async function saveDsProdTraders(list) {
-  await sb.from('user_categories').upsert({user_id:currentUser.id,type:'ds_prod_traders',categories:list},{onConflict:'user_id,type'});
+  const filtered = list.filter(x=>x!==DEFAULT_TRADER);
+  await sb.from('user_categories').upsert({user_id:currentUser.id,type:'ds_prod_traders',categories:filtered},{onConflict:'user_id,type'});
 }
 async function openDsProdTraderManager() {
   let traders = await getDsProdTraders();
   document.getElementById('modal-title').textContent='👤 إدارة تجار المنتجات';
-  const refresh = () => { document.getElementById('ds-prod-trader-list').outerHTML=`<div id="ds-prod-trader-list">${traders.map((t,j)=>`<div class="cat-item"><span>${s(t)}</span><button class="btn-sm btn-r" onclick="window._dsProdTrDel(${j})">🗑️</button></div>`).join('')}</div>`; };
+  const renderDsProdTr = (list) => list.map((t,i)=>`<div class="cat-item"><span>👤 ${s(t)}</span>${t===DEFAULT_TRADER?'<span style="font-size:0.7rem;color:var(--muted);font-weight:700;">🔒 افتراضي</span>':`<button class="btn-sm btn-r" onclick="window._dsProdTrDel(${i})">🗑️</button>`}</div>`).join('');
+  const refresh = () => { document.getElementById('ds-prod-trader-list').outerHTML=`<div id="ds-prod-trader-list">${renderDsProdTr(traders)}</div>`; };
   document.getElementById('modal-body').innerHTML=`
-    <div id="ds-prod-trader-list">${traders.map((t,i)=>`<div class="cat-item"><span>${s(t)}</span><button class="btn-sm btn-r" onclick="window._dsProdTrDel(${i})">🗑️</button></div>`).join('')}</div>
+    <div id="ds-prod-trader-list">${renderDsProdTr(traders)}</div>
     <div style="display:flex;gap:8px;margin-top:12px;">
       <input id="new-ds-prod-trader" placeholder="اسم تاجر جديد" style="flex:1;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.88rem;">
       <button class="btn-sm btn-g" onclick="window._dsProdTrAdd()" style="padding:10px 16px;">➕</button>
@@ -5660,6 +5671,7 @@ async function openDsProdTraderManager() {
     showToast('✅ تمت الإضافة');
   };
   window._dsProdTrDel = async (i) => {
+    if(traders[i]===DEFAULT_TRADER) return showToast('🔒 التاجر الافتراضي لا يمكن حذفه');
     traders.splice(i,1); await saveDsProdTraders(traders); refresh();
     const sel=document.getElementById('ds-prod-trader'); if(sel) sel.innerHTML='<option value="">-- اختار التاجر --</option>'+traders.map(t=>`<option>${s(t)}</option>`).join('');
     const fSel=document.getElementById('ds-filter-prod-trader'); if(fSel) fSel.innerHTML='<option value="">كل التجار</option>'+traders.map(t=>`<option>${s(t)}</option>`).join('');
@@ -6298,7 +6310,9 @@ function renderTradersList(traders){
   return traders.map((t,i)=>`
     <div class="cat-item">
       <span>👤 ${s(t)}</span>
-      <button class="btn-sm btn-r" onclick="deleteTrader(${i})">🗑️</button>
+      ${t===DEFAULT_TRADER
+        ? '<span style="font-size:0.7rem;color:var(--muted);font-weight:700;">🔒 افتراضي</span>'
+        : `<button class="btn-sm btn-r" onclick="deleteTrader(${i})">🗑️</button>`}
     </div>`).join('');
 }
 async function openTraderManager(){
@@ -6334,6 +6348,7 @@ async function addTrader(){
 }
 async function deleteTrader(i){
   const traders = await getTraders();
+  if(traders[i]===DEFAULT_TRADER) return showToast('🔒 التاجر الافتراضي لا يمكن حذفه');
   const {data} = await sb.from('deferred_sales').select('id').eq('user_id',currentUser.id).eq('trader',traders[i]).limit(1);
   const msg = data?.length?'⚠️ حذف هذا التاجر سيؤثر على البيانات المُسجلة مسبقاً - متأكد؟':'هتحذف التاجر "'+traders[i]+'"؟';
   if(!await showConfirm(msg,data?.length?'⚠️':'🗑️')) return;
