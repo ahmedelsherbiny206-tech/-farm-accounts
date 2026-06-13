@@ -7852,7 +7852,7 @@ async function renderInvStock(){
   const el = document.getElementById('inv-stock-table');
   if(!el) return;
   const stocks = await calcAllStock();
-  const active = stocks.filter(r=>r.qty>0.001);
+  const active = stocks.filter(r=>Math.abs(r.qty)>0.001);
   if(!active.length){ el.innerHTML='<div class="empty">المخزن فارغ 📭</div>'; return; }
   const grandTotal = active.reduce((s,r)=>s+r.qty*r.avg_cost,0);
   el.innerHTML=`<div style="overflow-x:auto;">
@@ -7867,7 +7867,7 @@ async function renderInvStock(){
     <tbody>
       ${active.map(r=>`<tr style="border-bottom:1px solid var(--border);">
         <td style="padding:7px 8px;font-weight:700;">${s(r.item)}<span style="font-size:0.68rem;color:var(--muted);margin-right:4px;">${s(r.unit)}</span></td>
-        <td style="padding:7px 8px;text-align:center;font-weight:900;">${Number(r.qty).toLocaleString('en-US')}</td>
+        <td style="padding:7px 8px;text-align:center;font-weight:900;color:${r.qty<0?'var(--red)':'inherit'}">${Number(r.qty).toLocaleString('en-US')}</td>
         <td style="padding:7px 8px;text-align:center;">${Number(r.avg_cost).toLocaleString('en-US')} ج</td>
         <td style="padding:7px 8px;text-align:center;font-weight:900;color:#e65100;">${Number(r.qty*r.avg_cost).toLocaleString('en-US')} ج</td>
         <td style="padding:7px 8px;text-align:center;">
