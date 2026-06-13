@@ -2040,7 +2040,6 @@ body.dark-mode .ss-option{color:#e0e0e0;}
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
 
 <script>
 const SUPABASE_URL = 'https://blcoxnuitogyguhpcmiv.supabase.co';
@@ -2105,11 +2104,7 @@ function fmtDate(d) {
   if(!d) return '';
   return new Date(d+'T00:00:00').toLocaleDateString('ar-EG',{year:'numeric',month:'short',day:'numeric'});
 }
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
-}
+function showToast(msg) {}
 function setDateInputs() {
   document.querySelectorAll('input[type=date]').forEach(el => {
     if(!el.value && !el.id.endsWith('-from') && !el.id.endsWith('-to')) el.value = today();
