@@ -910,12 +910,12 @@ body.dark-mode .ss-option{color:#e0e0e0;}
 
       <div class="card" onclick="showPage('deferred',document.getElementById('bnav-deferred'))" style="cursor:pointer;text-align:center;padding:12px;">
         <div style="font-size:1.6rem;">🛒</div>
-        <div style="font-size:0.75rem;font-weight:800;color:var(--g2);margin-top:3px;">مبيعات آجل</div>
+        <div style="font-size:0.75rem;font-weight:800;color:var(--g2);margin-top:3px;">مبيعات</div>
       </div>
 
       <div class="card" onclick="showPage('deferred-purchases',document.getElementById('bnav-deferred-purchases'))" style="cursor:pointer;text-align:center;padding:12px;">
         <div style="font-size:1.6rem;">🛍️</div>
-        <div style="font-size:0.75rem;font-weight:800;color:#6a1b9a;margin-top:3px;">مشتريات آجل</div>
+        <div style="font-size:0.75rem;font-weight:800;color:#6a1b9a;margin-top:3px;">مشتريات</div>
       </div>
 
       <div class="card" onclick="showPage('inventory',document.getElementById('bnav-inventory'))" style="cursor:pointer;text-align:center;padding:12px;">
@@ -1277,7 +1277,7 @@ body.dark-mode .ss-option{color:#e0e0e0;}
   <div class="page" id="page-deferred-purchases">
     <div class="page-actions">
       <button class="btn-sm outline" onclick="showPage('deferred',document.getElementById('bnav-deferred'))">← رجوع</button>
-      <span class="page-title">🛍️ مشتريات آجل</span>
+      <span class="page-title">🛍️ مشتريات</span>
       <button class="btn-sm primary" onclick="showPage('dp-payment',document.getElementById('bnav-dp-payment'))">💵 سداد</button>
       <button class="btn-sm primary" onclick="showPage('dp-account-statement',document.getElementById('bnav-dp-account-statement'))">📋 كشف حساب</button>
       <button class="btn-sm excel" onclick="exportDpToExcel()">📊 Excel</button>
@@ -3018,7 +3018,7 @@ function showDetail(type, item) {
       const elemId = item.ref_id ? 'ds-item-' + item.ref_id : null;
       extraHtml = `<div style="margin-top:16px;text-align:center;">
         <button onclick="goToSource('deferred','${elemId}')" style="background:#1565C0;color:#fff;border:none;border-radius:12px;padding:10px 24px;font-family:Cairo,sans-serif;font-size:0.9rem;font-weight:900;cursor:pointer;">
-          🛒 مبيعات آجل — اذهب للمصدر
+          🛒 مبيعات — اذهب للمصدر
         </button></div>`;
     }
   }
@@ -5221,9 +5221,9 @@ async function exportDpToExcel() {
   const headers = ['التاريخ','الوصف','التاجر','المنتج','الكمية','السعر','إجمالي المنتج','إجمالي الفاتورة','الحالة','ملاحظات'];
   const ws = XLSX.utils.json_to_sheet(rows, {header:headers});
   xlStyle(ws, 0, []);
-  xlPrependTitle(ws, 'مشتريات آجل', headers.length);
+  xlPrependTitle(ws, 'مشتريات', headers.length);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'مشتريات آجل');
+  XLSX.utils.book_append_sheet(wb, ws, 'مشتريات');
   XLSX.writeFile(wb, 'مشتريات-آجل-'+today()+'.xlsx');
 }
 
