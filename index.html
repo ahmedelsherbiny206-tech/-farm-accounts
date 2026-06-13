@@ -1420,10 +1420,10 @@ body.dark-mode .ss-option{color:#e0e0e0;}
             <option value="">كل الأصناف</option>
           </select>
           <select id="inv-filter-type" class="filter-input" onchange="renderInvHistory()">
-            <option value="">كل العمليات</option>
-            <option value="in">استلام</option>
-            <option value="sale">بيع</option>
-            <option value="usage">صرف</option>
+            <option value="">كل الحركات</option>
+            <option value="in">📥 وارد (استلام)</option>
+            <option value="sale">📤 صادر (بيع)</option>
+            <option value="usage">📤 صادر (صرف)</option>
           </select>
         </div>
         <div class="filter-row" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
@@ -7472,23 +7472,30 @@ async function renderInvHistory(){
   if(to)   q=q.lte('date',to);
   const {data,error}=await q;
   if(error||!data?.length){el.innerHTML='<div class="empty">لا يوجد حركات</div>';return;}
-  const typeLabel={'in':'📥 استلام','sale':'💰 بيع','usage':'🔧 صرف'};
-  const typeColor={'in':'#e65100','sale':'var(--g2)','usage':'#6a1b9a'};
+  const dirLabel={'in':'📥 وارد','sale':'📤 صادر','usage':'📤 صادر'};
+  const dirColor={'in':'#2d6a4f','sale':'#c0392b','usage':'#c0392b'};
+  const subLabel={'in':'استلام','sale':'بيع','usage':'صرف'};
   el.innerHTML=data.map(r=>`
     <div class="item" style="padding:10px 14px;border-bottom:1px solid var(--border);">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-        <div>
-          <span style="font-size:0.78rem;font-weight:900;background:${typeColor[r.type]}22;color:${typeColor[r.type]};border-radius:6px;padding:2px 7px;">${typeLabel[r.type]||r.type}</span>
-          <span style="font-size:0.85rem;font-weight:800;margin-right:6px;">${s(r.item)}</span>
-          <span style="font-size:0.72rem;color:var(--muted);">${Number(r.quantity).toLocaleString('en-US')} ${s(r.unit||'')}</span>
-          ${r.crop?`<span style="font-size:0.7rem;color:#6a1b9a;margin-right:4px;">🌾 ${s(r.crop)}</span>`:''}
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;">
+            <span style="font-size:0.78rem;font-weight:900;background:${dirColor[r.type]}22;color:${dirColor[r.type]};border-radius:6px;padding:2px 8px;">${dirLabel[r.type]||r.type}</span>
+            <span style="font-size:0.7rem;color:var(--muted);font-weight:700;">${subLabel[r.type]||''}</span>
+            <span style="font-size:0.85rem;font-weight:800;">${s(r.item)}</span>
+          </div>
+          <div style="font-size:0.78rem;color:var(--muted);">
+            الكمية: <strong style="color:var(--text);">${Number(r.quantity).toLocaleString('en-US')} ${s(r.unit||'')}</strong>
+            ${r.unit_price?` · سعر الوحدة: <strong style="color:var(--text);">${Number(r.unit_price).toLocaleString('en-US')} ج</strong>`:''}
+            ${r.crop?` · 🌾 ${s(r.crop)}`:''}
+          </div>
+          ${r.notes?`<div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">${s(r.notes)}</div>`:''}
         </div>
-        <div style="text-align:left;">
-          <div style="font-size:0.85rem;font-weight:900;color:${typeColor[r.type]};">${Number(r.total||0).toLocaleString('en-US')} ج</div>
-          <div style="font-size:0.68rem;color:var(--muted);">${fmtDate(r.date)}</div>
+        <div style="text-align:left;white-space:nowrap;">
+          <div style="font-size:0.9rem;font-weight:900;color:${dirColor[r.type]};">${r.type==='in'?'+':'−'}${Number(r.quantity).toLocaleString('en-US')} ${s(r.unit||'')}</div>
+          <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;">${fmtDate(r.date)}</div>
         </div>
       </div>
-      ${r.notes?`<div style="font-size:0.72rem;color:var(--muted);margin-top:3px;">${s(r.notes)}</div>`:''}
     </div>`).join('');
 }
 
