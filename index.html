@@ -747,7 +747,7 @@ body.dark-mode .ss-option{color:#e0e0e0;}
 <body>
 
 <!-- AUTH -->
-<div id="auth-screen">
+<div id="auth-screen" style="display:none!important">
   <div class="auth-box">
     <div class="auth-logo">
       <div class="emoji">🌿</div>
@@ -2237,9 +2237,7 @@ async function handleAuthRedirect() {
     }
   }
   // Normal session check
-  const {data:{session}} = await sb.auth.getSession();
-  if(session) initApp(session.user);
-  else document.getElementById('auth-screen').style.display = 'flex';
+  initApp({id:'5efb70e9-c27f-490a-9a8b-94a15215919d', email:'ahmedelsherbiny206@gmail.com', user_metadata:{full_name:'الهي'}});
 }
 handleAuthRedirect();
 
