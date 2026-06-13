@@ -1193,7 +1193,7 @@ body.dark-mode .ss-option{color:#e0e0e0;}
             <span>📦 المنتجات</span>
             <div class="lbl-actions">
               <button onclick="openDsProductManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">📦 إدارة المنتجات</button>
-              <button onclick="openDsUnitManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">📐 إدارة الوحدات</button>
+              <button onclick="openUnitManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">📐 إدارة الوحدات</button>
             </div>
           </div>
           <div id="ds-prod-items-list"></div>
@@ -6041,14 +6041,13 @@ async function openDsUnitManager() {
 }
 
 async function initDeferredSalesPage(){
-  const [crops, units, traders, varieties, dsProds, dsProdUnitsData, dsProdTraders] = await Promise.all([
+  const [crops, units, traders, varieties, dsProds, dsProdTraders] = await Promise.all([
     getCrops(), getUnits(), getTraders(), getVarieties(), getDsProducts(),
-    sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','ds_prod_units').maybeSingle(),
     getDsProdTraders()
   ]);
 
   _dsProdProducts = dsProds;
-  _dsProdUnits = dsProdUnitsData?.data?.categories?.length ? dsProdUnitsData.data.categories : [...DP_DEFAULT_UNITS];
+  _dsProdUnits = units.length ? units : [...DP_DEFAULT_UNITS];
   _dsCropCrops = crops;
   _dsCropUnits = units;
 
