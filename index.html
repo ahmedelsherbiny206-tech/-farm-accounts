@@ -190,13 +190,13 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 /* ======= CARDS ======= */
 .card{
   background:var(--card);border-radius:var(--radius);
-  padding:18px;box-shadow:var(--shadow);
-  margin-bottom:12px;border:1px solid var(--border);
+  padding:14px;box-shadow:var(--shadow);
+  margin-bottom:10px;border:1px solid var(--border);
 }
 .card-title{
-  font-size:0.9rem;font-weight:800;color:var(--text);
-  margin-bottom:16px;display:flex;align-items:center;gap:8px;
-  padding-bottom:12px;border-bottom:1px solid var(--border);
+  font-size:0.87rem;font-weight:800;color:var(--text);
+  margin-bottom:12px;display:flex;align-items:center;gap:7px;
+  padding-bottom:10px;border-bottom:1px solid var(--border);
 }
 
 /* ======= SUMMARY CARDS ======= */
@@ -260,25 +260,26 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 .clear-btn:hover{border-color:var(--border-strong);}
 
 /* ======= FORMS ======= */
-.form-row{margin-bottom:14px;}
+.form-row{margin-bottom:10px;}
 .form-row label{
-  display:block;font-size:0.72rem;font-weight:700;
-  color:var(--muted);margin-bottom:6px;letter-spacing:0.3px;
+  display:block;font-size:0.7rem;font-weight:700;
+  color:var(--muted);margin-bottom:4px;letter-spacing:0.2px;
 }
 .form-row input,.form-row select,.form-row textarea{
-  width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid var(--border);
-  background:var(--bg);font-family:'Cairo',sans-serif;font-size:0.88rem;
+  width:100%;padding:9px 12px;border-radius:9px;border:1.5px solid var(--border);
+  background:var(--bg);font-family:'Cairo',sans-serif;font-size:0.84rem;
   color:var(--text);outline:none;transition:border-color 0.2s,box-shadow 0.2s;
+  box-sizing:border-box;
 }
 .form-row input:focus,.form-row select:focus,.form-row textarea:focus{
-  border-color:var(--primary);box-shadow:0 0 0 3px rgba(45,106,79,0.1);
+  border-color:var(--primary);box-shadow:0 0 0 2px rgba(45,106,79,0.1);
 }
-.form-row textarea{resize:vertical;min-height:60px;}
+.form-row textarea{resize:vertical;min-height:52px;}
 
 /* ======= BUTTONS ======= */
 .btn{
-  width:100%;padding:13px;border-radius:12px;border:none;
-  font-family:'Cairo',sans-serif;font-size:0.92rem;font-weight:800;
+  width:100%;padding:11px;border-radius:10px;border:none;
+  font-family:'Cairo',sans-serif;font-size:0.88rem;font-weight:800;
   cursor:pointer;transition:all 0.2s;letter-spacing:0.2px;
 }
 .btn-g{background:var(--primary);color:#fff;box-shadow:0 2px 8px rgba(45,106,79,0.25);}
@@ -627,49 +628,64 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 /* ======= SECTION HEADER IN CARD ======= */
 .section-lbl{
   display:flex;justify-content:space-between;align-items:center;
-  margin:16px 0 10px;padding-bottom:8px;border-bottom:1px solid var(--border);
+  margin:10px 0 7px;padding-bottom:6px;border-bottom:1px solid var(--border);
 }
-.section-lbl span{font-size:0.85rem;font-weight:800;color:var(--text);}
-.section-lbl .lbl-actions{display:flex;gap:8px;}
+.section-lbl span{font-size:0.8rem;font-weight:800;color:var(--text);}
+.section-lbl .lbl-actions{display:flex;gap:6px;}
 .section-lbl .lbl-actions button{
-  background:none;border:none;font-size:0.75rem;color:var(--primary);
+  background:none;border:none;font-size:0.72rem;color:var(--primary);
   font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;padding:0;
 }
 
 /* ======= INVOICE ROWS ======= */
 .inv-row{
-  background:var(--bg);border:1px solid var(--border);border-radius:10px;
-  padding:10px;margin-bottom:8px;display:grid;gap:6px;align-items:center;
+  background:var(--bg);border:1px solid var(--border);border-radius:9px;
+  padding:7px;margin-bottom:6px;display:grid;gap:5px;align-items:center;
 }
-.inv-row-4{grid-template-columns:2.5fr 1fr 1fr 34px;}
-.inv-row-5{grid-template-columns:2fr 1fr 0.8fr 1fr 34px;}
-.inv-row-qty{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.inv-row-4{grid-template-columns:2.5fr 1fr 1fr 30px;}
+.inv-row-5{grid-template-columns:2fr 1fr 0.8fr 1fr 30px;}
+.inv-row-qty{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
 .inv-field{
-  width:100%;padding:9px 10px;border-radius:8px;border:1.5px solid var(--border);
-  background:var(--card);font-family:Cairo,sans-serif;font-size:0.83rem;
+  width:100%;padding:7px 8px;border-radius:7px;border:1.5px solid var(--border);
+  background:var(--card);font-family:Cairo,sans-serif;font-size:0.8rem;
   color:var(--text);outline:none;transition:border-color 0.2s;box-sizing:border-box;
   min-width:0;
 }
 .inv-field:focus{border-color:var(--primary);box-shadow:0 0 0 2px rgba(45,106,79,0.1);}
 .inv-del{
-  background:var(--red-p);color:var(--red);border:none;border-radius:8px;
-  width:34px;height:34px;cursor:pointer;font-size:0.9rem;display:flex;
-  align-items:center;justify-content:center;transition:background 0.15s;
+  background:var(--red-p);color:var(--red);border:none;border-radius:7px;
+  width:30px;height:30px;cursor:pointer;font-size:0.85rem;display:flex;
+  align-items:center;justify-content:center;transition:background 0.15s;flex-shrink:0;
 }
 .inv-del:hover{background:#fecaca;}
-.inv-subtotal{font-size:0.72rem;color:var(--muted);padding:0 2px 4px;text-align:left;}
+.inv-subtotal{font-size:0.68rem;color:var(--muted);padding:0 2px 2px;text-align:left;}
 
 /* ======= TOTAL DISPLAY ======= */
 .total-display{
   background:var(--primary-bg);border:1px solid var(--primary-border);
-  border-radius:10px;padding:12px 16px;
+  border-radius:9px;padding:9px 14px;
   display:flex;justify-content:space-between;align-items:center;
-  margin:8px 0;
+  margin:6px 0;
 }
-.total-display .td-lbl{font-size:0.8rem;font-weight:700;color:var(--primary);}
-.total-display .td-val{font-size:1.05rem;font-weight:900;color:var(--primary);}
+.total-display .td-lbl{font-size:0.76rem;font-weight:700;color:var(--primary);}
+.total-display .td-val{font-size:1rem;font-weight:900;color:var(--primary);}
 .total-display.red{background:var(--red-p);border-color:#fca5a5;}
 .total-display.red .td-lbl,.total-display.red .td-val{color:var(--red);}
+
+/* ======= TAB TOGGLE ======= */
+.tab-toggle{
+  display:flex;background:var(--bg);border:1.5px solid var(--border);
+  border-radius:10px;padding:3px;gap:3px;margin-bottom:12px;
+}
+.tab-toggle button{
+  flex:1;padding:7px 6px;border-radius:7px;border:none;
+  font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:800;
+  cursor:pointer;transition:all 0.2s;background:transparent;color:var(--muted);
+}
+.tab-toggle button.active{
+  background:var(--g3);color:#fff;box-shadow:0 2px 6px rgba(45,106,79,0.2);
+}
+.tab-toggle button.active.orange{background:#e65100;}
 
 /* ======= FILTER SECTION ======= */
 .filter-section{
@@ -713,11 +729,11 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 .type-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
 
 /* ======= PAY TYPE SELECTOR ======= */
-.pay-type-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:12px 0;}
+.pay-type-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin:8px 0;}
 .pay-type-btn{
-  padding:10px 6px;border-radius:9px;border:1.5px solid var(--border);
+  padding:8px 4px;border-radius:8px;border:1.5px solid var(--border);
   background:var(--bg);color:var(--muted);font-family:Cairo,sans-serif;
-  font-size:0.78rem;font-weight:700;cursor:pointer;text-align:center;transition:all 0.2s;
+  font-size:0.76rem;font-weight:700;cursor:pointer;text-align:center;transition:all 0.2s;
 }
 .pay-type-btn.active{background:var(--primary-bg);color:var(--primary);border-color:var(--primary-border);}
 
@@ -1101,11 +1117,9 @@ body.dark-mode .ss-option{color:#e0e0e0;}
         <div class="card-title">🛒 بيعة جديدة</div>
 
         <!-- التوجل: محصول أو منتج -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;">
-          <button id="ds-type-crop-btn" onclick="setDsSaleType('crop')"
-            style="padding:10px;border-radius:10px;border:2px solid var(--g3);background:var(--g3);color:#fff;font-family:Cairo,sans-serif;font-size:0.88rem;font-weight:900;cursor:pointer;">🌾 بيع محصول</button>
-          <button id="ds-type-prod-btn" onclick="setDsSaleType('product')"
-            style="padding:10px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.88rem;font-weight:900;cursor:pointer;">📦 بيع منتج</button>
+        <div class="tab-toggle" style="margin-bottom:12px;">
+          <button id="ds-type-crop-btn" onclick="setDsSaleType('crop')" class="active">🌾 بيع محصول</button>
+          <button id="ds-type-prod-btn" onclick="setDsSaleType('product')">📦 بيع منتج</button>
         </div>
 
         <!-- فورم المحصول -->
@@ -1119,11 +1133,9 @@ body.dark-mode .ss-option{color:#e0e0e0;}
           </div>
 
           <!-- مصدر البيع -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;">
-            <button id="ds-src-harvest-btn" onclick="setDsSource('harvest')"
-              style="padding:8px;border-radius:10px;border:2px solid var(--g3);background:var(--g3);color:#fff;font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:900;cursor:pointer;">🌾 حصاد جديد</button>
-            <button id="ds-src-storage-btn" onclick="setDsSource('storage')"
-              style="padding:8px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:900;cursor:pointer;">📦 من المخزن</button>
+          <div class="tab-toggle">
+            <button id="ds-src-harvest-btn" onclick="setDsSource('harvest')" class="active">🌾 حصاد جديد</button>
+            <button id="ds-src-storage-btn" onclick="setDsSource('storage')">📦 من المخزن</button>
           </div>
 
           <!-- حصاد جديد -->
@@ -1452,9 +1464,9 @@ body.dark-mode .ss-option{color:#e0e0e0;}
     </div>
 
     <!-- أزرار العمليات -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
-      <button onclick="openInvModal('usage')" class="btn btn-g" style="font-size:0.82rem;padding:12px;">🔧 صرف</button>
-      <button onclick="openCropStorage()" class="btn" style="font-size:0.82rem;padding:12px;background:#e65100;color:#fff;border:none;border-radius:14px;font-family:Cairo,sans-serif;font-weight:900;cursor:pointer;">📦 تخزين محصول</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+      <button onclick="openInvModal('usage')" class="btn btn-g" style="font-size:0.8rem;padding:10px;">🔧 صرف</button>
+      <button onclick="openCropStorage()" class="btn" style="font-size:0.8rem;padding:10px;background:#e65100;color:#fff;border:none;border-radius:10px;font-family:Cairo,sans-serif;font-weight:900;cursor:pointer;">📦 تخزين محصول</button>
     </div>
 
     <!-- الجرد الحالي -->
@@ -5846,8 +5858,8 @@ function setDsSaleType(type) {
   if(prodFilters) prodFilters.style.display = type==='product' ? 'grid' : 'none';
   const cropBtn = document.getElementById('ds-type-crop-btn');
   const prodBtn = document.getElementById('ds-type-prod-btn');
-  if(cropBtn){ cropBtn.style.background=type==='crop'?'var(--g3)':'var(--bg)'; cropBtn.style.color=type==='crop'?'#fff':'var(--text)'; cropBtn.style.borderColor=type==='crop'?'var(--g3)':'var(--border)'; }
-  if(prodBtn){ prodBtn.style.background=type==='product'?'var(--g3)':'var(--bg)'; prodBtn.style.color=type==='product'?'#fff':'var(--text)'; prodBtn.style.borderColor=type==='product'?'var(--g3)':'var(--border)'; }
+  if(cropBtn) cropBtn.classList.toggle('active', type==='crop');
+  if(prodBtn) prodBtn.classList.toggle('active', type==='product');
   renderDeferredSales();
 }
 
@@ -6147,12 +6159,10 @@ function calcDsCropTotal() {
 
 function setDsSource(src){
   _dsSource = src;
-  document.getElementById('ds-src-harvest-btn').style.cssText = src==='harvest'
-    ? 'padding:8px;border-radius:10px;border:2px solid var(--g3);background:var(--g3);color:#fff;font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:900;cursor:pointer;'
-    : 'padding:8px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:900;cursor:pointer;';
-  document.getElementById('ds-src-storage-btn').style.cssText = src==='storage'
-    ? 'padding:8px;border-radius:10px;border:2px solid #e65100;background:#e65100;color:#fff;font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:900;cursor:pointer;'
-    : 'padding:8px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:900;cursor:pointer;';
+  const harvestBtn = document.getElementById('ds-src-harvest-btn');
+  const storageBtn = document.getElementById('ds-src-storage-btn');
+  if(harvestBtn) harvestBtn.classList.toggle('active', src==='harvest');
+  if(storageBtn){ storageBtn.classList.toggle('active', src==='storage'); storageBtn.classList.toggle('orange', src==='storage'); }
   document.getElementById('ds-src-harvest-form').style.display = src==='harvest'?'':'none';
   document.getElementById('ds-src-storage-form').style.display = src==='storage'?'':'none';
   if(src==='storage'&&!_dsStorageItems.length) addDsStorageItem();
