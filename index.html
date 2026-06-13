@@ -5829,6 +5829,10 @@ let _dsCropUnits = [];
 let _dsProdItems = [];
 let _dsProdProducts = [];
 let _dsProdUnits = [];
+async function saveDsProdUnits(list) {
+  _dsProdUnits = list;
+  await sb.from('user_categories').upsert({user_id:currentUser.id,type:'ds_prod_units',categories:list},{onConflict:'user_id,type'});
+}
 
 function setDsSaleType(type) {
   _dsSaleType = type;
@@ -6028,9 +6032,9 @@ async function openDsUnitManager() {
     const inp=document.getElementById('new-ds-unit'); const name=inp?.value.trim();
     if(!name) return showToast('❌ اكتب الوحدة');
     if(units.includes(name)) return showToast('❌ موجودة بالفعل');
-    units.push(name); await sb.from('user_categories').upsert({user_id:currentUser.id,type:'ds_prod_units',categories:units},{onConflict:'user_id,type'}); _dsProdUnits=units; inp.value=''; refresh();
+    units.push(name); saveDsProdUnits(units); inp.value=''; refresh();
   };
-  window._dsUnitMgrDel = async (i) => { units.splice(i,1); await sb.from('user_categories').upsert({user_id:currentUser.id,type:'ds_prod_units',categories:units},{onConflict:'user_id,type'}); _dsProdUnits=units; refresh(); };
+  window._dsUnitMgrDel = async (i) => { units.splice(i,1); saveDsProdUnits(units); refresh(); };
   document.getElementById('detail-overlay').classList.add('open');
 }
 
@@ -7765,8 +7769,9 @@ async function saveReturn(){
 }
 
 // ===== المخزن =====
-async function getInvItems(){ const {data}=await sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','inventory_items').limit(1); return data?.[0]?.categories||[]; }
-async function saveInvItems(list){ await sb.from('user_categories').upsert({user_id:currentUser.id,type:'inventory_items',categories:list},{onConflict:'user_id,type'}); }
+let _invItemsCache = null;
+async function getInvItems(){ if(_invItemsCache) return _invItemsCache; const {data}=await sb.from('user_categories').select('categories').eq('user_id',currentUser.id).eq('type','inventory_items').limit(1); _invItemsCache=data?.[0]?.categories||[]; return _invItemsCache; }
+async function saveInvItems(list){ _invItemsCache=list; await sb.from('user_categories').upsert({user_id:currentUser.id,type:'inventory_items',categories:list},{onConflict:'user_id,type'}); }
 
 async function itemHasUsage(name){
   const [{data:t},{data:dp},{data:ds}] = await Promise.all([
