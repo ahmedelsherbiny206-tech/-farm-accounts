@@ -5057,7 +5057,7 @@ async function renderDeferredPurchases() {
       <div style="border-top:1px solid var(--border);padding-top:6px;">${itemsHtml}</div>
       ${x.notes?`<div style="font-size:0.72rem;color:var(--muted);">📝 ${s(x.notes)}</div>`:''}
       <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
-        ${!x.paid&&!x.is_return?`<button class="btn-sm btn-g" onclick="payDeferredPurchase('${x.id}')">✅ سُدِّدت</button>`:''}
+        ${!x.paid&&!x.is_return?`<button class="btn-sm btn-g" onclick="event.stopPropagation();openDpCollect('${x.id}',${Math.abs(x.total||0)})">💵 تحصيل</button>`:''}
         ${!x.is_return?`<button class="btn-sm" style="background:#fff3e0;color:#e65100;border:1.5px solid #e65100;" onclick="openReturnModal('purchase','${x.id}','${s(x.trader||'')}','',${Math.abs(x.total||0)})">🔄 مرتجع</button>`:''}
         <button class="btn-sm" style="background:var(--blue-p);color:var(--blue);border:none;" onclick="editDeferredPurchase('${x.id}')">✏️ تعديل</button>
         <button class="btn-sm btn-r" onclick="deleteDeferredPurchase('${x.id}','${x.paid}')">🗑️ حذف</button>
@@ -6370,13 +6370,73 @@ async function renderDeferredSales(){
         <div class="ds-total-badge">${Number(x.total||0).toLocaleString('en-US')} ج</div>
       </div>
       <div class="ds-actions">
-        ${!isPaid&&!x.is_return?`<button class="btn-sm btn-g" onclick="payDeferredSale('${x.id}')">✅ تسديد</button>`:''}
+        ${!isPaid&&!x.is_return?`<button class="btn-sm btn-g" onclick="event.stopPropagation();openDsSaleCollect('${x.id}',${Math.abs(x.total||0)})">💵 تحصيل</button>`:''}
         ${!x.is_return?`<button class="btn-sm" style="background:#fff3e0;color:#e65100;border:1.5px solid #e65100;" onclick="openReturnModal('sale','${x.id}','${s(x.trader||'')}','${x.sale_type}',${Math.abs(x.total||0)})">🔄 مرتجع</button>`:''}
         <button class="btn-sm" style="background:var(--blue-p);color:var(--blue);border:none;" onclick="editDeferredSale('${x.id}')">✏️ تعديل</button>
         <button class="btn-sm btn-r" onclick="deleteDeferredSale('${x.id}',${isPaid})">🗑️</button>
       </div>
     </div>`;
   }).join('');
+}
+
+async function openDsSaleCollect(id, total){
+  const {data:vEntries} = await sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('ref_id',id).in('category',['سداد_مبيعات','سداد_مبيعات_منتج','تسوية_مبيعات','تسوية_مبيعات_منتج']);
+  const paidSoFar = (vEntries||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const remaining = total - paidSoFar;
+  document.getElementById('modal-title').textContent = '💵 تحصيل مبيعات';
+  document.getElementById('modal-body').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;text-align:center;">
+      <div style="background:var(--g5);border-radius:10px;padding:10px;"><div style="font-size:0.68rem;color:var(--muted);font-weight:700;">الإجمالي</div><div style="font-size:1rem;font-weight:900;color:var(--text);">${Number(total).toLocaleString('en-US')} ج</div></div>
+      <div style="background:#d1fae5;border-radius:10px;padding:10px;"><div style="font-size:0.68rem;color:#065f46;font-weight:700;">تم تحصيله</div><div style="font-size:1rem;font-weight:900;color:#065f46;">${Number(paidSoFar).toLocaleString('en-US')} ج</div></div>
+      <div style="background:#fee2e2;border-radius:10px;padding:10px;"><div style="font-size:0.68rem;color:#991b1b;font-weight:700;">المتبقي</div><div style="font-size:1rem;font-weight:900;color:#991b1b;">${Number(remaining).toLocaleString('en-US')} ج</div></div>
+    </div>
+    <div class="edit-modal-row"><label>المبلغ المحصَّل الآن</label>
+      <input type="text" inputmode="decimal" id="ds-collect-amt" placeholder="0" value="${Number(remaining).toLocaleString('en-US').replace(/,/g,'')}"></div>
+    <div class="edit-modal-row"><label>التاريخ</label>
+      <input type="date" id="ds-collect-date" value="${today()}"></div>
+    <button class="btn btn-g" style="width:100%;margin-top:12px;" onclick="saveDsSaleCollect('${id}',${total},${paidSoFar})">💾 تأكيد التحصيل</button>`;
+  document.getElementById('detail-overlay').classList.add('open');
+}
+async function saveDsSaleCollect(id, total, paidSoFar){
+  const amt = parseNum(document.getElementById('ds-collect-amt')?.value||'0');
+  const date = document.getElementById('ds-collect-date')?.value;
+  if(!amt||amt<=0) return;
+  if(!date) return;
+  const newPaid = paidSoFar + amt;
+  const isFullyPaid = newPaid >= total - 0.001;
+  await sb.from('vault').insert({user_id:currentUser.id,type:'in',description:'تحصيل مبيعات',amount:amt,date,category:'سداد_مبيعات',ref_id:id});
+  if(isFullyPaid) await sb.from('deferred_sales').update({paid:true,paid_at:new Date().toISOString()}).eq('id',id).eq('user_id',currentUser.id);
+  closeModal(); renderDeferredSales(); renderHome();
+}
+
+async function openDpCollect(id, total){
+  const {data:vEntries} = await sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('ref_id',id).eq('category','مشتريات_آجل');
+  const paidSoFar = (vEntries||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const remaining = total - paidSoFar;
+  document.getElementById('modal-title').textContent = '💵 سداد مشتريات';
+  document.getElementById('modal-body').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;text-align:center;">
+      <div style="background:var(--g5);border-radius:10px;padding:10px;"><div style="font-size:0.68rem;color:var(--muted);font-weight:700;">الإجمالي</div><div style="font-size:1rem;font-weight:900;color:var(--text);">${Number(total).toLocaleString('en-US')} ج</div></div>
+      <div style="background:#d1fae5;border-radius:10px;padding:10px;"><div style="font-size:0.68rem;color:#065f46;font-weight:700;">تم سداده</div><div style="font-size:1rem;font-weight:900;color:#065f46;">${Number(paidSoFar).toLocaleString('en-US')} ج</div></div>
+      <div style="background:#fee2e2;border-radius:10px;padding:10px;"><div style="font-size:0.68rem;color:#991b1b;font-weight:700;">المتبقي</div><div style="font-size:1rem;font-weight:900;color:#991b1b;">${Number(remaining).toLocaleString('en-US')} ج</div></div>
+    </div>
+    <div class="edit-modal-row"><label>المبلغ المسدَّد الآن</label>
+      <input type="text" inputmode="decimal" id="dp-collect-amt" placeholder="0" value="${Number(remaining).toLocaleString('en-US').replace(/,/g,'')}"></div>
+    <div class="edit-modal-row"><label>التاريخ</label>
+      <input type="date" id="dp-collect-date" value="${today()}"></div>
+    <button class="btn btn-g" style="width:100%;margin-top:12px;" onclick="saveDpCollect('${id}',${total},${paidSoFar})">💾 تأكيد السداد</button>`;
+  document.getElementById('detail-overlay').classList.add('open');
+}
+async function saveDpCollect(id, total, paidSoFar){
+  const amt = parseNum(document.getElementById('dp-collect-amt')?.value||'0');
+  const date = document.getElementById('dp-collect-date')?.value;
+  if(!amt||amt<=0) return;
+  if(!date) return;
+  const newPaid = paidSoFar + amt;
+  const isFullyPaid = newPaid >= total - 0.001;
+  await sb.from('vault').insert({user_id:currentUser.id,type:'out',description:'سداد مشتريات',amount:amt,date,category:'مشتريات_آجل',ref_id:id});
+  if(isFullyPaid) await sb.from('deferred_purchases').update({paid:true,paid_at:new Date().toISOString()}).eq('id',id).eq('user_id',currentUser.id);
+  closeModal(); renderDeferredPurchases(); renderHome();
 }
 
 // تسديد بيعة
