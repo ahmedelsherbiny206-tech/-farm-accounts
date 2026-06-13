@@ -1424,6 +1424,7 @@ body.dark-mode .ss-option{color:#e0e0e0;}
             <option value="in">📥 وارد (استلام)</option>
             <option value="sale">📤 صادر (بيع)</option>
             <option value="usage">📤 صادر (صرف)</option>
+            <option value="adjust">⚖️ تسوية</option>
           </select>
         </div>
         <div class="filter-row" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
@@ -7402,10 +7403,10 @@ async function calcAllStock(){
   (data||[]).forEach(r=>{
     if(!map[r.item]) map[r.item]={item:r.item,unit:r.unit||'',qty:0,avg_cost:0};
     if(r.type==='in'){
-      const prev = map[r.item];
-      // avg_cost محفوظ وقت الاستلام
-      prev.avg_cost = r.avg_cost||0;
-      prev.qty += Number(r.quantity||0);
+      map[r.item].avg_cost = r.avg_cost||0;
+      map[r.item].qty += Number(r.quantity||0);
+    } else if(r.type==='adjust'){
+      map[r.item].qty += Number(r.quantity||0); // quantity can be negative
     } else {
       map[r.item].qty -= Number(r.quantity||0);
     }
@@ -7422,6 +7423,8 @@ async function calcItemStock(item){
       const newQty = Number(r.quantity||0);
       avg = (qty*avg + newQty*Number(r.avg_cost||0)) / (qty+newQty||1);
       qty += newQty;
+    } else if(r.type==='adjust'){
+      qty += Number(r.quantity||0);
     } else {
       qty -= Number(r.quantity||0);
     }
@@ -7442,7 +7445,8 @@ async function renderInvStock(){
       <th style="padding:7px 8px;text-align:right;">الصنف</th>
       <th style="padding:7px 8px;text-align:center;">الكمية</th>
       <th style="padding:7px 8px;text-align:center;">متوسط التكلفة</th>
-      <th style="padding:7px 8px;text-align:center;">القيمة الإجمالية</th>
+      <th style="padding:7px 8px;text-align:center;">القيمة</th>
+      <th style="padding:7px 8px;text-align:center;">تسوية</th>
     </tr></thead>
     <tbody>
       ${active.map(r=>`<tr style="border-bottom:1px solid var(--border);">
@@ -7450,9 +7454,13 @@ async function renderInvStock(){
         <td style="padding:7px 8px;text-align:center;font-weight:900;">${Number(r.qty).toLocaleString('en-US')}</td>
         <td style="padding:7px 8px;text-align:center;">${Number(r.avg_cost).toLocaleString('en-US')} ج</td>
         <td style="padding:7px 8px;text-align:center;font-weight:900;color:#e65100;">${Number(r.qty*r.avg_cost).toLocaleString('en-US')} ج</td>
+        <td style="padding:7px 8px;text-align:center;">
+          <button onclick="openInvAdjust('${s(r.item).replace(/'/g,"\\'")}',${r.qty},'${s(r.unit).replace(/'/g,"\\'")}',${r.avg_cost})"
+            style="background:var(--primary-bg);color:var(--primary);border:1.5px solid var(--primary-border);border-radius:8px;padding:4px 10px;font-family:Cairo,sans-serif;font-size:0.72rem;font-weight:800;cursor:pointer;">⚖️ تسوية</button>
+        </td>
       </tr>`).join('')}
       <tr style="background:var(--g5);font-weight:900;border-top:2px solid #e65100;">
-        <td style="padding:7px 8px;" colspan="3">إجمالي قيمة المخزن</td>
+        <td style="padding:7px 8px;" colspan="4">إجمالي قيمة المخزن</td>
         <td style="padding:7px 8px;text-align:center;color:#e65100;">${Number(grandTotal).toLocaleString('en-US')} ج</td>
       </tr>
     </tbody>
@@ -7474,15 +7482,18 @@ async function renderInvHistory(){
   if(to)   q=q.lte('date',to);
   const {data,error}=await q;
   if(error||!data?.length){el.innerHTML='<div class="empty">لا يوجد حركات</div>';return;}
-  const dirLabel={'in':'📥 وارد','sale':'📤 صادر','usage':'📤 صادر'};
-  const dirColor={'in':'#2d6a4f','sale':'#c0392b','usage':'#c0392b'};
-  const subLabel={'in':'استلام','sale':'بيع','usage':'صرف'};
+  const dirLabel={
+    'in':'📥 وارد','sale':'📤 صادر','usage':'📤 صادر',
+  };
+  const dirColor={'in':'#2d6a4f','sale':'#c0392b','usage':'#c0392b','adjust':'#1565C0'};
+  const subLabel={'in':'استلام','sale':'بيع','usage':'صرف','adjust':'تسوية'};
+  const getDirLabel=(r)=> r.type==='adjust' ? (Number(r.quantity)>=0?'⚖️ تسوية +':'⚖️ تسوية −') : (dirLabel[r.type]||r.type);
   el.innerHTML=data.map(r=>`
     <div class="item" style="padding:10px 14px;border-bottom:1px solid var(--border);">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
         <div style="flex:1;min-width:0;">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;">
-            <span style="font-size:0.78rem;font-weight:900;background:${dirColor[r.type]}22;color:${dirColor[r.type]};border-radius:6px;padding:2px 8px;">${dirLabel[r.type]||r.type}</span>
+            <span style="font-size:0.78rem;font-weight:900;background:${dirColor[r.type]}22;color:${dirColor[r.type]};border-radius:6px;padding:2px 8px;">${getDirLabel(r)}</span>
             <span style="font-size:0.7rem;color:var(--muted);font-weight:700;">${subLabel[r.type]||''}</span>
             <span style="font-size:0.85rem;font-weight:800;">${s(r.item)}</span>
           </div>
@@ -7494,11 +7505,70 @@ async function renderInvHistory(){
           ${r.notes?`<div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">${s(r.notes)}</div>`:''}
         </div>
         <div style="text-align:left;white-space:nowrap;">
-          <div style="font-size:0.9rem;font-weight:900;color:${dirColor[r.type]};">${r.type==='in'?'+':'−'}${Number(r.quantity).toLocaleString('en-US')} ${s(r.unit||'')}</div>
+          <div style="font-size:0.9rem;font-weight:900;color:${dirColor[r.type]};">${r.type==='in'||(r.type==='adjust'&&Number(r.quantity)>=0)?'+':'−'}${Math.abs(Number(r.quantity)).toLocaleString('en-US')} ${s(r.unit||'')}</div>
           <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;">${fmtDate(r.date)}</div>
         </div>
       </div>
     </div>`).join('');
+}
+
+function openInvAdjust(item, currentQty, unit, avgCost){
+  document.getElementById('modal-title').textContent = '⚖️ تسوية مخزن';
+  document.getElementById('modal-body').innerHTML=`
+    <div style="background:var(--primary-bg);border:1px solid var(--primary-border);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+      <div style="font-size:0.78rem;font-weight:700;color:var(--primary);margin-bottom:4px;">الصنف: <strong>${s(item)}</strong> ${unit?`(${s(unit)})`:''}  </div>
+      <div style="font-size:0.85rem;font-weight:900;color:var(--text);">الكمية الحالية في النظام: <span style="color:var(--primary);">${Number(currentQty).toLocaleString('en-US')}</span></div>
+    </div>
+    <div class="edit-modal-row"><label>الكمية الفعلية في المخزن</label>
+      <input type="text" inputmode="decimal" id="inv-adj-qty" placeholder="0" oninput="calcAdjDiff(${currentQty})">
+    </div>
+    <div id="inv-adj-diff-box" style="display:none;border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:0.85rem;font-weight:900;text-align:center;"></div>
+    <div class="edit-modal-row"><label>التاريخ</label>
+      <input type="date" id="inv-adj-date" value="${today()}">
+    </div>
+    <div class="edit-modal-row"><label>ملاحظات (اختياري)</label>
+      <input type="text" id="inv-adj-notes" placeholder="سبب التسوية...">
+    </div>
+    <button class="btn btn-g" style="margin-top:4px;" onclick="saveInvAdjust('${item.replace(/'/g,"\\'")}','${unit.replace(/'/g,"\\'")}',${currentQty},${avgCost})">💾 حفظ التسوية</button>
+  `;
+  document.getElementById('detail-overlay').classList.add('open');
+}
+
+function calcAdjDiff(currentQty){
+  const newQty = parseFloat(document.getElementById('inv-adj-qty').value)||0;
+  const diff = newQty - currentQty;
+  const box = document.getElementById('inv-adj-diff-box');
+  if(!document.getElementById('inv-adj-qty').value){ box.style.display='none'; return; }
+  box.style.display='block';
+  if(diff===0){
+    box.style.background='var(--g5)'; box.style.color='var(--muted)';
+    box.textContent='لا يوجد فرق — الكمية مطابقة';
+  } else if(diff>0){
+    box.style.background='#d1fae5'; box.style.color='#065f46';
+    box.textContent=`زيادة بمقدار +${diff.toLocaleString('en-US')}`;
+  } else {
+    box.style.background='#fee2e2'; box.style.color='#991b1b';
+    box.textContent=`نقص بمقدار ${diff.toLocaleString('en-US')}`;
+  }
+}
+
+async function saveInvAdjust(item, unit, currentQty, avgCost){
+  const newQty = parseFloat(document.getElementById('inv-adj-qty').value);
+  if(isNaN(newQty)||newQty<0){ showToast('❌ ادخل كمية صحيحة'); return; }
+  const diff = newQty - currentQty;
+  if(diff===0){ showToast('الكمية مطابقة، لا يوجد تغيير'); return; }
+  const date  = document.getElementById('inv-adj-date').value||today();
+  const notes = document.getElementById('inv-adj-notes').value||null;
+  const {error} = await sb.from('inventory_transactions').insert({
+    user_id:currentUser.id, item, unit, type:'adjust',
+    quantity:diff, unit_price:avgCost, avg_cost:avgCost,
+    total:Math.abs(diff)*avgCost, date, notes
+  });
+  if(error){ showToast('❌ خطأ: '+error.message); return; }
+  document.getElementById('detail-overlay').classList.remove('open');
+  showToast('✅ تم حفظ التسوية');
+  renderInvStock();
+  renderInvHistory();
 }
 
 function clearInvFilter(){
