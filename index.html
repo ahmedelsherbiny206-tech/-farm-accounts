@@ -7822,7 +7822,7 @@ async function openInvModal(type){
       <input type="text" id="inv-m-unit" placeholder="كيلو / لتر / كيس ..."></div>
     ${type==='usage'?`<div class="edit-modal-row"><label>🌾 المحصول (اختياري)</label>
       <select id="inv-m-crop" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.88rem;">
-        <option value="">-- بدون تخصيص --</option><option value="عام 🌍">عام 🌍</option>${cropOpts}
+        <option value="">-- اختار المحصول --</option><option value="عام 🌍">عام 🌍</option>${cropOpts}
       </select></div>`:''}
     <div id="inv-m-total-box" style="display:none;background:var(--g5);border-radius:10px;padding:8px 12px;margin-bottom:8px;font-size:0.9rem;font-weight:900;color:#e65100;text-align:center;">الإجمالي: <span id="inv-m-total">0</span> ج</div>
     <div class="edit-modal-row"><label>التاريخ</label>
@@ -7879,6 +7879,7 @@ async function saveInvTransaction(type){
   if(!item) return showToast('❌ اختار الصنف');
   if(!qty||qty<=0) return showToast('❌ اكتب الكمية');
   if((type==='in'||type==='sale')&&(!price||price<=0)) return showToast('❌ اكتب السعر');
+  if(type==='usage'&&!crop) return showToast('❌ اختار المحصول');
   if(!date) return showToast('❌ اختار التاريخ');
 
   // حساب المتوسط المرجح للاستلام
