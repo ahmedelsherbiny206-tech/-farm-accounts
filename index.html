@@ -1122,8 +1122,8 @@ body.dark-mode .ss-option{color:#e0e0e0;}
           <button id="ds-type-prod-btn" onclick="setDsSaleType('product')">📦 بيع منتج</button>
         </div>
 
-        <!-- مصدر البيع - دايماً ظاهر -->
-        <div class="tab-toggle" style="margin-bottom:12px;">
+        <!-- مصدر البيع - يظهر بس لما اختار بيع محصول -->
+        <div id="ds-src-toggle" class="tab-toggle" style="margin-bottom:12px;">
           <button id="ds-src-harvest-btn" onclick="setDsSource('harvest')" class="active">🌾 حصاد جديد</button>
           <button id="ds-src-storage-btn" onclick="setDsSource('storage')">📦 من المخزن</button>
         </div>
@@ -5872,6 +5872,8 @@ function setDsSaleType(type) {
   const prodBtn = document.getElementById('ds-type-prod-btn');
   if(cropBtn) cropBtn.classList.toggle('active', type==='crop');
   if(prodBtn) prodBtn.classList.toggle('active', type==='product');
+  const srcToggle = document.getElementById('ds-src-toggle');
+  if(srcToggle) srcToggle.style.display = type==='crop' ? '' : 'none';
   renderDeferredSales();
 }
 
