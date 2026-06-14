@@ -7285,19 +7285,24 @@ async function _allTradersSalesBalance(traders, from, to){
   const saleType = _asSaleType==='product' ? 'product' : 'crop';
   const cats = _asCategories();
   const [
-    {data:preS}, {data:preP},
-    {data:perS}, {data:perP}
+    {data:preS}, {data:preP}, {data:preR},
+    {data:perS}, {data:perP}, {data:perR}
   ] = await Promise.all([
     sb.from('deferred_sales').select('total,trader').eq('user_id',currentUser.id).eq('sale_type',saleType).lt('date',from).in('trader',traders),
     sb.from('vault').select('amount,description').eq('user_id',currentUser.id).in('category',cats).lt('date',from),
+    sb.from('vault').select('amount,description').eq('user_id',currentUser.id).eq('category','مرتجع_مبيعات').lt('date',from),
     sb.from('deferred_sales').select('total,trader').eq('user_id',currentUser.id).eq('sale_type',saleType).gte('date',from).lte('date',to).in('trader',traders),
-    sb.from('vault').select('amount,description').eq('user_id',currentUser.id).in('category',cats).gte('date',from).lte('date',to)
+    sb.from('vault').select('amount,description').eq('user_id',currentUser.id).in('category',cats).gte('date',from).lte('date',to),
+    sb.from('vault').select('amount,description').eq('user_id',currentUser.id).eq('category','مرتجع_مبيعات').gte('date',from).lte('date',to)
   ]);
   return traders.map(t=>{
+    const retDesc = 'مرتجع مبيعات - '+t;
     const opening  = (preS||[]).filter(x=>x.trader===t).reduce((a,x)=>a+Number(x.total||0),0)
-                   - (preP||[]).filter(x=>x.description===_asVaultDesc(t)).reduce((a,x)=>a+Number(x.amount||0),0);
+                   - (preP||[]).filter(x=>x.description===_asVaultDesc(t)).reduce((a,x)=>a+Number(x.amount||0),0)
+                   + (preR||[]).filter(x=>x.description===retDesc).reduce((a,x)=>a+Number(x.amount||0),0);
     const pSales   = (perS||[]).filter(x=>x.trader===t).reduce((a,x)=>a+Number(x.total||0),0);
-    const pPaid    = (perP||[]).filter(x=>x.description===_asVaultDesc(t)).reduce((a,x)=>a+Number(x.amount||0),0);
+    const pPaid    = (perP||[]).filter(x=>x.description===_asVaultDesc(t)).reduce((a,x)=>a+Number(x.amount||0),0)
+                   - (perR||[]).filter(x=>x.description===retDesc).reduce((a,x)=>a+Number(x.amount||0),0);
     return {trader:t, opening, pSales, pPaid, closing: opening+pSales-pPaid};
   }).filter(r=>r.opening||r.pSales||r.pPaid);
 }
@@ -7305,19 +7310,24 @@ async function _allTradersSalesBalance(traders, from, to){
 // helper: يحسب أرصدة كل تجار المشتريات في 4 queries بس
 async function _allTradersPurchasesBalance(traders, from, to){
   const [
-    {data:preS}, {data:preP},
-    {data:perS}, {data:perP}
+    {data:preS}, {data:preP}, {data:preR},
+    {data:perS}, {data:perP}, {data:perR}
   ] = await Promise.all([
     sb.from('deferred_purchases').select('total,trader').eq('user_id',currentUser.id).lt('date',from).in('trader',traders),
     sb.from('vault').select('amount,description').eq('user_id',currentUser.id).in('category',['سداد_مشتريات','تسوية_مشتريات']).lt('date',from),
+    sb.from('vault').select('amount,description').eq('user_id',currentUser.id).eq('category','مرتجع_مشتريات').lt('date',from),
     sb.from('deferred_purchases').select('total,trader').eq('user_id',currentUser.id).gte('date',from).lte('date',to).in('trader',traders),
-    sb.from('vault').select('amount,description').eq('user_id',currentUser.id).in('category',['سداد_مشتريات','تسوية_مشتريات']).gte('date',from).lte('date',to)
+    sb.from('vault').select('amount,description').eq('user_id',currentUser.id).in('category',['سداد_مشتريات','تسوية_مشتريات']).gte('date',from).lte('date',to),
+    sb.from('vault').select('amount,description').eq('user_id',currentUser.id).eq('category','مرتجع_مشتريات').gte('date',from).lte('date',to)
   ]);
   return traders.map(t=>{
+    const retDesc = 'مرتجع مشتريات - '+t;
     const opening  = (preS||[]).filter(x=>x.trader===t).reduce((a,x)=>a+Number(x.total||0),0)
-                   - (preP||[]).filter(x=>x.description==='سداد مشتريات: '+t).reduce((a,x)=>a+Number(x.amount||0),0);
+                   - (preP||[]).filter(x=>x.description==='سداد مشتريات: '+t).reduce((a,x)=>a+Number(x.amount||0),0)
+                   - (preR||[]).filter(x=>x.description===retDesc).reduce((a,x)=>a+Number(x.amount||0),0);
     const pPurch   = (perS||[]).filter(x=>x.trader===t).reduce((a,x)=>a+Number(x.total||0),0);
-    const pPaid    = (perP||[]).filter(x=>x.description==='سداد مشتريات: '+t).reduce((a,x)=>a+Number(x.amount||0),0);
+    const pPaid    = (perP||[]).filter(x=>x.description==='سداد مشتريات: '+t).reduce((a,x)=>a+Number(x.amount||0),0)
+                   + (perR||[]).filter(x=>x.description===retDesc).reduce((a,x)=>a+Number(x.amount||0),0);
     return {trader:t, opening, pSales:pPurch, pPaid, closing: opening+pPurch-pPaid};
   }).filter(r=>r.opening||r.pSales||r.pPaid);
 }
@@ -7383,18 +7393,20 @@ async function showAccountStatement(){
 
   // جلب كل ما قبل الفترة (الرصيد المرحل) + حركات الفترة
   const [
-    {data:preSales}, {data:prePayments},
-    {data:sales},    {data:payments}
+    {data:preSales}, {data:prePayments}, {data:preRetS},
+    {data:sales},    {data:payments},    {data:perRetS}
   ] = await Promise.all([
     sb.from('deferred_sales').select('total').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',saleType).lt('date',from),
     sb.from('vault').select('amount').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).lt('date',from),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('category','مرتجع_مبيعات').like('description','مرتجع مبيعات - '+trader+'%').lt('date',from),
     sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',saleType).gte('date',from).lte('date',to).order('date',{ascending:true}),
-    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).gte('date',from).lte('date',to).order('date',{ascending:true})
+    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).gte('date',from).lte('date',to).order('date',{ascending:true}),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('category','مرتجع_مبيعات').like('description','مرتجع مبيعات - '+trader+'%').gte('date',from).lte('date',to)
   ]);
 
-  const openingBalance = (preSales||[]).reduce((s,x)=>s+Number(x.total||0),0) - (prePayments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const openingBalance = (preSales||[]).reduce((s,x)=>s+Number(x.total||0),0) - (prePayments||[]).reduce((s,x)=>s+Number(x.amount||0),0) + (preRetS||[]).reduce((s,x)=>s+Number(x.amount||0),0);
   const periodSales    = (sales||[]).reduce((s,x)=>s+Number(x.total||0),0);
-  const periodPayments = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const periodPayments = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0) - (perRetS||[]).reduce((s,x)=>s+Number(x.amount||0),0);
   const closingBalance = openingBalance + periodSales - periodPayments;
 
   const paymentTypeBadge = x => {
@@ -7465,18 +7477,20 @@ async function showDetailedStatement(){
   const saleTypeD = isDetProd ? 'product' : 'crop';
 
   const [
-    {data:preSalesD}, {data:prePaymentsD},
-    {data:sales},     {data:payments}
+    {data:preSalesD}, {data:prePaymentsD}, {data:preRetD},
+    {data:sales},     {data:payments},     {data:perRetD}
   ] = await Promise.all([
     sb.from('deferred_sales').select('total').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',saleTypeD).lt('date',from),
     sb.from('vault').select('amount').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).lt('date',from),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('category','مرتجع_مبيعات').like('description','مرتجع مبيعات - '+trader+'%').lt('date',from),
     sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',saleTypeD).gte('date',from).lte('date',to).order('date',{ascending:true}),
-    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).gte('date',from).lte('date',to).order('date',{ascending:true})
+    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).gte('date',from).lte('date',to).order('date',{ascending:true}),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('category','مرتجع_مبيعات').like('description','مرتجع مبيعات - '+trader+'%').gte('date',from).lte('date',to)
   ]);
 
-  const openingBalanceD = (preSalesD||[]).reduce((s,x)=>s+Number(x.total||0),0) - (prePaymentsD||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const openingBalanceD = (preSalesD||[]).reduce((s,x)=>s+Number(x.total||0),0) - (prePaymentsD||[]).reduce((s,x)=>s+Number(x.amount||0),0) + (preRetD||[]).reduce((s,x)=>s+Number(x.amount||0),0);
   const totalAll        = (sales||[]).reduce((s,x)=>s+Number(x.total||0),0);
-  const totalPayments   = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const totalPayments   = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0) - (perRetD||[]).reduce((s,x)=>s+Number(x.amount||0),0);
   const closingBalanceD = openingBalanceD + totalAll - totalPayments;
 
   // تجميع: للمنتج حسب اسم المنتج، للمحصول حسب صنف+وحدة+محصول
@@ -7589,18 +7603,20 @@ async function exportAccountStatementExcel(trader, from, to){
   const isXlProd = _asSaleType === 'product';
   const saleTypeXl = isXlProd ? 'product' : 'crop';
   const [
-    {data:preSalesXl}, {data:prePaymentsXl},
-    {data:sales},      {data:payments}
+    {data:preSalesXl}, {data:prePaymentsXl}, {data:preRetXl},
+    {data:sales},      {data:payments},       {data:perRetXl}
   ] = await Promise.all([
     sb.from('deferred_sales').select('total').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',saleTypeXl).lt('date',from),
     sb.from('vault').select('amount').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).lt('date',from),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('category','مرتجع_مبيعات').like('description','مرتجع مبيعات - '+trader+'%').lt('date',from),
     sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',saleTypeXl).gte('date',from).lte('date',to).order('date',{ascending:true}),
-    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).gte('date',from).lte('date',to).order('date',{ascending:true})
+    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).gte('date',from).lte('date',to).order('date',{ascending:true}),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('category','مرتجع_مبيعات').like('description','مرتجع مبيعات - '+trader+'%').gte('date',from).lte('date',to)
   ]);
 
-  const openingXl     = (preSalesXl||[]).reduce((s,x)=>s+Number(x.total||0),0) - (prePaymentsXl||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const openingXl     = (preSalesXl||[]).reduce((s,x)=>s+Number(x.total||0),0) - (prePaymentsXl||[]).reduce((s,x)=>s+Number(x.amount||0),0) + (preRetXl||[]).reduce((s,x)=>s+Number(x.amount||0),0);
   const totalSales    = (sales||[]).reduce((s,x)=>s+Number(x.total||0),0);
-  const totalPayments = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const totalPayments = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0) - (perRetXl||[]).reduce((s,x)=>s+Number(x.amount||0),0);
   const closingXl     = openingXl + totalSales - totalPayments;
   const wb = XLSX.utils.book_new();
 
@@ -7657,15 +7673,17 @@ async function exportDetailedStatementExcel(trader, from, to){
   const isXlDetProd = _asSaleType === 'product';
   const saleTypeDXl = isXlDetProd ? 'product' : 'crop';
   const [
-    {data:preSalesDXl}, {data:prePaymentsDXl},
-    {data:sales},       {data:payments}
+    {data:preSalesDXl}, {data:prePaymentsDXl}, {data:preRetDXl},
+    {data:sales},       {data:payments},        {data:perRetDXl}
   ] = await Promise.all([
     sb.from('deferred_sales').select('total').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',saleTypeDXl).lt('date',from),
     sb.from('vault').select('amount').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).lt('date',from),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('category','مرتجع_مبيعات').like('description','مرتجع مبيعات - '+trader+'%').lt('date',from),
     sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',saleTypeDXl).gte('date',from).lte('date',to).order('date',{ascending:true}),
-    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).gte('date',from).lte('date',to).order('date',{ascending:true})
+    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',_asCategories()).like('description',_asVaultDesc(trader)).gte('date',from).lte('date',to).order('date',{ascending:true}),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('category','مرتجع_مبيعات').like('description','مرتجع مبيعات - '+trader+'%').gte('date',from).lte('date',to)
   ]);
-  const openingDXl = (preSalesDXl||[]).reduce((s,x)=>s+Number(x.total||0),0) - (prePaymentsDXl||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const openingDXl = (preSalesDXl||[]).reduce((s,x)=>s+Number(x.total||0),0) - (prePaymentsDXl||[]).reduce((s,x)=>s+Number(x.amount||0),0) + (preRetDXl||[]).reduce((s,x)=>s+Number(x.amount||0),0);
 
   const wb = XLSX.utils.book_new();
   const groups = {};
@@ -7716,7 +7734,7 @@ async function exportDetailedStatementExcel(trader, from, to){
   if(!Object.keys(groups).length) return showToast('❌ لا يوجد بيانات');
 
   const totalSales    = (sales||[]).reduce((s,x)=>s+Number(x.total||0),0);
-  const totalPayments = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const totalPayments = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0) - (perRetDXl||[]).reduce((s,x)=>s+Number(x.amount||0),0);
   const closingDXl    = openingDXl + totalSales - totalPayments;
   const payRows = (payments||[]).map((x,i)=>({'م':i+1,'التاريخ':x.date,'النوع':x.category.includes('تسوية')?'تسوية':'سداد','المبلغ':Number(x.amount||0),'ملاحظات':x.notes||''}));
   payRows.push({'م':'','التاريخ':'إجمالي سدادات الفترة','النوع':'','المبلغ':totalPayments,'ملاحظات':''});
@@ -7762,18 +7780,20 @@ async function showDpAccountStatement(){
   showToast('⏳ جاري التحميل...');
 
   const [
-    {data:prePurch},  {data:prePay},
-    {data:purchases}, {data:payments}
+    {data:prePurch},  {data:prePay},  {data:preRetDp},
+    {data:purchases}, {data:payments},{data:perRetDp}
   ] = await Promise.all([
     sb.from('deferred_purchases').select('total').eq('user_id',currentUser.id).eq('trader',trader).lt('date',from),
     sb.from('vault').select('amount').eq('user_id',currentUser.id).in('category',['سداد_مشتريات','تسوية_مشتريات']).like('description','سداد مشتريات: '+trader).lt('date',from),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('category','مرتجع_مشتريات').like('description','مرتجع مشتريات - '+trader+'%').lt('date',from),
     sb.from('deferred_purchases').select('*').eq('user_id',currentUser.id).eq('trader',trader).gte('date',from).lte('date',to).order('date',{ascending:true}),
-    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',['سداد_مشتريات','تسوية_مشتريات']).like('description','سداد مشتريات: '+trader).gte('date',from).lte('date',to).order('date',{ascending:true})
+    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',['سداد_مشتريات','تسوية_مشتريات']).like('description','سداد مشتريات: '+trader).gte('date',from).lte('date',to).order('date',{ascending:true}),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('category','مرتجع_مشتريات').like('description','مرتجع مشتريات - '+trader+'%').gte('date',from).lte('date',to)
   ]);
 
-  const openingBal  = (prePurch||[]).reduce((s,x)=>s+Number(x.total||0),0) - (prePay||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const openingBal  = (prePurch||[]).reduce((s,x)=>s+Number(x.total||0),0) - (prePay||[]).reduce((s,x)=>s+Number(x.amount||0),0) - (preRetDp||[]).reduce((s,x)=>s+Number(x.amount||0),0);
   const periodPurch = (purchases||[]).reduce((s,x)=>s+Number(x.total||0),0);
-  const periodPay   = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const periodPay   = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0) + (perRetDp||[]).reduce((s,x)=>s+Number(x.amount||0),0);
   const closingBal  = openingBal + periodPurch - periodPay;
 
   const purchRowsHtml = (purchases||[]).length ? (purchases||[]).map(x=>{
@@ -7851,18 +7871,20 @@ async function exportDpAccountStatementExcel(trader, from, to){
     return showToast('✅ تم التصدير!');
   }
   const [
-    {data:prePurch},  {data:prePay},
-    {data:purchases}, {data:payments}
+    {data:prePurch},  {data:prePay},  {data:preRetDpXl},
+    {data:purchases}, {data:payments},{data:perRetDpXl}
   ] = await Promise.all([
     sb.from('deferred_purchases').select('total').eq('user_id',currentUser.id).eq('trader',trader).lt('date',from),
     sb.from('vault').select('amount').eq('user_id',currentUser.id).in('category',['سداد_مشتريات','تسوية_مشتريات']).like('description','سداد مشتريات: '+trader).lt('date',from),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('category','مرتجع_مشتريات').like('description','مرتجع مشتريات - '+trader+'%').lt('date',from),
     sb.from('deferred_purchases').select('*').eq('user_id',currentUser.id).eq('trader',trader).gte('date',from).lte('date',to).order('date',{ascending:true}),
-    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',['سداد_مشتريات','تسوية_مشتريات']).like('description','سداد مشتريات: '+trader).gte('date',from).lte('date',to).order('date',{ascending:true})
+    sb.from('vault').select('*').eq('user_id',currentUser.id).in('category',['سداد_مشتريات','تسوية_مشتريات']).like('description','سداد مشتريات: '+trader).gte('date',from).lte('date',to).order('date',{ascending:true}),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('category','مرتجع_مشتريات').like('description','مرتجع مشتريات - '+trader+'%').gte('date',from).lte('date',to)
   ]);
 
-  const openingXl  = (prePurch||[]).reduce((s,x)=>s+Number(x.total||0),0) - (prePay||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const openingXl  = (prePurch||[]).reduce((s,x)=>s+Number(x.total||0),0) - (prePay||[]).reduce((s,x)=>s+Number(x.amount||0),0) - (preRetDpXl||[]).reduce((s,x)=>s+Number(x.amount||0),0);
   const totalPurch = (purchases||[]).reduce((s,x)=>s+Number(x.total||0),0);
-  const totalPay   = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const totalPay   = (payments||[]).reduce((s,x)=>s+Number(x.amount||0),0) + (perRetDpXl||[]).reduce((s,x)=>s+Number(x.amount||0),0);
   const closingXl  = openingXl + totalPurch - totalPay;
 
   const wb = XLSX.utils.book_new();
