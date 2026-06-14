@@ -8086,8 +8086,11 @@ async function renderInvHistory(){
     </div>`).join('');
 }
 
-function openInvAdjust(item, currentQty, unit, avgCost){
+async function openInvAdjust(item, _unused, unit, avgCost){
   document.getElementById('modal-title').textContent = '⚖️ تسوية مخزن';
+  document.getElementById('detail-overlay').classList.add('open');
+  document.getElementById('modal-body').innerHTML='<div class="loading">⏳ جاري التحقق...</div>';
+  const {qty: currentQty} = await calcItemStock(item);
   document.getElementById('modal-body').innerHTML=`
     <div style="background:var(--primary-bg);border:1px solid var(--primary-border);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
       <div style="font-size:0.78rem;font-weight:700;color:var(--primary);margin-bottom:4px;">الصنف: <strong>${s(item)}</strong> ${unit?`(${s(unit)})`:''}  </div>
@@ -8105,7 +8108,6 @@ function openInvAdjust(item, currentQty, unit, avgCost){
     </div>
     <button class="btn btn-g" style="margin-top:4px;" onclick="saveInvAdjust('${item.replace(/'/g,"\\'")}','${unit.replace(/'/g,"\\'")}',${currentQty},${avgCost})">💾 حفظ التسوية</button>
   `;
-  document.getElementById('detail-overlay').classList.add('open');
 }
 
 function calcAdjDiff(currentQty){
