@@ -763,6 +763,7 @@ body.dark-mode .ss-option{color:#e0e0e0;}
 <body>
 
 <!-- AUTH -->
+<div id="toast-msg" class="toast"></div>
 <div id="auth-screen" style="display:none!important">
   <div class="auth-box">
     <div class="auth-logo">
@@ -2159,7 +2160,15 @@ function arabicError(msg){
   if(m.includes('numeric field overflow') || m.includes('out of range')) return 'الرقم المدخل كبير جداً أو خارج النطاق المسموح';
   return 'خطأ: ' + msg;
 }
-function showToast(msg) {}
+let _toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast-msg');
+  if(!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(()=>el.classList.remove('show'), 3000);
+}
 function setDateInputs() {
   document.querySelectorAll('input[type=date]').forEach(el => {
     if(!el.value && !el.id.endsWith('-from') && !el.id.endsWith('-to')) el.value = today();
