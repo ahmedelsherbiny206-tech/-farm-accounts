@@ -3685,6 +3685,7 @@ function xlPrependTitle(ws, title, numCols) {
 
 async function exportToExcel(type) {
   showToast('⏳ جاري التصدير...');
+  try {
   let data = [], filename = '', headers = [];
 
   if(type === 'income') {
@@ -3739,10 +3740,12 @@ async function exportToExcel(type) {
   XLSX.utils.book_append_sheet(wb, ws, type==='income'?'الإيرادات':'المصاريف');
   XLSX.writeFile(wb, filename);
   showToast('✅ تم التصدير!');
+  } catch(e){ showToast('❌ '+arabicError(e.message||String(e))); console.error('exportToExcel:',e); }
 }
 
 async function exportAjalToExcel(){
   showToast('⏳ جاري التصدير...');
+  try {
   const {data:rows, error} = await sb.from('ajal').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
   if(error) return showToast('❌ حدث خطأ أثناء التصدير — تحقق من البيانات');
 
@@ -3790,10 +3793,12 @@ async function exportAjalToExcel(){
 
   XLSX.writeFile(wb, 'الآجل_النقدي.xlsx');
   showToast('✅ تم التصدير!');
+  } catch(e){ showToast('❌ '+arabicError(e.message||String(e))); }
 }
 
 async function exportDeferredToExcel(){
   showToast('⏳ جاري التصدير...');
+  try {
   const isProduct = _dsSaleType === 'product';
   let q = sb.from('deferred_sales').select('*').eq('user_id',currentUser.id).eq('sale_type', isProduct?'product':'crop').order('date',{ascending:false});
   const from = document.getElementById('ds-from')?.value;
@@ -3876,6 +3881,7 @@ async function exportDeferredToExcel(){
     XLSX.writeFile(wb, 'مبيعات_محاصيل_آجل.xlsx');
   }
   showToast('✅ تم التصدير!');
+  } catch(e){ showToast('❌ '+arabicError(e.message||String(e))); console.error('exportDeferredToExcel:',e); }
 }
 
 async function exportReportToExcel() {
@@ -3883,6 +3889,7 @@ async function exportReportToExcel() {
   const to = document.getElementById('rep-to').value;
   if(!from||!to) return showToast('❌ اختار الفترة الزمنية أولاً');
   showToast('⏳ جاري التصدير...');
+  try {
 
   const farmName = localStorage.getItem('farmName') || 'حسابات المزرعة';
 
@@ -3982,6 +3989,7 @@ async function exportReportToExcel() {
 
   XLSX.writeFile(wb, farmName+'-'+from+'-'+to+'.xlsx');
   showToast('✅ تم التصدير بنجاح!');
+  } catch(e){ showToast('❌ '+arabicError(e.message||String(e))); console.error('exportReportToExcel:',e); }
 }
 
 // ===== CATEGORY MANAGER =====
@@ -5486,6 +5494,8 @@ window.deleteDpTrader = async function(i) {
 };
 
 async function exportVaultToExcel(){
+  showToast('⏳ جاري التصدير...');
+  try {
   const from = document.getElementById('vault-from')?.value;
   const to   = document.getElementById('vault-to')?.value;
   const ftype= document.getElementById('vault-filter-type')?.value;
@@ -5510,9 +5520,13 @@ async function exportVaultToExcel(){
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'الخزنة');
   XLSX.writeFile(wb,'الخزنة-'+today()+'.xlsx');
+  showToast('✅ تم التصدير!');
+  } catch(e){ showToast('❌ '+arabicError(e.message||String(e))); console.error('exportVaultToExcel:',e); }
 }
 
 async function exportDpToExcel() {
+  showToast('⏳ جاري التصدير...');
+  try {
   const {data} = await sb.from('deferred_purchases').select('*').eq('user_id',currentUser.id).order('date',{ascending:false});
   if(!data?.length) return showToast('❌ لا يوجد بيانات');
   const rows = [];
@@ -5539,6 +5553,8 @@ async function exportDpToExcel() {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'مشتريات');
   XLSX.writeFile(wb, 'مشتريات-آجل-'+today()+'.xlsx');
+  showToast('✅ تم التصدير!');
+  } catch(e){ showToast('❌ '+arabicError(e.message||String(e))); console.error('exportDpToExcel:',e); }
 }
 
 // ===== SEASONS =====
@@ -5879,6 +5895,8 @@ async function openSeasonDetail(seasonId){
 }
 
 async function exportSeasonToExcel(seasonId){
+  showToast('⏳ جاري التصدير...');
+  try {
   const {data:seasons} = await sb.from('seasons').select('*').eq('id',seasonId).eq('user_id',currentUser.id);
   if(!seasons?.length) return;
   const season = seasons[0];
@@ -5974,6 +5992,7 @@ async function exportSeasonToExcel(seasonId){
   wb.SheetNames=['ملخص الموسم','الإيرادات','المصاريف','المصاريف حسب التصنيف'];
   XLSX.writeFile(wb, 'موسم-'+season.name+'-'+season.start_date+'.xlsx');
   showToast('✅ تم التصدير!');
+  } catch(e){ showToast('❌ '+arabicError(e.message||String(e))); console.error('exportSeasonToExcel:',e); }
 }
 </script>
 <script>
@@ -7601,6 +7620,7 @@ async function showDetailedStatement(){
 
 async function exportAccountStatementExcel(trader, from, to){
   showToast('⏳ جاري التصدير...');
+  try {
   if(trader === 'ALL'){
     const allTraders = _asSaleType==='product' ? await getDsProdTraders() : await getTraders();
     const rows = await _allTradersSalesBalance(allTraders, from, to);
@@ -7686,6 +7706,7 @@ async function exportAccountStatementExcel(trader, from, to){
   XLSX.utils.book_append_sheet(wb, ws2, 'السدادات');
   XLSX.writeFile(wb, `كشف_حساب_${trader}.xlsx`);
   showToast('✅ تم التصدير!');
+  } catch(e){ showToast('❌ '+arabicError(e.message||String(e))); console.error('exportAccountStatementExcel:',e); }
 }
 
 async function exportDetailedStatementExcel(trader, from, to){
@@ -7717,8 +7738,12 @@ async function exportDetailedStatementExcel(trader, from, to){
         groups[key].rows.push({date:x.date, qty:it.qty||0, unit:it.unit||'', price:it.price||0, total:(it.qty||0)*(it.price||0)});
       });
     });
+    const usedProdNames = new Set();
     Object.values(groups).forEach(g=>{
-      const sheetName = (g.label).slice(0,31);
+      let sheetName = (g.label).slice(0,31);
+      let n=2; const base=sheetName;
+      while(usedProdNames.has(sheetName)){ sheetName=(base.slice(0,28)+' '+n).slice(0,31); n++; }
+      usedProdNames.add(sheetName);
       const rows = g.rows.map((r,i)=>({'م':i+1,'التاريخ':r.date,'الكمية':r.qty,'الوحدة':r.unit,'السعر':r.price,'الإجمالي':r.total}));
       const totQty = g.rows.reduce((s,r)=>s+Number(r.qty||0),0);
       const totAmt = g.rows.reduce((s,r)=>s+Number(r.total||0),0);
@@ -7878,6 +7903,7 @@ async function showDpAccountStatement(){
 
 async function exportDpAccountStatementExcel(trader, from, to){
   showToast('⏳ جاري التصدير...');
+  try {
   if(trader === 'ALL'){
     const allTraders = await getDpTraders();
     const rows = await _allTradersPurchasesBalance(allTraders, from, to);
@@ -7941,6 +7967,7 @@ async function exportDpAccountStatementExcel(trader, from, to){
   XLSX.utils.book_append_sheet(wb, ws2, 'المدفوعات');
   XLSX.writeFile(wb, `كشف_مشتريات_${trader}.xlsx`);
   showToast('✅ تم التصدير!');
+  } catch(e){ showToast('❌ '+arabicError(e.message||String(e))); }
 }
 
 // ===== المرتجعات =====
@@ -8686,6 +8713,7 @@ async function openInvItemManager(){
 
 async function exportInventoryExcel(){
   showToast('⏳ جاري التصدير...');
+  try {
   const stocks = await calcAllStock();
   const {data:txns} = await sb.from('inventory_transactions').select('*').eq('user_id',currentUser.id).order('date',{ascending:false});
 
@@ -8712,6 +8740,7 @@ async function exportInventoryExcel(){
 
   XLSX.writeFile(wb,`المخزن_${today()}.xlsx`);
   showToast('✅ تم التصدير!');
+  } catch(e){ showToast('❌ '+arabicError(e.message||String(e))); }
 }
 
 // ===== سداد مشتريات =====
