@@ -1117,9 +1117,15 @@ body.dark-mode .ss-option{color:#e0e0e0;}
         <div class="card-title">🛒 بيعة جديدة</div>
 
         <!-- التوجل: محصول أو منتج -->
-        <div class="tab-toggle" style="margin-bottom:12px;">
+        <div class="tab-toggle" style="margin-bottom:6px;">
           <button id="ds-type-crop-btn" onclick="setDsSaleType('crop')" class="active">🌾 بيع محصول</button>
           <button id="ds-type-prod-btn" onclick="setDsSaleType('product')">📦 بيع منتج</button>
+        </div>
+
+        <!-- مصدر البيع - دايماً ظاهر -->
+        <div class="tab-toggle" style="margin-bottom:12px;">
+          <button id="ds-src-harvest-btn" onclick="setDsSource('harvest')" class="active">🌾 حصاد جديد</button>
+          <button id="ds-src-storage-btn" onclick="setDsSource('storage')">📦 من المخزن</button>
         </div>
 
         <!-- فورم المحصول -->
@@ -1130,12 +1136,6 @@ body.dark-mode .ss-option{color:#e0e0e0;}
           <div class="form-row">
             <div class="section-lbl"><span>التاجر</span><div class="lbl-actions"><button onclick="openTraderManager()">👤 إدارة</button></div></div>
             <select id="ds-trader"><option value="">-- اختار التاجر --</option></select>
-          </div>
-
-          <!-- مصدر البيع -->
-          <div class="tab-toggle">
-            <button id="ds-src-harvest-btn" onclick="setDsSource('harvest')" class="active">🌾 حصاد جديد</button>
-            <button id="ds-src-storage-btn" onclick="setDsSource('storage')">📦 من المخزن</button>
           </div>
 
           <!-- حصاد جديد -->
