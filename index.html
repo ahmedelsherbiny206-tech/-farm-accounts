@@ -1485,7 +1485,14 @@ body.dark-mode .ss-option{color:#e0e0e0;}
     <div class="card">
       <div class="card-title">📋 سجل الحركات</div>
       <div class="filter-section">
-        <div class="filter-row">
+        <div class="filter-row" style="margin-bottom:8px;">
+          <span class="filter-label">من:</span>
+          <input type="date" id="inv-from" class="filter-input" onchange="renderInvHistory()">
+          <span class="filter-label">إلى:</span>
+          <input type="date" id="inv-to" class="filter-input" onchange="renderInvHistory()">
+          <button class="btn-sm outline" onclick="clearInvFilter()">الكل</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
           <select id="inv-filter-item" class="filter-input" onchange="renderInvHistory()">
             <option value="">كل الأصناف</option>
           </select>
@@ -1496,13 +1503,6 @@ body.dark-mode .ss-option{color:#e0e0e0;}
             <option value="usage">📤 صادر (صرف)</option>
             <option value="adjust">⚖️ تسوية</option>
           </select>
-        </div>
-        <div class="filter-row" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
-          <span class="filter-label">من:</span>
-          <input type="date" id="inv-from" class="filter-input" onchange="renderInvHistory()">
-          <span class="filter-label">إلى:</span>
-          <input type="date" id="inv-to" class="filter-input" onchange="renderInvHistory()">
-          <button class="btn-sm outline" onclick="clearInvFilter()">الكل</button>
         </div>
       </div>
       <div id="inv-history"><div class="loading">⏳</div></div>
