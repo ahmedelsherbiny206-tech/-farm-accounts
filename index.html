@@ -5263,24 +5263,26 @@ async function renderDeferredPurchases() {
   const bar = document.getElementById('dp-summary-bar');
   if(bar){bar.style.display='flex';document.getElementById('dp-total-val').textContent=fmt(totalAll)+' ج';document.getElementById('dp-unpaid-val').textContent=fmt(unpaidAll)+' ج';}
   dpSelected.clear(); updateDpSelBtn();
+  const returnedDpIds = new Set((rawData||[]).filter(x=>x.is_return && x.return_for_id).map(x=>x.return_for_id));
   el.innerHTML = data.map(x=>{
     const isPaid = x.paid;
     const pt = isPaid ? 'full' : (x.pay_type||'ajal');
     const badge = _payBadge[pt]||_payBadge.ajal;
-    const needsPay = !isPaid && !x.is_return;
+    const isReturned = returnedDpIds.has(x.id);
+    const needsPay = !isPaid && !x.is_return && !isReturned;
     const title = x.description ? s(x.description) : (x.trader ? s(x.trader) : 'فاتورة مشتريات');
     const subDesc = [fmtDate(x.date), x.crop?'🌾 '+s(x.crop):'', x.trader?'👤 '+s(x.trader):''].filter(Boolean).join(' · ');
-    return `<div class="item ${isPaid?'':'exp'} ${dpSelected.has(x.id)?'selected':''}" id="dp-item-${x.id}" style="${x.is_return?'border-right:4px solid var(--red);':''}">
+    return `<div class="item ${isPaid?'':'exp'} ${dpSelected.has(x.id)?'selected':''}" id="dp-item-${x.id}" style="${x.is_return?'border-right:4px solid var(--red);':isReturned?'border-right:4px solid #f97316;opacity:0.75;':''}">
       <input type="checkbox" class="item-check" onclick="event.stopPropagation();toggleDpSel('${x.id}')" ${dpSelected.has(x.id)?'checked':''}>
       <div style="flex:1;min-width:0;cursor:pointer;" onclick="showDpDetail('${x.id}')">
-        <div class="i-desc">${title} ${badge}${x.is_return?' <span style="font-size:0.6rem;background:#fdecea;color:var(--red);padding:1px 5px;border-radius:5px;font-weight:800;">🔄 مرتجع</span>':''}</div>
+        <div class="i-desc">${title} ${badge}${x.is_return?' <span style="font-size:0.6rem;background:#fdecea;color:var(--red);padding:1px 5px;border-radius:5px;font-weight:800;">🔄 مرتجع</span>':''}${isReturned?' <span style="font-size:0.6rem;background:#fff3e0;color:#c2410c;padding:1px 5px;border-radius:5px;font-weight:800;">🔒 تم الإرجاع</span>':''}</div>
         <div class="i-sub">${subDesc}</div>
       </div>
       <div class="i-actions">
         <div class="i-amt">${fmt(x.total||0)}</div>
         ${needsPay?`<button class="btn-sm" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;" onclick="event.stopPropagation();openDpCollect('${x.id}',${Math.abs(x.total||0)})">💵 تحصيل</button>`:''}
-        ${!x.is_return?`<button class="btn-sm" style="background:#fff3e0;color:#e65100;border:1.5px solid #e65100;" onclick="event.stopPropagation();openReturnModal('purchase','${x.id}','${s(x.trader||'').replace(/'/g,"\\'")}','',${Math.abs(x.total||0)})">🔄</button>`:''}
-        <button class="btn-sm" style="background:var(--blue-p);color:var(--blue);" onclick="event.stopPropagation();editDeferredPurchase('${x.id}')">✏️</button>
+        ${!x.is_return && !isReturned?`<button class="btn-sm" style="background:#fff3e0;color:#e65100;border:1.5px solid #e65100;" onclick="event.stopPropagation();openReturnModal('purchase','${x.id}','${s(x.trader||'').replace(/'/g,"\\'")}','',${Math.abs(x.total||0)})">🔄</button>`:''}
+        ${!isReturned?`<button class="btn-sm" style="background:var(--blue-p);color:var(--blue);" onclick="event.stopPropagation();editDeferredPurchase('${x.id}')">✏️</button>`:''}
         <button class="del-btn" onclick="event.stopPropagation();deleteDeferredPurchase('${x.id}','${x.paid}')">✕</button>
       </div>
     </div>`;
@@ -6627,23 +6629,26 @@ async function renderDeferredSales(){
   document.getElementById('ds-units-shown').textContent = Number(totalUnits).toLocaleString('en-US');
 
   dsSelected.clear(); updateDsSelBtn();
+  // IDs التي تم إرجاعها (الفاتورة الأصلية مقفولة)
+  const returnedIds = new Set((rawDs||[]).filter(x=>x.is_return && x.return_for_id).map(x=>x.return_for_id));
   el.innerHTML = data.map(x=>{
     const isPaid = x.paid;
     const pt = isPaid ? 'full' : (x.pay_type||'ajal');
     const badge = _payBadge[pt]||_payBadge.ajal;
-    const needsPay = !isPaid && !x.is_return;
+    const isReturned = returnedIds.has(x.id); // فاتورة أصلية تم مرتجعها
+    const needsPay = !isPaid && !x.is_return && !isReturned;
     const subDesc = [fmtDate(x.date), x.crop?'🌾 '+s(x.crop):'', x.variety?'🌿 '+s(x.variety):'', x.trader?'👤 '+s(x.trader):''].filter(Boolean).join(' · ');
-    return `<div class="item ${isPaid?'':'exp'} ${dsSelected.has(x.id)?'selected':''}" id="ds-item-${x.id}" style="${x.is_return?'border-right:4px solid var(--red);':''}">
+    return `<div class="item ${isPaid?'':'exp'} ${dsSelected.has(x.id)?'selected':''}" id="ds-item-${x.id}" style="${x.is_return?'border-right:4px solid var(--red);':isReturned?'border-right:4px solid #f97316;opacity:0.75;':''}">
       <input type="checkbox" class="item-check" onclick="event.stopPropagation();toggleDsSel('${x.id}')" ${dsSelected.has(x.id)?'checked':''}>
       <div style="flex:1;min-width:0;cursor:pointer;" onclick="showDsDetail('${x.id}')">
-        <div class="i-desc">${x.trader?s(x.trader):(x.description?s(x.description):'فاتورة مبيعات')} ${badge}${x.is_return?' <span style="font-size:0.6rem;background:#fdecea;color:var(--red);padding:1px 5px;border-radius:5px;font-weight:800;">🔄 مرتجع</span>':''}</div>
+        <div class="i-desc">${x.trader?s(x.trader):(x.description?s(x.description):'فاتورة مبيعات')} ${badge}${x.is_return?' <span style="font-size:0.6rem;background:#fdecea;color:var(--red);padding:1px 5px;border-radius:5px;font-weight:800;">🔄 مرتجع</span>':''}${isReturned?' <span style="font-size:0.6rem;background:#fff3e0;color:#c2410c;padding:1px 5px;border-radius:5px;font-weight:800;">🔒 تم الإرجاع</span>':''}</div>
         <div class="i-sub">${subDesc}</div>
       </div>
       <div class="i-actions">
         <div class="i-amt">${fmt(x.total||0)}</div>
         ${needsPay?`<button class="btn-sm" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;" onclick="event.stopPropagation();openDsSaleCollect('${x.id}',${Math.abs(x.total||0)})">💵 تحصيل</button>`:''}
-        ${!x.is_return?`<button class="btn-sm" style="background:#fff3e0;color:#e65100;border:1.5px solid #e65100;" onclick="event.stopPropagation();openReturnModal('sale','${x.id}','${s(x.trader||'').replace(/'/g,"\\'")}','${x.sale_type}',${Math.abs(x.total||0)})">🔄</button>`:''}
-        <button class="btn-sm" style="background:var(--blue-p);color:var(--blue);" onclick="event.stopPropagation();editDeferredSale('${x.id}')">✏️</button>
+        ${!x.is_return && !isReturned?`<button class="btn-sm" style="background:#fff3e0;color:#e65100;border:1.5px solid #e65100;" onclick="event.stopPropagation();openReturnModal('sale','${x.id}','${s(x.trader||'').replace(/'/g,"\\'")}','${x.sale_type}',${Math.abs(x.total||0)})">🔄</button>`:''}
+        ${!isReturned?`<button class="btn-sm" style="background:var(--blue-p);color:var(--blue);" onclick="event.stopPropagation();editDeferredSale('${x.id}')">✏️</button>`:''}
         <button class="del-btn" onclick="event.stopPropagation();deleteDeferredSale('${x.id}',${isPaid})">✕</button>
       </div>
     </div>`;
@@ -8016,7 +8021,8 @@ async function saveReturn(){
     const {error} = await sb.from('deferred_sales').insert({
       user_id: currentUser.id, description: desc, sale_type: saleType||o.sale_type||'crop',
       trader: trader||null, total: -Math.abs(amount), date, notes: notes||null,
-      is_return: true, paid: false, crop: o.crop||null, items: [], quantity:0, unit:'', price:0
+      is_return: true, paid: false, crop: o.crop||null, items: [], quantity:0, unit:'', price:0,
+      return_for_id: origId
     });
     if(error) return showToast('❌ '+arabicError(error.message));
     // income بقيمة سالبة لتتطرح من الموسم
@@ -8038,7 +8044,8 @@ async function saveReturn(){
     const {error} = await sb.from('deferred_purchases').insert({
       user_id: currentUser.id, description: desc,
       trader: trader||null, total: -Math.abs(amount), date, notes: notes||null,
-      is_return: true, paid: false, crop: o.crop||null, items: []
+      is_return: true, paid: false, crop: o.crop||null, items: [],
+      return_for_id: origId
     });
     if(error) return showToast('❌ '+arabicError(error.message));
     // expenses بقيمة سالبة
