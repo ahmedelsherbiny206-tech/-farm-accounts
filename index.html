@@ -7052,13 +7052,16 @@ async function onSpTraderChange(){
     document.getElementById('sp-history-section').style.display = 'none';
     return;
   }
-  const [{data: salesData}, {data: paidData}] = await Promise.all([
+  const [{data: salesData}, {data: paidData}, {data: retData}] = await Promise.all([
     sb.from('deferred_sales').select('total').eq('user_id',currentUser.id).eq('trader',trader).eq('sale_type',_spSaleType==='product'?'product':'crop'),
-    sb.from('vault').select('amount').eq('user_id',currentUser.id).in('category',_spCategories()).like('description',_spVaultDesc(trader))
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).in('category',_spCategories()).like('description',_spVaultDesc(trader)),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('category','مرتجع_مبيعات').like('description','مرتجع مبيعات - '+trader+'%')
   ]);
   const totalSales = (salesData||[]).reduce((s,x)=>s+Number(x.total||0),0);
   const totalPaid  = (paidData||[]).reduce((s,x)=>s+Number(x.amount||0),0);
-  const debt = totalSales - totalPaid;
+  const totalReturnedCash = (retData||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  // مبلغ المرتجع النقدي (الي اترد للتاجر) يُضاف للدين لأنه يقلل صافي التحصيل
+  const debt = totalSales - totalPaid + totalReturnedCash;
   const box = document.getElementById('sp-debt-box');
   box.style.display = 'flex';
   document.getElementById('sp-debt-val').textContent = Number(debt).toLocaleString('en-US') + ' ج';
@@ -8678,13 +8681,16 @@ async function onDppTraderChange(){
     document.getElementById('dpp-history-section').style.display = 'none';
     return;
   }
-  const [{data:purchData}, {data:paidData}] = await Promise.all([
+  const [{data:purchData}, {data:paidData}, {data:retData}] = await Promise.all([
     sb.from('deferred_purchases').select('total').eq('user_id',currentUser.id).eq('trader',trader),
-    sb.from('vault').select('amount').eq('user_id',currentUser.id).in('category',['سداد_مشتريات','تسوية_مشتريات']).like('description','سداد مشتريات: '+trader)
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).in('category',['سداد_مشتريات','تسوية_مشتريات']).like('description','سداد مشتريات: '+trader),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('category','مرتجع_مشتريات').like('description','مرتجع مشتريات - '+trader+'%')
   ]);
   const totalPurch = (purchData||[]).reduce((s,x)=>s+Number(x.total||0),0);
   const totalPaid  = (paidData||[]).reduce((s,x)=>s+Number(x.amount||0),0);
-  const debt = totalPurch - totalPaid;
+  const totalReturnedCash = (retData||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  // مبلغ المرتجع النقدي (اللي استلمناه من التاجر عند إرجاع المشتريات) يُطرح من الدين
+  const debt = totalPurch - totalPaid - totalReturnedCash;
   const box = document.getElementById('dpp-debt-box');
   box.style.display = 'flex';
   document.getElementById('dpp-debt-val').textContent = Number(debt).toLocaleString('en-US') + ' ج';
