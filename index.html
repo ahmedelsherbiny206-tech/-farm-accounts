@@ -2115,7 +2115,7 @@ window.addEventListener('unhandledrejection', e => {
 });
 async function sbRun(fn) {
   const r = await fn();
-  if(r?.error) { console.error('sb error:', r.error.message); showToast('❌ خطأ: '+r.error.message); return null; }
+  if(r?.error) { console.error('sb error:', r.error.message); showToast('❌ '+arabicError(r.error.message)); return null; }
   return r;
 }
 function toWesternNum(v){ return String(v||'').replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)); }
@@ -2139,6 +2139,26 @@ function fmtDate(d) {
   if(!d) return '';
   return new Date(d+'T00:00:00').toLocaleDateString('ar-EG',{year:'numeric',month:'short',day:'numeric'});
 }
+function arabicError(msg){
+  if(!msg) return 'خطأ غير معروف';
+  const m = msg.toLowerCase();
+  if(m.includes('jwt expired') || m.includes('token expired') || m.includes('not authenticated')) return 'انتهت جلسة الدخول — سجّل دخولك مرة أخرى';
+  if(m.includes('duplicate key') || m.includes('unique constraint') || m.includes('already exists')) return 'هذا السجل موجود بالفعل، لا يمكن تكراره';
+  if(m.includes('foreign key') || m.includes('violates foreign')) return 'لا يمكن الحذف — يوجد بيانات مرتبطة بهذا السجل';
+  if(m.includes('not-null') || m.includes('null value') || m.includes('violates not-null')) return 'يجب ملء جميع الحقول المطلوبة';
+  if(m.includes('check constraint') || m.includes('violates check')) return 'القيمة المدخلة غير مقبولة (تحقق من الأرقام)';
+  if(m.includes('permission denied') || m.includes('insufficient privilege')) return 'ليس لديك صلاحية لهذا الإجراء';
+  if(m.includes('too many requests') || m.includes('rate limit')) return 'طلبات كثيرة جداً — انتظر لحظة ثم حاول';
+  if(m.includes('network') || m.includes('failed to fetch') || m.includes('connection')) return 'تعذّر الاتصال بالإنترنت — تحقق من اتصالك';
+  if(m.includes('timeout')) return 'انتهت مهلة الطلب — حاول مرة أخرى';
+  if(m.includes('invalid input syntax') || m.includes('invalid value')) return 'قيمة غير صالحة في أحد الحقول';
+  if(m.includes('row-level security') || m.includes('new row violates row')) return 'لا يمكن إتمام العملية — تحقق من البيانات';
+  if(m.includes('column') && m.includes('does not exist')) return 'خطأ في بنية البيانات — تواصل مع الدعم';
+  if(m.includes('relation') && m.includes('does not exist')) return 'خطأ في قاعدة البيانات — تواصل مع الدعم';
+  if(m.includes('value too long')) return 'النص المدخل طويل جداً';
+  if(m.includes('numeric field overflow') || m.includes('out of range')) return 'الرقم المدخل كبير جداً أو خارج النطاق المسموح';
+  return 'خطأ: ' + msg;
+}
 function showToast(msg) {}
 function setDateInputs() {
   document.querySelectorAll('input[type=date]').forEach(el => {
@@ -2155,7 +2175,7 @@ async function doGoogleAuth() {
       queryParams: { prompt: 'select_account' }
     }
   });
-  if(error) showToast('❌ خطأ: ' + error.message);
+  if(error) showToast('❌ '+arabicError(error.message));
 }
 
 // ===== FORGOT PASSWORD =====
@@ -2171,7 +2191,7 @@ async function sendResetEmail() {
   const {error} = await sb.auth.resetPasswordForEmail(email, {
     redirectTo: window.location.href
   });
-  if(error) return showToast('❌ خطأ: ' + error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
   const errEl = document.getElementById('auth-err');
   errEl.style.color = 'var(--g2)';
   errEl.textContent = '✅ تم إرسال رابط الاستعادة على بريدك!';
@@ -2462,7 +2482,7 @@ async function addIncome() {
     if(paidAmt>=amt) return showToast('❌ المبلغ الجزئي أكبر من أو يساوي الإجمالي — اختار كاش');
   }
   const {data:incRow,error}=await sb.from('income').insert({description:desc,category:type,crop:crop||null,amount:amt,date:date,notes:notes,user_id:currentUser.id,pay_type:_incPayType,paid_amount:paidAmt}).select('id').single();
-  if(error) return showToast('❌ خطأ: '+error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
   const vaultAmt = _incPayType==='full' ? amt : _incPayType==='partial' ? paidAmt : 0;
   if(vaultAmt>0){
     const {error:ve1}=await sb.from('vault').insert({type:'income_auto',description:'إيراد: '+desc,amount:vaultAmt,date:date,notes:notes||'',user_id:currentUser.id,ref_id:incRow?.id});
@@ -2642,7 +2662,7 @@ async function saveIncPay(id, total, paidSoFar){
     pay_type: isFullyPaid ? 'full' : 'partial',
     paid_amount: isFullyPaid ? null : newPaid
   }).eq('id',id).eq('user_id',currentUser.id);
-  if(error) return showToast('❌ خطأ: '+error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
   const {data:incRow} = await sb.from('income').select('description').eq('id',id).single();
   await sb.from('vault').insert({
     type:'income_auto', description:'إيراد: '+(incRow?.description||''), amount:newAmt,
@@ -2732,7 +2752,7 @@ async function deleteSelectedIncome(){
     : `🗑️ هتحذف ${ids.length} عنصر؟`;
   if(!await showConfirm(msg, totalInVault>0?'⚠️':'🗑️')) return;
   const {error:ide}=await sb.from('income').delete().in('id',ids).eq('user_id',currentUser.id);
-  if(ide) return showToast('❌ خطأ في الحذف: '+ide.message);
+  if(ide) return showToast('❌ '+arabicError(ide.message));
   for(const item of (selData||[])){
     const {data:d}=await sb.from('vault').delete().eq('type','income_auto').eq('ref_id',item.id).eq('user_id',currentUser.id).select('id');
     if(!d?.length) await sb.from('vault').delete().eq('type','income_auto').eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id).is('ref_id',null);
@@ -2766,7 +2786,7 @@ async function addExpense() {
     if(paidAmt>=amt) return showToast('❌ المبلغ الجزئي أكبر من أو يساوي الإجمالي — اختار كاش');
   }
   const {data:expRow,error}=await sb.from('expenses').insert({description:desc+' - '+cat,amount:amt,category:cat,crop:crop||null,date:date,notes:notes,user_id:currentUser.id,pay_type:_expPayType,paid_amount:paidAmt}).select('id').single();
-  if(error) return showToast('❌ خطأ: '+error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
   const vaultAmt = _expPayType==='full' ? amt : _expPayType==='partial' ? paidAmt : 0;
   if(vaultAmt>0){
     const {error:ve2}=await sb.from('vault').insert({type:'expense_auto',description:'مصروف: '+desc+' - '+cat,amount:vaultAmt,date:date,notes:notes||'',user_id:currentUser.id,ref_id:expRow?.id});
@@ -2828,7 +2848,7 @@ async function saveExpPay(id, total, paidSoFar){
     pay_type: isFullyPaid ? 'full' : 'partial',
     paid_amount: isFullyPaid ? null : newPaid
   }).eq('id',id).eq('user_id',currentUser.id);
-  if(error) return showToast('❌ خطأ: '+error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
   const {data:expRow} = await sb.from('expenses').select('description').eq('id',id).single();
   await sb.from('vault').insert({
     type:'expense_auto', description:'مصروف: '+(expRow?.description||''), amount:newAmt,
@@ -2916,7 +2936,7 @@ async function deleteSelectedExpense(){
     : `🗑️ هتحذف ${ids.length} عنصر؟`;
   if(!await showConfirm(msg, totalInVault>0?'⚠️':'🗑️')) return;
   const {error:ede}=await sb.from('expenses').delete().in('id',ids).eq('user_id',currentUser.id);
-  if(ede) return showToast('❌ خطأ في الحذف: '+ede.message);
+  if(ede) return showToast('❌ '+arabicError(ede.message));
   for(const item of (selData||[])){
     const {data:d}=await sb.from('vault').delete().eq('type','expense_auto').eq('ref_id',item.id).eq('user_id',currentUser.id).select('id');
     if(!d?.length) await sb.from('vault').delete().eq('type','expense_auto').eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id).is('ref_id',null);
@@ -2935,7 +2955,7 @@ async function addAjal() {
   if(!name||!amt) return showToast('❌ اكمل البيانات');
   if(amt<=0) return showToast('❌ المبلغ لازم يكون أكبر من صفر');
   const {data:inserted, error}=await sb.from('ajal').insert({type:type,name:name,amount:amt,reason:reason,due_date:due,user_id:currentUser.id}).select();
-  if(error) return showToast('❌ خطأ: '+error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
   const newId = inserted?.[0]?.id;
   // مزامنة الخزنة فور التسجيل
   const isReceivable = type === 'receivable'; // لي عند غيري = سلّفته → تخصم من الخزنة
@@ -2986,7 +3006,7 @@ async function markPaid(id) {
     const rec = ajalData?.[0];
     if(!rec) return;
     const {error:ae} = await sb.from('ajal').update({paid:true}).eq('id',id).eq('user_id',currentUser.id);
-    if(ae) return showToast('❌ خطأ: '+ae.message);
+    if(ae) return showToast('❌ '+arabicError(ae.message));
     const isReceivable = rec.type === 'receivable';
     const {error:ve} = await sb.from('vault').insert({
       user_id: currentUser.id,
@@ -3002,7 +3022,7 @@ async function markPaid(id) {
     logActivity('تسديد','ajal','تسديد '+ajalType+': '+(rec.name||''), rec.amount);
     showToast(isReceivable ? '✅ استرجعت فلوسك وأضيفت للخزنة' : '✅ ردّيت السلفة وخصمت من الخزنة');
     renderAjalLists(); renderHome();
-  } catch(e) { showToast('❌ خطأ: '+e.message); }
+  } catch(e) { showToast('❌ '+arabicError(e.message)); }
 }
 
 // ===== CAPITAL =====
@@ -3013,7 +3033,7 @@ async function addCapital() {
   if(!amt) return showToast('❌ أدخل المبلغ');
   if(amt<=0) return showToast('❌ المبلغ لازم يكون أكبر من صفر');
   const {data:capRow,error}=await sb.from('capital').insert({amount:amt,date:date,notes:notes,user_id:currentUser.id}).select('id').single();
-  if(error) return showToast('❌ خطأ: '+error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
   const {error:ve3}=await sb.from('vault').insert({type:'capital_auto',description:'رأس مال: '+amt,amount:amt,date:date,notes:notes||'',user_id:currentUser.id,ref_id:capRow?.id});
   if(ve3) console.error('vault sync error:',ve3.message);
   showToast('✅ تم تحديث رأس المال وإضافته للخزنة');
@@ -3076,7 +3096,7 @@ async function deleteSelectedCapital(){
   if(!await showConfirm('هتحذف '+capSelected.size+' عنصر؟')) return;
   const {data:selData} = await sb.from('capital').select('id,amount,date').in('id',[...capSelected]).eq('user_id',currentUser.id);
   const {error:cde}=await sb.from('capital').delete().in('id',[...capSelected]).eq('user_id',currentUser.id);
-  if(cde) return showToast('❌ خطأ في الحذف: '+cde.message);
+  if(cde) return showToast('❌ '+arabicError(cde.message));
   for(const item of (selData||[])){
     const {data:vd}=await sb.from('vault').delete().eq('type','capital_auto').eq('ref_id',item.id).eq('user_id',currentUser.id).select('id');
     if(!vd?.length) await sb.from('vault').delete().eq('type','capital_auto').eq('amount',item.amount).eq('date',item.date).eq('user_id',currentUser.id).is('ref_id',null);
@@ -3357,7 +3377,7 @@ async function doRestore(event) {
     if(errs.length) return showToast('❌ خطأ في الاستعادة: '+errs[0]);
     showToast('✅ تم الاستعادة بنجاح!');
     renderHome();
-  } catch(e) { showToast('❌ خطأ في الاستعادة: '+e.message); }
+  } catch(e) { showToast('❌ '+arabicError(e.message)); }
 }
 
 async function quickAdd() {
@@ -3368,7 +3388,7 @@ async function quickAdd() {
   const table=type==='income'?'income':'expenses';
   const vaultType=type==='income'?'income_auto':'expense_auto';
   const {data:qRow,error:qe}=await sb.from(table).insert({description:desc,amount:amt,date:today(),user_id:currentUser.id}).select('id').single();
-  if(qe) return showToast('❌ خطأ: '+qe.message);
+  if(qe) return showToast('❌ '+arabicError(qe.message));
   const {error:qve}=await sb.from('vault').insert({type:vaultType,description:(type==='income'?'إيراد: ':'مصروف: ')+desc,amount:amt,date:today(),user_id:currentUser.id,ref_id:qRow?.id});
   if(qve) console.error('vault sync:',qve.message);
   showToast('✅ تم التسجيل');
@@ -3426,13 +3446,13 @@ async function addVaultTx(){
   let capRefId = null;
   if(type==='capital_auto') {
     const {data:capRow,error:ce}=await sb.from('capital').insert({amount:amt,date,notes,user_id:currentUser.id}).select('id').single();
-    if(ce) return showToast('❌ خطأ: '+ce.message);
+    if(ce) return showToast('❌ '+arabicError(ce.message));
     capRefId = capRow?.id;
   }
   // opening balance saved in vault table only
 
   const {error} = await sb.from('vault').insert({type,description:desc,amount:amt,date,notes,user_id:currentUser.id,ref_id:capRefId});
-  if(error) return showToast('❌ خطأ: '+error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
 
   // تسجيل في السجل
   if(type==='capital_auto'){
@@ -3522,7 +3542,7 @@ async function deleteSelectedVault(){
   if(!await showConfirm('هتحذف '+vaultSelected.size+' حركة؟')) return;
   const {data:selItems} = await sb.from('vault').select('*').in('id',[...vaultSelected]).eq('user_id',currentUser.id);
   const {error:vde}=await sb.from('vault').delete().in('id',[...vaultSelected]).eq('user_id',currentUser.id);
-  if(vde) return showToast('❌ خطأ في الحذف: '+vde.message);
+  if(vde) return showToast('❌ '+arabicError(vde.message));
   // Delete from source tables
   for(const item of (selItems||[])) {
     const rid = item.ref_id;
@@ -3707,7 +3727,7 @@ async function exportToExcel(type) {
 async function exportAjalToExcel(){
   showToast('⏳ جاري التصدير...');
   const {data:rows, error} = await sb.from('ajal').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
-  if(error) return showToast('❌ خطأ في التصدير');
+  if(error) return showToast('❌ حدث خطأ أثناء التصدير — تحقق من البيانات');
 
   const receivable = (rows||[]).filter(x=>x.type==='receivable');
   const payable    = (rows||[]).filter(x=>x.type==='payable');
@@ -3775,7 +3795,7 @@ async function exportDeferredToExcel(){
   if(_dsFilter==='paid')   q=q.eq('paid',true);
   if(_dsFilter==='unpaid') q=q.eq('paid',false);
   const {data:rows,error} = await q;
-  if(error) return showToast('❌ خطأ في التصدير');
+  if(error) return showToast('❌ حدث خطأ أثناء التصدير — تحقق من البيانات');
 
   const wb = XLSX.utils.book_new();
   const grandTotal = (rows||[]).reduce((s,x)=>s+Number(x.total||0),0);
@@ -4190,7 +4210,7 @@ async function saveEdit(table, id, type) {
     else updates = {...updates, description:desc+' - '+cat, category:cat, crop};
   }
   const {error} = await sb.from(table).update(updates).eq('id',id).eq('user_id',currentUser.id);
-  if(error) return showToast('❌ خطأ: '+error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
 
   // تحديث الخزنة لو المبلغ أو التاريخ اتغير
   if(oldAmt !== undefined){
@@ -4338,7 +4358,7 @@ async function saveVaultEdit(id, type, refId) {
   if(!desc||!amt) return showToast('❌ اكمل البيانات');
   if(amt<=0) return showToast('❌ المبلغ لازم يكون أكبر من صفر');
   const {error} = await sb.from('vault').update({description:desc, amount:amt, date, notes}).eq('id',id).eq('user_id',currentUser.id);
-  if(error) return showToast('❌ خطأ: '+error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
   if(type==='capital_auto') {
     if(refId) await sb.from('capital').update({amount:amt, date, notes}).eq('id',refId).eq('user_id',currentUser.id);
     else await sb.from('capital').update({amount:amt, date, notes}).eq('amount',amt).eq('user_id',currentUser.id);
@@ -4448,7 +4468,7 @@ async function finishSetup(){
     // إرسال رسالة ترحيب على واتساب
     sendWelcomeWhatsApp(phone, name);
   } catch(e){
-    showToast('❌ خطأ في الحفظ: '+(e.message||e));
+    showToast('❌ '+arabicError(e.message||String(e)));
   }
 }
 
@@ -4547,7 +4567,7 @@ async function saveFarmName(){
     closeModal();
     showToast('✅ تم تغيير اسم المزرعة وحفظه على كل الأجهزة');
   } catch(e){
-    showToast('❌ خطأ في الحفظ: '+(e.message||e));
+    showToast('❌ '+arabicError(e.message||String(e)));
   }
 }
 
@@ -4577,7 +4597,7 @@ async function saveFarmArea(){
     closeModal();
     showToast('✅ تم حفظ المساحة: '+area+' فدان على كل الأجهزة');
   } catch(e){
-    showToast('❌ خطأ في الحفظ: '+(e.message||e));
+    showToast('❌ '+arabicError(e.message||String(e)));
   }
 }
 
@@ -4603,7 +4623,7 @@ async function savePhone(){
     closeModal();
     showToast('✅ تم حفظ رقم التليفون');
   } catch(e){
-    showToast('❌ خطأ في الحفظ: '+(e.message||e));
+    showToast('❌ '+arabicError(e.message||String(e)));
   }
 }
 
@@ -4661,7 +4681,7 @@ async function saveDeletePin(){
     closeModal();
     showToast('✅ تم حفظ رمز الحذف السري');
   } catch(e) {
-    showToast('❌ خطأ في الحفظ: ' + (e.message||e));
+    showToast('❌ '+arabicError(e.message||String(e)));
   }
 }
 
@@ -4730,7 +4750,7 @@ async function confirmDeleteFarmData(){
     showToast('✅ تم حذف كل البيانات');
     setTimeout(() => window.location.reload(), 1500);
   } catch(e) {
-    showToast('❌ خطأ أثناء الحذف: '+(e.message||e));
+    showToast('❌ '+arabicError(e.message||String(e)));
   }
 }
 
@@ -4738,7 +4758,7 @@ async function confirmDeleteFarmData(){
 async function sendPasswordReset(){
   if(!currentUser?.email) return showToast('❌ مش قادر يجيب الإيميل');
   const {error} = await sb.auth.resetPasswordForEmail(currentUser.email);
-  if(error) return showToast('❌ خطأ: '+error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
   showToast('✅ تم إرسال رابط تغيير كلمة المرور على إيميلك');
   closeSettings();
 }
@@ -5144,7 +5164,7 @@ async function addDeferredPurchase() {
     paid: isPaidNow, paid_at: isPaidNow ? new Date().toISOString() : null,
     crop: dpCropVal||null
   }).select('id');
-  if(error) return showToast('❌ خطأ: '+error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
   const purchaseId = dpRow?.[0]?.id;
 
   const expDesc = 'مشتريات آجل'+(trader?' - '+trader:'')+(desc?' - '+desc:'');
@@ -5257,13 +5277,13 @@ async function payDeferredPurchase(id) {
     if(!data?.length) return showToast('❌ مش لاقي الفاتورة');
     const pur = data[0];
     const {error:ve} = await sb.from('vault').insert({user_id:currentUser.id,type:'out',description:'سداد مشتريات آجل'+(pur.trader?' - '+pur.trader:''),amount:pur.total,date:today(),notes:pur.description||'',category:'مشتريات_آجل',ref_id:pur.id});
-    if(ve) return showToast('❌ خطأ في الخزنة: '+ve.message);
+    if(ve) return showToast('❌ '+arabicError(ve.message));
     const {error:ue} = await sb.from('deferred_purchases').update({paid:true,paid_at:new Date().toISOString()}).eq('id',id).eq('user_id',currentUser.id);
-    if(ue) return showToast('❌ خطأ: '+ue.message);
+    if(ue) return showToast('❌ '+arabicError(ue.message));
     logActivity('تسديد','deferred_purchases','تسديد مشتريات آجل'+(pur.trader?' - '+pur.trader:''),pur.total);
     showToast('✅ تم التسديد وخصم من الخزنة');
     renderDeferredPurchases(); renderHome();
-  } catch(e){ showToast('❌ خطأ: '+e.message); }
+  } catch(e){ showToast('❌ '+arabicError(e.message)); }
 }
 
 async function deleteDeferredPurchase(id, isPaid) {
@@ -5366,7 +5386,7 @@ async function saveDpEdit(id) {
   if(!date) return showToast('❌ اختار التاريخ');
   const total = items.reduce((s,x)=>s+x.qty*x.price,0);
   const {error} = await sb.from('deferred_purchases').update({description:desc||null,items,trader,total,date,notes:notes||null}).eq('id',id).eq('user_id',currentUser.id);
-  if(error) return showToast('❌ خطأ: '+error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
   // تحديث سجل المصروف المرتبط
   const expDesc = 'مشتريات آجل'+(trader?' - '+trader:'')+(desc?' - '+desc:'');
   await sb.from('expenses').update({description:expDesc,amount:total,date}).eq('category','مشتريات آجل').eq('user_id',currentUser.id).eq('amount',total).eq('date',date);
@@ -5564,7 +5584,7 @@ async function addSeason(){
   const notes=document.getElementById('season-notes').value;
   if(!name||!start) return showToast('❌ اكتب اسم الموسم وتاريخ البداية');
   const {error}=await sb.from('seasons').insert({user_id:currentUser.id,name,crop:crop||null,start_date:start,end_date:end||null,area,notes});
-  if(error) return showToast('❌ خطأ: '+error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
   logActivity('إضافة','seasons','موسم جديد: '+name);
   showToast('✅ تم إضافة الموسم');
   document.getElementById('season-name').value='';
@@ -5613,7 +5633,7 @@ async function saveSeasonEdit(id){
   const notes = document.getElementById('sedit-notes')?.value || '';
   if(!name||!start) return showToast('❌ اكتب اسم الموسم وتاريخ البداية');
   const {error} = await sb.from('seasons').update({name, crop, start_date:start, end_date:end, area, notes}).eq('id',id).eq('user_id',currentUser.id);
-  if(error) return showToast('❌ خطأ: '+error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
   logActivity('تعديل','seasons','تعديل موسم: '+name);
   showToast('✅ تم التعديل');
   closeModal();
@@ -6200,7 +6220,7 @@ async function addDeferredSaleProd() {
     paid: isPaidNow, paid_at: isPaidNow ? new Date().toISOString() : null,
     crop: dsProdCropVal||null, quantity: 0, unit: '', price: 0
   }).select('id');
-  if(error) return showToast('❌ خطأ: '+error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
   const saleId = dsRow?.[0]?.id;
 
   if(dsProdCropVal === 'المخزن 🏪'){
@@ -6479,7 +6499,7 @@ async function addDeferredSale(){
     paid_at: isPaidNow ? new Date().toISOString() : null,
     sale_type:'crop'
   }).select('id');
-  if(error) return showToast('❌ خطأ: '+error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
   const saleId = dsData?.[0]?.id || null;
 
   const itemsNote = validItems.map(x=>`${x.name} ${x.qty} ${x.unit} × ${x.price} ج`).join(' | ');
@@ -6704,14 +6724,14 @@ async function payDeferredSale(id){
     if(!data?.length) return showToast('❌ مش لاقي البيعة');
     const sale = data[0];
     const {error:ve} = await sb.from('vault').insert({user_id:currentUser.id,type:'in',description:'سداد مبيعات: '+(sale.trader||''),amount:sale.total,date:today(),notes:'تسديد بيعة: '+(sale.description||''),category:'سداد_مبيعات',ref_id:sale.id});
-    if(ve) return showToast('❌ خطأ في الخزنة: '+ve.message);
+    if(ve) return showToast('❌ '+arabicError(ve.message));
     const {error:de} = await sb.from('deferred_sales').update({paid:true,paid_at:new Date().toISOString()}).eq('id',id).eq('user_id',currentUser.id);
-    if(de) return showToast('❌ خطأ في التحديث: '+de.message);
+    if(de) return showToast('❌ '+arabicError(de.message));
     logActivity('تسديد','deferred_sales','تسديد بيعة آجل: '+(sale.description||''),sale.total);
     showToast('✅ تم التسديد وإضافته للخزنة');
     renderDeferredSales();
     renderHome();
-  } catch(e) { showToast('❌ خطأ: '+e.message); }
+  } catch(e) { showToast('❌ '+arabicError(e.message)); }
 }
 
 // حذف بيعة
@@ -6842,7 +6862,7 @@ async function saveDsEdit(id){
   const firstCrop = validItems[0]?.name||null;
 
   const {error} = await sb.from('deferred_sales').update({description:desc,crop:firstCrop,items:validItems,total,trader,date,notes}).eq('id',id).eq('user_id',currentUser.id);
-  if(error) return showToast('❌ خطأ: '+error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
 
   const incDesc = 'بيع آجل: '+desc+(trader?' - '+trader:'');
   const itemsNote = validItems.map(x=>`${x.name} ${x.qty} ${x.unit} × ${x.price} ج`).join(' | ');
@@ -6904,7 +6924,7 @@ async function addUnit(){
     saveUnits(units);
   } catch(e) {
     units.pop();
-    return showToast('❌ خطأ في الحفظ: ' + (e.message||e));
+    return showToast('❌ '+arabicError(e.message||String(e)));
   }
   document.getElementById('units-list').innerHTML=renderUnitsList(units);
   document.getElementById('new-unit-input').value='';
@@ -6958,7 +6978,7 @@ async function addTrader(){
     saveTraders(traders);
   } catch(e) {
     traders.pop();
-    return showToast('❌ خطأ في الحفظ: ' + (e.message||e));
+    return showToast('❌ '+arabicError(e.message||String(e)));
   }
   document.getElementById('traders-list').innerHTML=renderTradersList(traders);
   document.getElementById('new-trader-input').value='';
@@ -7051,7 +7071,7 @@ async function addTaswiya(){
     notes: (notes ? notes + ' - ' : '') + 'تسوية',
     category: _spCategories()[1]
   });
-  if(error) return showToast('❌ خطأ: ' + error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
 
   logActivity('إضافة','vault','تسوية مبيعات: '+trader, amount);
   showToast('✅ تم تسجيل التسوية');
@@ -7087,7 +7107,7 @@ async function addSalesPayment(){
     notes: notes || '',
     category: _spCategories()[0]
   });
-  if(error) return showToast('❌ خطأ: ' + error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
 
   logActivity('إضافة','vault','سداد مبيعات من: '+trader, amount);
   showToast('✅ تم تسجيل السداد');
@@ -7203,7 +7223,7 @@ async function saveSpPayment(id){
   if(!amount || amount <= 0) return showToast('❌ أدخل المبلغ');
   if(!date) return showToast('❌ أدخل التاريخ');
   const {error} = await sb.from('vault').update({amount, date, notes}).eq('id',id).eq('user_id',currentUser.id);
-  if(error) return showToast('❌ خطأ: '+error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
   closeModal();
   showToast('✅ تم التعديل');
   onSpTraderChange();
@@ -7981,7 +8001,7 @@ async function saveReturn(){
       trader: trader||null, total: -Math.abs(amount), date, notes: notes||null,
       is_return: true, paid: false, crop: o.crop||null, items: [], quantity:0, unit:'', price:0
     });
-    if(error) return showToast('❌ خطأ: '+error.message);
+    if(error) return showToast('❌ '+arabicError(error.message));
     // income بقيمة سالبة لتتطرح من الموسم
     await sb.from('income').insert({
       user_id:currentUser.id, description:desc, category:'مرتجع_مبيعات',
@@ -8003,7 +8023,7 @@ async function saveReturn(){
       trader: trader||null, total: -Math.abs(amount), date, notes: notes||null,
       is_return: true, paid: false, crop: o.crop||null, items: []
     });
-    if(error) return showToast('❌ خطأ: '+error.message);
+    if(error) return showToast('❌ '+arabicError(error.message));
     // expenses بقيمة سالبة
     await sb.from('expenses').insert({
       user_id:currentUser.id, description:desc, category:'مرتجع_مشتريات',
@@ -8269,7 +8289,7 @@ async function saveInvAdjust(item, unit, currentQty, avgCost){
     quantity:diff, unit_price:avgCost, avg_cost:avgCost,
     total:Math.abs(diff)*avgCost, date, notes
   });
-  if(error){ showToast('❌ خطأ: '+error.message); return; }
+  if(error){ showToast('❌ '+arabicError(error.message)); return; }
   document.getElementById('detail-overlay').classList.remove('open');
   showToast('✅ تم حفظ التسوية');
   renderInvStock();
@@ -8279,7 +8299,7 @@ async function saveInvAdjust(item, unit, currentQty, avgCost){
 async function deleteInvTxn(id){
   if(!await showConfirm('🗑️ سيتم حذف هذه الحركة من المخزن — متأكد؟','🗑️')) return;
   const {error} = await sb.from('inventory_transactions').delete().eq('id',id).eq('user_id',currentUser.id);
-  if(error){ showToast('❌ خطأ: '+error.message); return; }
+  if(error){ showToast('❌ '+arabicError(error.message)); return; }
   showToast('✅ تم الحذف');
   renderInvStock(); renderInvHistory();
 }
@@ -8321,7 +8341,7 @@ async function saveEditInvTxn(id, type){
     quantity:qty, unit_price:price, avg_cost:price,
     total:Math.abs(qty)*price, date, notes
   }).eq('id',id).eq('user_id',currentUser.id);
-  if(error){ showToast('❌ خطأ: '+error.message); return; }
+  if(error){ showToast('❌ '+arabicError(error.message)); return; }
   document.getElementById('detail-overlay').classList.remove('open');
   showToast('✅ تم حفظ التعديل');
   renderInvStock(); renderInvHistory();
@@ -8449,7 +8469,7 @@ async function saveInvTransaction(type){
     user_id:currentUser.id, item, unit, type, quantity:qty,
     unit_price, avg_cost, total, date, notes:notes||null, crop:crop||null
   });
-  if(error) return showToast('❌ خطأ: '+error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
 
   // صرف مخزن → دايماً يسجّل كمصروف في expenses
   if(type==='usage'){
@@ -8514,7 +8534,7 @@ async function saveCropStorage(){
     quantity:qty, unit_price:cost||0, avg_cost:cost||0, total, date,
     notes:notes||null, crop
   });
-  if(error) return showToast('❌ خطأ: '+error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
   showToast('✅ تم تخزين المحصول');
   closeModal();
   window._invStocks = await calcAllStock();
@@ -8664,7 +8684,7 @@ async function addDpPayment(){
     description: 'سداد مشتريات: '+trader,
     amount, date, notes: notes||'', category: 'سداد_مشتريات'
   });
-  if(error) return showToast('❌ خطأ: '+error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
 
   logActivity('إضافة','vault','سداد مشتريات: '+trader, amount);
   showToast('✅ تم تسجيل السداد');
@@ -8698,7 +8718,7 @@ async function addDpTaswiya(){
     notes: (notes?notes+' - ':'')+'تسوية',
     category: 'تسوية_مشتريات'
   });
-  if(error) return showToast('❌ خطأ: '+error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
 
   logActivity('إضافة','vault','تسوية مشتريات: '+trader, amount);
   showToast('✅ تم تسجيل التسوية');
@@ -8806,7 +8826,7 @@ async function saveDppEdit(id){
   if(!newAmt||newAmt<=0) return showToast('❌ اكتب مبلغ صحيح');
   if(!newDate) return showToast('❌ اختار التاريخ');
   const {error} = await sb.from('vault').update({amount:newAmt,date:newDate,notes:newNotes}).eq('id',id).eq('user_id',currentUser.id);
-  if(error) return showToast('❌ خطأ: '+error.message);
+  if(error) return showToast('❌ '+arabicError(error.message));
   showToast('✅ تم التعديل');
   closeModal();
   onDppTraderChange();
