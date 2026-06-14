@@ -6325,7 +6325,7 @@ async function addDeferredSale(){
 // عرض المبيعات
 function setDsFilter(f, btn){
   _dsFilter = f;
-  document.querySelectorAll('#page-deferred .filter-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#dsf-all,#dsf-unpaid,#dsf-paid').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
   renderDeferredSales();
 }
