@@ -2234,7 +2234,8 @@ async function initApp(user) {
   document.getElementById('hdr-date').textContent = new Date().toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   checkBackupInfo();
   populateCatSelects();
-  renderHome();
+  const lastPage = localStorage.getItem('lastPage') || 'home';
+  showPage(lastPage, document.getElementById('bnav-'+lastPage) || null);
   checkAjalAlerts();
   await loadFarmSettings();
   setDateInputs();
@@ -2319,6 +2320,7 @@ function showPage(name, btn) {
   if(name==='search'){ populateSearchCrops(); }
   if(name==='seasons') renderSeasons();
   if(name==='report') { renderReport(); }
+  localStorage.setItem('lastPage', name);
 }
 function showMoreMenu() {
   const menu = document.getElementById('more-menu');
