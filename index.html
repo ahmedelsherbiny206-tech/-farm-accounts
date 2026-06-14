@@ -8342,7 +8342,9 @@ async function openInvModal(type){
   const typeColor={'in':'#e65100','sale':'var(--g2)','usage':'#6a1b9a'};
   const stocks = await calcAllStock();
 
-  const itemOpts = items.map(i=>`<option>${s(i)}</option>`).join('');
+  const stockItemNames = stocks.map(r=>r.item);
+  const allItemNames = [...new Set([...stockItemNames, ...items])];
+  const itemOpts = (type==='usage' ? stockItemNames : allItemNames).map(i=>`<option>${s(i)}</option>`).join('');
   const cropOpts = crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${s(c)}</option>`).join('');
 
   document.getElementById('modal-title').textContent = typeLabel[type];
