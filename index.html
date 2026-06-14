@@ -5344,11 +5344,11 @@ async function deleteDeferredPurchase(id, isPaid) {
   if(pur){
     await sb.from('expenses').delete().eq('user_id',currentUser.id).eq('ref_id',pur.id);
     if(pur.is_return){
-      // مسح expenses المرتجع بدون ref_id (سجلات قديمة)
       const retDesc = 'مرتجع مشتريات' + (pur.trader?' - '+pur.trader:'');
-      await sb.from('expenses').delete().eq('user_id',currentUser.id).eq('category','مرتجع_مشتريات').eq('amount',-Math.abs(pur.total)).ilike('description',retDesc+'%').is('ref_id',null);
-      // مسح خزنة المرتجع بدون ref_id (سجلات قديمة)
-      await sb.from('vault').delete().eq('user_id',currentUser.id).eq('category','مرتجع_مشتريات').ilike('description',retDesc+'%').is('ref_id',null);
+      // مسح expenses المرتجع (بأي ref_id)
+      await sb.from('expenses').delete().eq('user_id',currentUser.id).eq('category','مرتجع_مشتريات').eq('amount',-Math.abs(pur.total)).ilike('description',retDesc+'%');
+      // مسح خزنة المرتجع (بأي ref_id)
+      await sb.from('vault').delete().eq('user_id',currentUser.id).eq('category','مرتجع_مشتريات').ilike('description',retDesc+'%');
     } else {
       await sb.from('expenses').delete().eq('user_id',currentUser.id).eq('category','مشتريات آجل').eq('amount',pur.total).eq('date',pur.date).is('ref_id',null);
     }
@@ -6800,11 +6800,11 @@ async function deleteDeferredSale(id, isPaid){
     // مسح income المرتبطة (سواء بـ ref_id أو بدونه للسجلات القديمة)
     await sb.from('income').delete().eq('user_id',currentUser.id).eq('ref_id', sale.id);
     if(sale.is_return){
-      // مسح income المرتجع بدون ref_id (سجلات قديمة)
       const retDesc = 'مرتجع مبيعات' + (sale.trader?' - '+sale.trader:'');
-      await sb.from('income').delete().eq('user_id',currentUser.id).eq('category','مرتجع_مبيعات').eq('amount',-Math.abs(sale.total)).ilike('description',retDesc+'%').is('ref_id',null);
-      // مسح خزنة المرتجع بدون ref_id (سجلات قديمة)
-      await sb.from('vault').delete().eq('user_id',currentUser.id).eq('category','مرتجع_مبيعات').ilike('description',retDesc+'%').is('ref_id',null);
+      // مسح income المرتجع (بأي ref_id)
+      await sb.from('income').delete().eq('user_id',currentUser.id).eq('category','مرتجع_مبيعات').eq('amount',-Math.abs(sale.total)).ilike('description',retDesc+'%');
+      // مسح خزنة المرتجع (بأي ref_id)
+      await sb.from('vault').delete().eq('user_id',currentUser.id).eq('category','مرتجع_مبيعات').ilike('description',retDesc+'%');
     } else {
       const incDesc = 'بيع آجل: '+(sale.description||'');
       await sb.from('income').delete().eq('user_id',currentUser.id).eq('category','مبيعات آجل').eq('amount',sale.total).ilike('description', incDesc+'%').is('ref_id',null);
