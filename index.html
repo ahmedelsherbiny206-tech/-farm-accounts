@@ -7690,6 +7690,7 @@ async function exportAccountStatementExcel(trader, from, to){
 
 async function exportDetailedStatementExcel(trader, from, to){
   showToast('⏳ جاري التصدير...');
+  try {
   const isXlDetProd = _asSaleType === 'product';
   const saleTypeDXl = isXlDetProd ? 'product' : 'crop';
   const [
@@ -7733,12 +7734,17 @@ async function exportDetailedStatementExcel(trader, from, to){
       const items = (x.items||[]).length ? x.items : [{name:x.crop||'—',qty:x.quantity||0,unit:x.unit||'',price:x.price||0}];
       items.forEach(it=>{
         const key = [(x.variety||'بدون صنف'), (it.name||'—'), (it.unit||'—')].join('||');
-        if(!groups[key]) groups[key]={label:(it.name||'—')+(x.variety?' · '+x.variety:''), unit:it.unit||'', rows:[]};
+        if(!groups[key]) groups[key]={label:(it.name||'—')+(x.variety?' · '+x.variety:'')+(it.unit?' · '+it.unit:''), unit:it.unit||'', rows:[]};
         groups[key].rows.push({date:x.date, qty:it.qty||0, unit:it.unit||'', price:it.price||0, total:(it.qty||0)*(it.price||0)});
       });
     });
+    const usedSheetNames = new Set();
     Object.values(groups).forEach(g=>{
-      const sheetName = g.label.slice(0,31);
+      let sheetName = g.label.slice(0,31);
+      // تجنب تكرار اسم الشيت
+      let n=2; const base=sheetName;
+      while(usedSheetNames.has(sheetName)){ sheetName=(base.slice(0,28)+' '+n).slice(0,31); n++; }
+      usedSheetNames.add(sheetName);
       const rows = g.rows.map((r,i)=>({'م':i+1,'التاريخ':r.date,'الكمية':r.qty,'الوحدة':r.unit,'السعر':r.price,'الإجمالي':r.total}));
       const totQty = g.rows.reduce((s,r)=>s+Number(r.qty||0),0);
       const totAmt = g.rows.reduce((s,r)=>s+Number(r.total||0),0);
@@ -7769,6 +7775,7 @@ async function exportDetailedStatementExcel(trader, from, to){
 
   XLSX.writeFile(wb, `كشف_تفصيلي_${trader}.xlsx`);
   showToast('✅ تم التصدير!');
+  } catch(e){ showToast('❌ '+arabicError(e.message||String(e))); console.error('exportDetailedStatementExcel error:',e); }
 }
 
 // ===== كشف حساب المشتريات =====
