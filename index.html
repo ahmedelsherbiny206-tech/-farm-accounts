@@ -5341,8 +5341,19 @@ async function deleteDeferredPurchase(id, isPaid) {
     invTxns?.length ? sb.from('inventory_transactions').delete().eq('user_id',currentUser.id).eq('ref_id',id) : Promise.resolve()
   ]);
 
-  if(pur) await sb.from('expenses').delete().eq('user_id',currentUser.id).eq('category','مشتريات آجل').eq('amount',pur.total).eq('date',pur.date);
-  if(isPaid==='true' && pur) await sb.from('vault').delete().eq('user_id',currentUser.id).eq('category','مشتريات_آجل').eq('amount',pur.total).is('ref_id',null);
+  if(pur){
+    await sb.from('expenses').delete().eq('user_id',currentUser.id).eq('ref_id',pur.id);
+    if(pur.is_return){
+      // مسح expenses المرتجع بدون ref_id (سجلات قديمة)
+      const retDesc = 'مرتجع مشتريات' + (pur.trader?' - '+pur.trader:'');
+      await sb.from('expenses').delete().eq('user_id',currentUser.id).eq('category','مرتجع_مشتريات').eq('amount',-Math.abs(pur.total)).ilike('description',retDesc+'%').is('ref_id',null);
+      // مسح خزنة المرتجع بدون ref_id (سجلات قديمة)
+      await sb.from('vault').delete().eq('user_id',currentUser.id).eq('category','مرتجع_مشتريات').ilike('description',retDesc+'%').is('ref_id',null);
+    } else {
+      await sb.from('expenses').delete().eq('user_id',currentUser.id).eq('category','مشتريات آجل').eq('amount',pur.total).eq('date',pur.date).is('ref_id',null);
+    }
+  }
+  if(isPaid==='true' && pur && !pur.is_return) await sb.from('vault').delete().eq('user_id',currentUser.id).eq('category','مشتريات_آجل').eq('amount',pur.total).is('ref_id',null);
 
   logActivity('حذف','deferred_purchases','حذف فاتورة مشتريات آجل'+(pur?.trader?' - '+pur.trader:''));
   showToast('🗑️ تم الحذف'+(totalPaid>0?' وإزالة المدفوعات من الخزنة':'')+(invTxns?.length?' وحركات المخزن':''));
@@ -6786,11 +6797,20 @@ async function deleteDeferredSale(id, isPaid){
   ]);
 
   if(sale){
+    // مسح income المرتبطة (سواء بـ ref_id أو بدونه للسجلات القديمة)
     await sb.from('income').delete().eq('user_id',currentUser.id).eq('ref_id', sale.id);
-    const incDesc = 'بيع آجل: '+(sale.description||'');
-    await sb.from('income').delete().eq('user_id',currentUser.id).eq('category','مبيعات آجل').eq('amount',sale.total).ilike('description', incDesc+'%').is('ref_id',null);
+    if(sale.is_return){
+      // مسح income المرتجع بدون ref_id (سجلات قديمة)
+      const retDesc = 'مرتجع مبيعات' + (sale.trader?' - '+sale.trader:'');
+      await sb.from('income').delete().eq('user_id',currentUser.id).eq('category','مرتجع_مبيعات').eq('amount',-Math.abs(sale.total)).ilike('description',retDesc+'%').is('ref_id',null);
+      // مسح خزنة المرتجع بدون ref_id (سجلات قديمة)
+      await sb.from('vault').delete().eq('user_id',currentUser.id).eq('category','مرتجع_مبيعات').ilike('description',retDesc+'%').is('ref_id',null);
+    } else {
+      const incDesc = 'بيع آجل: '+(sale.description||'');
+      await sb.from('income').delete().eq('user_id',currentUser.id).eq('category','مبيعات آجل').eq('amount',sale.total).ilike('description', incDesc+'%').is('ref_id',null);
+    }
   }
-  if(isPaid && sale){
+  if(isPaid && sale && !sale.is_return){
     const vDesc = 'سداد مبيعات: '+(sale.trader||'');
     await sb.from('vault').delete().eq('user_id',currentUser.id).eq('category','سداد_مبيعات').eq('amount',sale.total).ilike('description', vDesc+'%').is('ref_id',null);
   }
@@ -8043,47 +8063,49 @@ async function saveReturn(){
   if(isSale){
     const {data:orig} = await sb.from('deferred_sales').select('*').eq('id',origId).eq('user_id',currentUser.id).limit(1);
     const o = orig?.[0]||{};
-    const {error} = await sb.from('deferred_sales').insert({
+    const {data:retRow, error} = await sb.from('deferred_sales').insert({
       user_id: currentUser.id, description: desc, sale_type: saleType||o.sale_type||'crop',
       trader: trader||null, total: -Math.abs(amount), date, notes: notes||null,
       is_return: true, paid: false, crop: o.crop||null, items: [], quantity:0, unit:'', price:0,
       return_for_id: origId
-    });
+    }).select('id');
     if(error) return showToast('❌ '+arabicError(error.message));
+    const retId = retRow?.[0]?.id;
     // income بقيمة سالبة لتتطرح من الموسم
     await sb.from('income').insert({
       user_id:currentUser.id, description:desc, category:'مرتجع_مبيعات',
-      crop:o.crop||null, amount:-Math.abs(amount), date, notes:notes||null
+      crop:o.crop||null, amount:-Math.abs(amount), date, notes:notes||null, ref_id:retId||null
     });
     // خزنة: لو فيه رد نقدية → يخرج من الخزنة بمقدار اللي اتحصل فعلاً
     if(retCash){
       const cashAmt = window._retTotalPaid > 0 ? window._retTotalPaid : Math.abs(amount);
       if(cashAmt > 0) await sb.from('vault').insert({
         user_id:currentUser.id, type:'out', description:desc,
-        amount:cashAmt, date, notes:notes||null, category:'مرتجع_مبيعات'
+        amount:cashAmt, date, notes:notes||null, category:'مرتجع_مبيعات', ref_id:retId||null
       });
     }
   } else {
     const {data:orig} = await sb.from('deferred_purchases').select('*').eq('id',origId).eq('user_id',currentUser.id).limit(1);
     const o = orig?.[0]||{};
-    const {error} = await sb.from('deferred_purchases').insert({
+    const {data:retRow, error} = await sb.from('deferred_purchases').insert({
       user_id: currentUser.id, description: desc,
       trader: trader||null, total: -Math.abs(amount), date, notes: notes||null,
       is_return: true, paid: false, crop: o.crop||null, items: [],
       return_for_id: origId
-    });
+    }).select('id');
     if(error) return showToast('❌ '+arabicError(error.message));
+    const retId = retRow?.[0]?.id;
     // expenses بقيمة سالبة
     await sb.from('expenses').insert({
       user_id:currentUser.id, description:desc, category:'مرتجع_مشتريات',
-      crop:o.crop||null, amount:-Math.abs(amount), date, notes:notes||null
+      crop:o.crop||null, amount:-Math.abs(amount), date, notes:notes||null, ref_id:retId||null
     });
     // خزنة: لو استلمنا نقدية → يدخل للخزنة بمقدار اللي اتدفع فعلاً
     if(retCash){
       const cashAmt = window._retTotalPaid > 0 ? window._retTotalPaid : Math.abs(amount);
       if(cashAmt > 0) await sb.from('vault').insert({
         user_id:currentUser.id, type:'in', description:desc,
-        amount:cashAmt, date, notes:notes||null, category:'مرتجع_مشتريات'
+        amount:cashAmt, date, notes:notes||null, category:'مرتجع_مشتريات', ref_id:retId||null
       });
     }
   }
