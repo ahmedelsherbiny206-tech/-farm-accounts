@@ -6140,21 +6140,23 @@ function renderDsCropItemsForm() {
     return;
   }
   el.innerHTML = _dsCropItems.map((item,i)=>`
-    <div class="inv-row inv-row-5">
+    <div class="inv-row" style="grid-template-columns:1fr 30px;gap:5px;margin-bottom:6px;">
       <select class="inv-field" onchange="_dsCropItems[${i}].name=this.value">
-        <option value="">-- محصول --</option>
+        <option value="">-- اختار المحصول --</option>
         ${_dsCropCrops.map(c=>`<option ${item.name===c?'selected':''}>${c}</option>`).join('')}
       </select>
-      <input type="text" inputmode="decimal" placeholder="الكمية" value="${item.qty||''}" class="inv-field"
-        oninput="_dsCropItems[${i}].qty=parseNum(this.value);calcDsCropTotal()">
-      <select class="inv-field" onchange="_dsCropItems[${i}].unit=this.value">
-        ${_dsCropUnits.map(u=>`<option ${item.unit===u?'selected':''}>${u}</option>`).join('')}
-      </select>
-      <input type="text" inputmode="decimal" placeholder="السعر ج" value="${item.price||''}" class="inv-field"
-        oninput="_dsCropItems[${i}].price=parseNum(this.value);calcDsCropTotal()"
-        onblur="if(_dsCropItems[${i}].name&&_dsCropItems[${i}].qty>0&&_dsCropItems[${i}].price>0&&${i}===_dsCropItems.length-1){_dsCropItems.push({name:'',qty:'',unit:_dsCropUnits[0]||'كيلو',price:0});renderDsCropItemsForm();}"
-        onkeydown="if(event.key==='Enter'&&_dsCropItems[${i}].name&&_dsCropItems[${i}].qty>0&&_dsCropItems[${i}].price>0){event.preventDefault();_dsCropItems.push({name:'',qty:'',unit:_dsCropUnits[0]||'كيلو',price:0});renderDsCropItemsForm();}">
       <button class="inv-del" onclick="removeDsCropItem(${i})">✕</button>
+      <div style="display:grid;grid-template-columns:1fr 0.7fr 1fr;gap:5px;grid-column:1/-1;">
+        <input type="text" inputmode="decimal" placeholder="الكمية" value="${item.qty||''}" class="inv-field"
+          oninput="_dsCropItems[${i}].qty=parseNum(this.value);calcDsCropTotal()">
+        <select class="inv-field" onchange="_dsCropItems[${i}].unit=this.value">
+          ${_dsCropUnits.map(u=>`<option ${item.unit===u?'selected':''}>${u}</option>`).join('')}
+        </select>
+        <input type="text" inputmode="decimal" placeholder="السعر ج" value="${item.price||''}" class="inv-field"
+          oninput="_dsCropItems[${i}].price=parseNum(this.value);calcDsCropTotal()"
+          onblur="if(_dsCropItems[${i}].name&&_dsCropItems[${i}].qty>0&&_dsCropItems[${i}].price>0&&${i}===_dsCropItems.length-1){_dsCropItems.push({name:'',qty:'',unit:_dsCropUnits[0]||'كيلو',price:0});renderDsCropItemsForm();}"
+          onkeydown="if(event.key==='Enter'&&_dsCropItems[${i}].name&&_dsCropItems[${i}].qty>0&&_dsCropItems[${i}].price>0){event.preventDefault();_dsCropItems.push({name:'',qty:'',unit:_dsCropUnits[0]||'كيلو',price:0});renderDsCropItemsForm();}">
+      </div>
     </div>`).join('');
 }
 function calcDsCropTotal() {
