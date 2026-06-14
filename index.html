@@ -1283,6 +1283,12 @@ body.dark-mode .ss-option{color:#e0e0e0;}
           <span class="td-val" id="ds-units-shown">0</span>
         </div>
       </div>
+      <div class="results-header">
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.78rem;font-weight:700;color:var(--muted);cursor:pointer;">
+          <input type="checkbox" id="ds-select-all" onclick="toggleSelectAllDs(this)" style="width:16px;height:16px;accent-color:var(--primary);">تحديد الكل
+        </label>
+        <button id="ds-delete-selected-btn" style="display:none;" class="btn-sm btn-r" onclick="deleteSelectedDs()">🗑️ حذف (<span id="ds-sel-count">0</span>)</button>
+      </div>
       <div id="ds-list"><div class="loading">⏳</div></div>
 
   </div><!-- end page-deferred -->
@@ -1371,7 +1377,12 @@ body.dark-mode .ss-option{color:#e0e0e0;}
         <span><span id="dp-unpaid-val" style="color:var(--red);">0 ج</span> متبقي</span>
       </span>
     </div>
-
+    <div class="results-header">
+      <label style="display:flex;align-items:center;gap:6px;font-size:0.78rem;font-weight:700;color:var(--muted);cursor:pointer;">
+        <input type="checkbox" id="dp-select-all" onclick="toggleSelectAllDp(this)" style="width:16px;height:16px;accent-color:var(--primary);">تحديد الكل
+      </label>
+      <button id="dp-delete-selected-btn" style="display:none;" class="btn-sm btn-r" onclick="deleteSelectedDp()">🗑️ حذف (<span id="dp-sel-count">0</span>)</button>
+    </div>
     <div id="dp-list"><div class="loading">⏳</div></div>
   </div><!-- end page-deferred-purchases -->
 
@@ -2476,6 +2487,119 @@ const _payBadge = {
   partial: '<span style="font-size:0.65rem;font-weight:800;background:#dbeafe;color:#1e40af;border-radius:5px;padding:1px 5px;">💵 جزئي</span>',
 };
 let incomeSelected = new Set();
+let dsSelected = new Set();
+let dpSelected = new Set();
+
+function toggleSelectAllDs(cb){
+  document.querySelectorAll('#ds-list .item').forEach(el=>{
+    const id=el.id.replace('ds-item-',''); const chk=el.querySelector('.item-check');
+    if(cb.checked){dsSelected.add(id);el.classList.add('selected');if(chk)chk.checked=true;}
+    else{dsSelected.delete(id);el.classList.remove('selected');if(chk)chk.checked=false;}
+  }); updateDsSelBtn();
+}
+function toggleDsSel(id){
+  if(dsSelected.has(id))dsSelected.delete(id); else dsSelected.add(id);
+  const el=document.getElementById('ds-item-'+id);
+  if(el)el.classList.toggle('selected',dsSelected.has(id));
+  const chk=el?.querySelector('.item-check'); if(chk)chk.checked=dsSelected.has(id);
+  updateDsSelBtn();
+}
+function updateDsSelBtn(){
+  const btn=document.getElementById('ds-delete-selected-btn');
+  const cnt=document.getElementById('ds-sel-count');
+  if(btn){btn.style.display=dsSelected.size>0?'block':'none'; if(cnt)cnt.textContent=dsSelected.size;}
+}
+async function deleteSelectedDs(){
+  if(!dsSelected.size) return;
+  const ids=[...dsSelected];
+  if(!await showConfirm(`🗑️ هتحذف ${ids.length} فاتورة مبيعات؟`,'🗑️')) return;
+  const {data:vd}=await sb.from('vault').select('amount').eq('user_id',currentUser.id).in('ref_id',ids);
+  const totalV=(vd||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  if(totalV>0 && !await showConfirm(`⚠️ يوجد حركات خزنة (${fmt(totalV)} ج) ستُحذف أيضاً — متأكد؟`,'⚠️')) return;
+  await sb.from('vault').delete().eq('user_id',currentUser.id).in('ref_id',ids);
+  await sb.from('inventory_transactions').delete().eq('user_id',currentUser.id).in('ref_id',ids);
+  await sb.from('deferred_sales').delete().in('id',ids).eq('user_id',currentUser.id);
+  dsSelected.clear(); renderDeferredSales(); renderHome(); showToast('✅ تم الحذف');
+}
+
+function toggleSelectAllDp(cb){
+  document.querySelectorAll('#dp-list .item').forEach(el=>{
+    const id=el.id.replace('dp-item-',''); const chk=el.querySelector('.item-check');
+    if(cb.checked){dpSelected.add(id);el.classList.add('selected');if(chk)chk.checked=true;}
+    else{dpSelected.delete(id);el.classList.remove('selected');if(chk)chk.checked=false;}
+  }); updateDpSelBtn();
+}
+function toggleDpSel(id){
+  if(dpSelected.has(id))dpSelected.delete(id); else dpSelected.add(id);
+  const el=document.getElementById('dp-item-'+id);
+  if(el)el.classList.toggle('selected',dpSelected.has(id));
+  const chk=el?.querySelector('.item-check'); if(chk)chk.checked=dpSelected.has(id);
+  updateDpSelBtn();
+}
+function updateDpSelBtn(){
+  const btn=document.getElementById('dp-delete-selected-btn');
+  const cnt=document.getElementById('dp-sel-count');
+  if(btn){btn.style.display=dpSelected.size>0?'block':'none'; if(cnt)cnt.textContent=dpSelected.size;}
+}
+async function deleteSelectedDp(){
+  if(!dpSelected.size) return;
+  const ids=[...dpSelected];
+  if(!await showConfirm(`🗑️ هتحذف ${ids.length} فاتورة مشتريات؟`,'🗑️')) return;
+  const {data:vd}=await sb.from('vault').select('amount').eq('user_id',currentUser.id).in('ref_id',ids);
+  const totalV=(vd||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  if(totalV>0 && !await showConfirm(`⚠️ يوجد حركات خزنة (${fmt(totalV)} ج) ستُحذف أيضاً — متأكد؟`,'⚠️')) return;
+  await sb.from('vault').delete().eq('user_id',currentUser.id).in('ref_id',ids);
+  await sb.from('inventory_transactions').delete().eq('user_id',currentUser.id).in('ref_id',ids);
+  await sb.from('deferred_purchases').delete().in('id',ids).eq('user_id',currentUser.id);
+  dpSelected.clear(); renderDeferredPurchases(); renderHome(); showToast('✅ تم الحذف');
+}
+
+async function showDsDetail(id){
+  const {data:x}=await sb.from('deferred_sales').select('*').eq('id',id).eq('user_id',currentUser.id).single();
+  if(!x) return;
+  const {data:vd}=await sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('ref_id',id).in('category',['سداد_مبيعات','سداد_مبيعات_منتج','تسوية_مبيعات','تسوية_مبيعات_منتج']);
+  const paidSoFar=(vd||[]).reduce((s,r)=>s+Number(r.amount||0),0);
+  const remaining=Number(x.total||0)-paidSoFar;
+  const statusLabel = x.paid?'✅ مسددة بالكامل': paidSoFar>0?`💵 جزئي — دفع ${fmt(paidSoFar)} / باقي ${fmt(remaining)}`:'⏳ آجل (لم يُحصَّل بعد)';
+  const items=(x.items||[]);
+  const itemsHtml=items.length?`<div style="margin-top:4px;">${items.map(it=>`<div style="font-size:0.75rem;color:var(--muted);padding:2px 0;">• ${s(it.name)} — ${it.qty} ${s(it.unit||'')} × ${fmt(it.price)} = ${fmt((it.qty||0)*(it.price||0))} ج</div>`).join('')}</div>`:'';
+  document.getElementById('modal-title').textContent='تفاصيل المبيعات 🛒';
+  document.getElementById('modal-body').innerHTML=[
+    ['التاجر', x.trader?s(x.trader):'-'],
+    ['الوصف', x.description?s(x.description):'-'],
+    ['إجمالي المبلغ', fmt(x.total||0)],
+    ['التاريخ', fmtDate(x.date)],
+    ['المحصول', x.crop?('🌾 '+s(x.crop)):'-'],
+    ['الصنف', x.variety?('🌿 '+s(x.variety)):'-'],
+    ['حالة السداد', statusLabel],
+    ['ملاحظات', x.notes?s(x.notes):'-'],
+  ].map(([l,v])=>`<div class="detail-row"><span class="d-lbl">${l}</span><span class="d-val">${v}</span></div>`).join('')
+  + (itemsHtml?`<div class="detail-row" style="flex-direction:column;gap:4px;"><span class="d-lbl">المنتجات</span>${itemsHtml}</div>`:'');
+  document.getElementById('detail-overlay').classList.add('open');
+}
+
+async function showDpDetail(id){
+  const {data:x}=await sb.from('deferred_purchases').select('*').eq('id',id).eq('user_id',currentUser.id).single();
+  if(!x) return;
+  const {data:vd}=await sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('ref_id',id).in('category',['سداد_مشتريات','مشتريات_آجل','مرتجع_مشتريات']);
+  const paidSoFar=(vd||[]).reduce((s,r)=>s+Number(r.amount||0),0);
+  const remaining=Number(x.total||0)-paidSoFar;
+  const statusLabel = x.paid?'✅ مسددة بالكامل': paidSoFar>0?`💵 جزئي — دفع ${fmt(paidSoFar)} / باقي ${fmt(remaining)}`:'⏳ آجل (لم يُسدَّد بعد)';
+  const items=(x.items||[]);
+  const itemsHtml=items.length?`<div style="margin-top:4px;">${items.map(it=>`<div style="font-size:0.75rem;color:var(--muted);padding:2px 0;">• ${s(it.name)} — ${it.qty} ${s(it.unit||'')} × ${fmt(it.price)} = ${fmt((it.qty||0)*(it.price||0))} ج</div>`).join('')}</div>`:'';
+  document.getElementById('modal-title').textContent='تفاصيل المشتريات 🛍️';
+  document.getElementById('modal-body').innerHTML=[
+    ['التاجر', x.trader?s(x.trader):'-'],
+    ['الوصف', x.description?s(x.description):'-'],
+    ['إجمالي المبلغ', fmt(x.total||0)],
+    ['التاريخ', fmtDate(x.date)],
+    ['المحصول', x.crop?('🌾 '+s(x.crop)):'-'],
+    ['حالة السداد', statusLabel],
+    ['ملاحظات', x.notes?s(x.notes):'-'],
+  ].map(([l,v])=>`<div class="detail-row"><span class="d-lbl">${l}</span><span class="d-val">${v}</span></div>`).join('')
+  + (itemsHtml?`<div class="detail-row" style="flex-direction:column;gap:4px;"><span class="d-lbl">المنتجات</span>${itemsHtml}</div>`:'');
+  document.getElementById('detail-overlay').classList.add('open');
+}
 function clearIncFilter(){
   document.getElementById('inc-from').value='';
   document.getElementById('inc-to').value='';
@@ -5101,30 +5225,26 @@ async function renderDeferredPurchases() {
   const unpaidAll = data.filter(x=>!x.paid).reduce((s,x)=>s+Number(x.total||0),0);
   const bar = document.getElementById('dp-summary-bar');
   if(bar){bar.style.display='flex';document.getElementById('dp-total-val').textContent=fmt(totalAll)+' ج';document.getElementById('dp-unpaid-val').textContent=fmt(unpaidAll)+' ج';}
+  dpSelected.clear(); updateDpSelBtn();
   el.innerHTML = data.map(x=>{
-    const items = x.items||[];
-    const itemsHtml = items.map(it=>`<div style="font-size:0.72rem;color:var(--muted);">• ${s(it.name)} — ${it.qty} × ${fmt(it.price)} = ${fmt(it.qty*it.price)} ج</div>`).join('');
-    return `<div class="item ${x.paid?'':'exp'}" id="dp-item-${x.id}" style="flex-direction:column;align-items:stretch;gap:6px;padding:12px 14px;${x.is_return?'border-right:3px solid var(--red);opacity:0.9;':''}">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-        <div style="flex:1;">
-          <div class="i-desc">${x.description?s(x.description):(x.trader?'فاتورة - '+s(x.trader):'فاتورة مشتريات')}
-            ${x.is_return?'<span style="font-size:0.6rem;background:#fdecea;color:var(--red);padding:2px 6px;border-radius:8px;font-weight:800;margin-right:4px;">🔄 مرتجع</span>':''}
-          </div>
-          <div class="i-sub">${fmtDate(x.date)}${x.trader?' · 👤 '+s(x.trader):''}
-            ${!x.is_return?`<span class="badge ${x.paid?'badge-paid':'badge-pend'}" style="margin-right:4px;">${x.paid?'✅ مسددة':'⏳ معلقة'}</span>`:''}
-          </div>
-        </div>
-        <div style="text-align:left;">
-          <div class="i-amt" style="color:#6a1b9a;">${fmt(x.total)} ج</div>
-        </div>
+    const isPaid = x.paid;
+    const pt = isPaid ? 'full' : (x.pay_type||'ajal');
+    const badge = _payBadge[pt]||_payBadge.ajal;
+    const needsPay = !isPaid && !x.is_return;
+    const title = x.description ? s(x.description) : (x.trader ? s(x.trader) : 'فاتورة مشتريات');
+    const subDesc = [fmtDate(x.date), x.crop?'🌾 '+s(x.crop):'', x.trader?'👤 '+s(x.trader):''].filter(Boolean).join(' · ');
+    return `<div class="item ${isPaid?'':'exp'} ${dpSelected.has(x.id)?'selected':''}" id="dp-item-${x.id}" style="${x.is_return?'border-right:4px solid var(--red);':''}">
+      <input type="checkbox" class="item-check" onclick="event.stopPropagation();toggleDpSel('${x.id}')" ${dpSelected.has(x.id)?'checked':''}>
+      <div style="flex:1;min-width:0;cursor:pointer;" onclick="showDpDetail('${x.id}')">
+        <div class="i-desc">${title} ${badge}${x.is_return?' <span style="font-size:0.6rem;background:#fdecea;color:var(--red);padding:1px 5px;border-radius:5px;font-weight:800;">🔄 مرتجع</span>':''}</div>
+        <div class="i-sub">${subDesc}</div>
       </div>
-      <div style="border-top:1px solid var(--border);padding-top:6px;">${itemsHtml}</div>
-      ${x.notes?`<div style="font-size:0.72rem;color:var(--muted);">📝 ${s(x.notes)}</div>`:''}
-      <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
-        ${!x.paid&&!x.is_return?`<button class="btn-sm btn-g" onclick="event.stopPropagation();openDpCollect('${x.id}',${Math.abs(x.total||0)})">💵 تحصيل</button>`:''}
-        ${!x.is_return?`<button class="btn-sm" style="background:#fff3e0;color:#e65100;border:1.5px solid #e65100;" onclick="openReturnModal('purchase','${x.id}','${s(x.trader||'')}','',${Math.abs(x.total||0)})">🔄 مرتجع</button>`:''}
-        <button class="btn-sm" style="background:var(--blue-p);color:var(--blue);border:none;" onclick="editDeferredPurchase('${x.id}')">✏️ تعديل</button>
-        <button class="btn-sm btn-r" onclick="deleteDeferredPurchase('${x.id}','${x.paid}')">🗑️ حذف</button>
+      <div class="i-actions">
+        <div class="i-amt">${fmt(x.total||0)}</div>
+        ${needsPay?`<button class="btn-sm" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;" onclick="event.stopPropagation();openDpCollect('${x.id}',${Math.abs(x.total||0)})">💵 تحصيل</button>`:''}
+        ${!x.is_return?`<button class="btn-sm" style="background:#fff3e0;color:#e65100;border:1.5px solid #e65100;" onclick="event.stopPropagation();openReturnModal('purchase','${x.id}','${s(x.trader||'').replace(/'/g,"\\'")}','',${Math.abs(x.total||0)})">🔄</button>`:''}
+        <button class="btn-sm" style="background:var(--blue-p);color:var(--blue);" onclick="event.stopPropagation();editDeferredPurchase('${x.id}')">✏️</button>
+        <button class="del-btn" onclick="event.stopPropagation();deleteDeferredPurchase('${x.id}','${x.paid}')">✕</button>
       </div>
     </div>`;
   }).join('');
@@ -6469,30 +6589,25 @@ async function renderDeferredSales(){
   document.getElementById('ds-total-shown').textContent = Number(total).toLocaleString('en-US')+' ج';
   document.getElementById('ds-units-shown').textContent = Number(totalUnits).toLocaleString('en-US');
 
+  dsSelected.clear(); updateDsSelBtn();
   el.innerHTML = data.map(x=>{
     const isPaid = x.paid;
-    const isProd = x.sale_type === 'product';
-    const hasItems = (x.items||[]).length > 0;
-    const itemsHtml = hasItems ? (x.items||[]).map(it=>`<div style="font-size:0.72rem;color:var(--muted);">• ${s(it.name)} — ${it.qty} ${s(it.unit||'')} × ${fmt(it.price)} = ${fmt((it.qty||0)*(it.price||0))} ج</div>`).join('') : '';
-    return `<div class="ds-card ${isPaid?'ds-paid':''}" id="ds-item-${x.id}" style="${x.is_return?'border-right:3px solid var(--red);opacity:0.9;':''}">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:0.88rem;font-weight:900;color:var(--text);">${s(x.description||'')}
-            ${x.is_return?'<span style="font-size:0.6rem;background:#fdecea;color:var(--red);padding:2px 6px;border-radius:8px;font-weight:800;">🔄 مرتجع</span>':''}
-            ${isPaid&&!x.is_return?'<span style="font-size:0.6rem;background:#d4edda;color:#155724;padding:2px 6px;border-radius:8px;font-weight:800;">✅ مسددة</span>':''}
-          </div>
-          <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">${fmtDate(x.date)}${x.variety?' · 🌿 '+s(x.variety):''}${x.trader?' · 👤 '+s(x.trader):''}</div>
-          ${hasItems?`<div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;">${itemsHtml}</div>`:''}
-          ${!hasItems&&!isProd?`<div style="font-size:0.7rem;color:var(--muted);">${x.quantity} ${s(x.unit||'')} × ${Number(x.price).toLocaleString('en-US')} ج</div>`:''}
-          ${x.notes?`<div style="font-size:0.68rem;color:var(--muted);margin-top:2px;">${s(x.notes)}</div>`:''}
-        </div>
-        <div class="ds-total-badge">${Number(x.total||0).toLocaleString('en-US')} ج</div>
+    const pt = isPaid ? 'full' : (x.pay_type||'ajal');
+    const badge = _payBadge[pt]||_payBadge.ajal;
+    const needsPay = !isPaid && !x.is_return;
+    const subDesc = [fmtDate(x.date), x.crop?'🌾 '+s(x.crop):'', x.variety?'🌿 '+s(x.variety):'', x.trader?'👤 '+s(x.trader):''].filter(Boolean).join(' · ');
+    return `<div class="item ${isPaid?'':'exp'} ${dsSelected.has(x.id)?'selected':''}" id="ds-item-${x.id}" style="${x.is_return?'border-right:4px solid var(--red);':''}">
+      <input type="checkbox" class="item-check" onclick="event.stopPropagation();toggleDsSel('${x.id}')" ${dsSelected.has(x.id)?'checked':''}>
+      <div style="flex:1;min-width:0;cursor:pointer;" onclick="showDsDetail('${x.id}')">
+        <div class="i-desc">${x.trader?s(x.trader):(x.description?s(x.description):'فاتورة مبيعات')} ${badge}${x.is_return?' <span style="font-size:0.6rem;background:#fdecea;color:var(--red);padding:1px 5px;border-radius:5px;font-weight:800;">🔄 مرتجع</span>':''}</div>
+        <div class="i-sub">${subDesc}</div>
       </div>
-      <div class="ds-actions">
-        ${!isPaid&&!x.is_return?`<button class="btn-sm btn-g" onclick="event.stopPropagation();openDsSaleCollect('${x.id}',${Math.abs(x.total||0)})">💵 تحصيل</button>`:''}
-        ${!x.is_return?`<button class="btn-sm" style="background:#fff3e0;color:#e65100;border:1.5px solid #e65100;" onclick="openReturnModal('sale','${x.id}','${s(x.trader||'')}','${x.sale_type}',${Math.abs(x.total||0)})">🔄 مرتجع</button>`:''}
-        <button class="btn-sm" style="background:var(--blue-p);color:var(--blue);border:none;" onclick="editDeferredSale('${x.id}')">✏️ تعديل</button>
-        <button class="btn-sm btn-r" onclick="deleteDeferredSale('${x.id}',${isPaid})">🗑️</button>
+      <div class="i-actions">
+        <div class="i-amt">${fmt(x.total||0)}</div>
+        ${needsPay?`<button class="btn-sm" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;" onclick="event.stopPropagation();openDsSaleCollect('${x.id}',${Math.abs(x.total||0)})">💵 تحصيل</button>`:''}
+        ${!x.is_return?`<button class="btn-sm" style="background:#fff3e0;color:#e65100;border:1.5px solid #e65100;" onclick="event.stopPropagation();openReturnModal('sale','${x.id}','${s(x.trader||'').replace(/'/g,"\\'")}','${x.sale_type}',${Math.abs(x.total||0)})">🔄</button>`:''}
+        <button class="btn-sm" style="background:var(--blue-p);color:var(--blue);" onclick="event.stopPropagation();editDeferredSale('${x.id}')">✏️</button>
+        <button class="del-btn" onclick="event.stopPropagation();deleteDeferredSale('${x.id}',${isPaid})">✕</button>
       </div>
     </div>`;
   }).join('');
@@ -6502,18 +6617,25 @@ async function openDsSaleCollect(id, total){
   const {data:vEntries} = await sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('ref_id',id).in('category',['سداد_مبيعات','سداد_مبيعات_منتج','تسوية_مبيعات','تسوية_مبيعات_منتج']);
   const paidSoFar = (vEntries||[]).reduce((s,x)=>s+Number(x.amount||0),0);
   const remaining = total - paidSoFar;
+  const {data:saleRow}=await sb.from('deferred_sales').select('trader,description').eq('id',id).single();
+  const traderName=saleRow?.trader||saleRow?.description||'';
   document.getElementById('modal-title').textContent = '💵 تحصيل مبيعات';
   document.getElementById('modal-body').innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;text-align:center;">
-      <div style="background:var(--g5);border-radius:10px;padding:10px;"><div style="font-size:0.68rem;color:var(--muted);font-weight:700;">الإجمالي</div><div style="font-size:1rem;font-weight:900;color:var(--text);">${Number(total).toLocaleString('en-US')} ج</div></div>
-      <div style="background:#d1fae5;border-radius:10px;padding:10px;"><div style="font-size:0.68rem;color:#065f46;font-weight:700;">تم تحصيله</div><div style="font-size:1rem;font-weight:900;color:#065f46;">${Number(paidSoFar).toLocaleString('en-US')} ج</div></div>
-      <div style="background:#fee2e2;border-radius:10px;padding:10px;"><div style="font-size:0.68rem;color:#991b1b;font-weight:700;">المتبقي</div><div style="font-size:1rem;font-weight:900;color:#991b1b;">${Number(remaining).toLocaleString('en-US')} ج</div></div>
+    <div class="total-display" style="margin-bottom:14px;flex-direction:column;align-items:flex-start;gap:4px;background:#fef9f0;">
+      <div style="font-size:0.82rem;font-weight:800;color:var(--text);">${s(traderName)}</div>
+      <div style="display:flex;gap:16px;width:100%;margin-top:4px;">
+        <div><div style="font-size:0.68rem;color:var(--muted);">إجمالي</div><div style="font-weight:900;color:var(--text);">${fmt(total)}</div></div>
+        <div><div style="font-size:0.68rem;color:var(--muted);">تم تحصيله</div><div style="font-weight:900;color:#2d6a4f;">${fmt(paidSoFar)}</div></div>
+        <div><div style="font-size:0.68rem;color:var(--muted);">المتبقي</div><div style="font-weight:900;color:#c0392b;">${fmt(remaining)}</div></div>
+      </div>
     </div>
     <div class="edit-modal-row"><label>المبلغ المحصَّل الآن</label>
-      <input type="text" inputmode="decimal" id="ds-collect-amt" placeholder="0" value="${Number(remaining).toLocaleString('en-US').replace(/,/g,'')}"></div>
+      <input type="text" inputmode="decimal" id="ds-collect-amt" placeholder="0" value="${remaining}"></div>
     <div class="edit-modal-row"><label>التاريخ</label>
       <input type="date" id="ds-collect-date" value="${today()}"></div>
-    <button class="btn btn-g" style="width:100%;margin-top:12px;" onclick="saveDsSaleCollect('${id}',${total},${paidSoFar})">💾 تأكيد التحصيل</button>`;
+    <div class="edit-modal-row"><label>ملاحظات</label>
+      <input type="text" id="ds-collect-notes" placeholder="اختياري..."></div>
+    <button class="btn btn-g" style="width:100%;margin-top:12px;" onclick="saveDsSaleCollect('${id}',${total},${paidSoFar})">💾 تسجيل التحصيل</button>`;
   document.getElementById('detail-overlay').classList.add('open');
 }
 async function saveDsSaleCollect(id, total, paidSoFar){
@@ -6538,17 +6660,24 @@ async function openDpCollect(id, total){
   const {data:vEntries} = await sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('ref_id',id).eq('category','مشتريات_آجل');
   const paidSoFar = (vEntries||[]).reduce((s,x)=>s+Number(x.amount||0),0);
   const remaining = total - paidSoFar;
+  const {data:purRow}=await sb.from('deferred_purchases').select('trader,description').eq('id',id).single();
+  const traderNameDp=purRow?.trader||purRow?.description||'';
   document.getElementById('modal-title').textContent = '💵 سداد مشتريات';
   document.getElementById('modal-body').innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;text-align:center;">
-      <div style="background:var(--g5);border-radius:10px;padding:10px;"><div style="font-size:0.68rem;color:var(--muted);font-weight:700;">الإجمالي</div><div style="font-size:1rem;font-weight:900;color:var(--text);">${Number(total).toLocaleString('en-US')} ج</div></div>
-      <div style="background:#d1fae5;border-radius:10px;padding:10px;"><div style="font-size:0.68rem;color:#065f46;font-weight:700;">تم سداده</div><div style="font-size:1rem;font-weight:900;color:#065f46;">${Number(paidSoFar).toLocaleString('en-US')} ج</div></div>
-      <div style="background:#fee2e2;border-radius:10px;padding:10px;"><div style="font-size:0.68rem;color:#991b1b;font-weight:700;">المتبقي</div><div style="font-size:1rem;font-weight:900;color:#991b1b;">${Number(remaining).toLocaleString('en-US')} ج</div></div>
+    <div class="total-display" style="margin-bottom:14px;flex-direction:column;align-items:flex-start;gap:4px;background:#fef9f0;">
+      <div style="font-size:0.82rem;font-weight:800;color:var(--text);">${s(traderNameDp)}</div>
+      <div style="display:flex;gap:16px;width:100%;margin-top:4px;">
+        <div><div style="font-size:0.68rem;color:var(--muted);">إجمالي</div><div style="font-weight:900;color:var(--text);">${fmt(total)}</div></div>
+        <div><div style="font-size:0.68rem;color:var(--muted);">تم دفعه</div><div style="font-weight:900;color:#2d6a4f;">${fmt(paidSoFar)}</div></div>
+        <div><div style="font-size:0.68rem;color:var(--muted);">المتبقي</div><div style="font-weight:900;color:#c0392b;">${fmt(remaining)}</div></div>
+      </div>
     </div>
-    <div class="edit-modal-row"><label>المبلغ المسدَّد الآن</label>
-      <input type="text" inputmode="decimal" id="dp-collect-amt" placeholder="0" value="${Number(remaining).toLocaleString('en-US').replace(/,/g,'')}"></div>
+    <div class="edit-modal-row"><label>المبلغ المدفوع الآن</label>
+      <input type="text" inputmode="decimal" id="dp-collect-amt" placeholder="0" value="${remaining}"></div>
     <div class="edit-modal-row"><label>التاريخ</label>
       <input type="date" id="dp-collect-date" value="${today()}"></div>
+    <div class="edit-modal-row"><label>ملاحظات</label>
+      <input type="text" id="dp-collect-notes" placeholder="اختياري..."></div>
     <button class="btn btn-g" style="width:100%;margin-top:12px;" onclick="saveDpCollect('${id}',${total},${paidSoFar})">💾 تأكيد السداد</button>`;
   document.getElementById('detail-overlay').classList.add('open');
 }
