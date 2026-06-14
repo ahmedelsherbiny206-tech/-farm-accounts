@@ -2516,8 +2516,9 @@ async function saveIncPay(id, total, paidSoFar){
     paid_amount: isFullyPaid ? null : newPaid
   }).eq('id',id).eq('user_id',currentUser.id);
   if(error) return showToast('❌ خطأ: '+error.message);
+  const {data:incRow} = await sb.from('income').select('description').eq('id',id).single();
   await sb.from('vault').insert({
-    type:'income_auto', description:'تحصيل وارد آجل', amount:newAmt,
+    type:'income_auto', description:'إيراد: '+(incRow?.description||''), amount:newAmt,
     date, notes:notes||null, user_id:currentUser.id, ref_id:id
   });
   document.getElementById('detail-overlay').classList.remove('open');
@@ -2701,8 +2702,9 @@ async function saveExpPay(id, total, paidSoFar){
     paid_amount: isFullyPaid ? null : newPaid
   }).eq('id',id).eq('user_id',currentUser.id);
   if(error) return showToast('❌ خطأ: '+error.message);
+  const {data:expRow} = await sb.from('expenses').select('description').eq('id',id).single();
   await sb.from('vault').insert({
-    type:'expense_auto', description:'سداد صادر آجل', amount:newAmt,
+    type:'expense_auto', description:'مصروف: '+(expRow?.description||''), amount:newAmt,
     date, notes:notes||null, user_id:currentUser.id, ref_id:id
   });
   document.getElementById('detail-overlay').classList.remove('open');
@@ -6514,7 +6516,10 @@ async function saveDpCollect(id, total, paidSoFar){
   if(!date) return;
   const newPaid = paidSoFar + amt;
   const isFullyPaid = newPaid >= total - 0.001;
-  await sb.from('vault').insert({user_id:currentUser.id,type:'out',description:'سداد مشتريات',amount:amt,date,category:'مشتريات_آجل',ref_id:id});
+  const {data:pur} = await sb.from('deferred_purchases').select('trader').eq('id',id).single();
+  const trader = pur?.trader || '';
+  const desc = 'سداد مشتريات: ' + trader;
+  await sb.from('vault').insert({user_id:currentUser.id,type:'out',description:desc,amount:amt,date,category:'مشتريات_آجل',ref_id:id});
   if(isFullyPaid) await sb.from('deferred_purchases').update({paid:true,paid_at:new Date().toISOString()}).eq('id',id).eq('user_id',currentUser.id);
   closeModal(); renderDeferredPurchases(); renderHome();
 }
