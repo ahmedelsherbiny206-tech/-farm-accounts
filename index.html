@@ -5247,6 +5247,28 @@ async function saveDpEdit(id) {
   // تحديث سجل المصروف المرتبط
   const expDesc = 'مشتريات آجل'+(trader?' - '+trader:'')+(desc?' - '+desc:'');
   await sb.from('expenses').update({description:expDesc,amount:total,date}).eq('category','مشتريات آجل').eq('user_id',currentUser.id).eq('amount',total).eq('date',date);
+
+  // لو الفاتورة ليها حركات مخزن — احذفها وأعد إدخالها بالقيم الجديدة
+  const {data:oldInv} = await sb.from('inventory_transactions').select('id').eq('user_id',currentUser.id).eq('ref_id',id).eq('type','in');
+  if(oldInv?.length){
+    await sb.from('inventory_transactions').delete().eq('user_id',currentUser.id).eq('ref_id',id);
+    const {data:allTxns} = await sb.from('inventory_transactions').select('item,type,quantity,avg_cost').eq('user_id',currentUser.id);
+    const stockMap = {};
+    (allTxns||[]).forEach(r=>{
+      if(!stockMap[r.item]) stockMap[r.item]={qty:0,avg:0};
+      if(r.type==='in'){ stockMap[r.item].avg=r.avg_cost||0; stockMap[r.item].qty+=Number(r.quantity||0); }
+      else stockMap[r.item].qty-=Number(r.quantity||0);
+    });
+    const invRows = items.map(it=>{
+      const cur = stockMap[it.name]||{qty:0,avg:0};
+      const newAvg = cur.qty>0 ? (cur.qty*cur.avg + it.qty*it.price)/(cur.qty+it.qty) : it.price;
+      stockMap[it.name] = {qty:(cur.qty+it.qty), avg:newAvg};
+      return {user_id:currentUser.id,item:it.name,unit:it.unit||'',type:'in',quantity:it.qty,unit_price:it.price,avg_cost:newAvg,total:it.qty*it.price,date,notes:notes||null,crop:null,ref_id:id};
+    });
+    await sb.from('inventory_transactions').insert(invRows);
+    window._invStocks = null;
+  }
+
   showToast('✅ تم التعديل');
   closeModal();
   renderDeferredPurchases();
@@ -6694,6 +6716,26 @@ async function saveDsEdit(id){
   const itemsNote = validItems.map(x=>`${x.name} ${x.qty} ${x.unit} × ${x.price} ج`).join(' | ');
   const {data:iu} = await sb.from('income').update({description:incDesc,amount:total,date,crop:firstCrop||null,notes:'بيعة آجل - '+itemsNote}).eq('ref_id',id).eq('user_id',currentUser.id).select('id');
   if(!iu?.length) await sb.from('income').update({description:incDesc,amount:total,date,crop:firstCrop||null}).eq('category','مبيعات آجل').eq('date',date).eq('user_id',currentUser.id);
+
+  // لو الفاتورة ليها حركات مخزن (بيع من المخزن) — احذفها وأعد إدخالها
+  const {data:oldInv} = await sb.from('inventory_transactions').select('id').eq('user_id',currentUser.id).eq('ref_id',id).eq('type','sale');
+  if(oldInv?.length){
+    await sb.from('inventory_transactions').delete().eq('user_id',currentUser.id).eq('ref_id',id);
+    const {data:allTxns} = await sb.from('inventory_transactions').select('item,type,quantity,avg_cost').eq('user_id',currentUser.id);
+    const stockMap = {};
+    (allTxns||[]).forEach(r=>{
+      if(!stockMap[r.item]) stockMap[r.item]={qty:0,avg:0};
+      if(r.type==='in'){ stockMap[r.item].avg=r.avg_cost||0; stockMap[r.item].qty+=Number(r.quantity||0); }
+      else stockMap[r.item].qty-=Number(r.quantity||0);
+    });
+    const invRows = validItems.map(it=>{
+      const cur = stockMap[it.name]||{qty:0,avg:0};
+      return {user_id:currentUser.id,item:it.name,unit:it.unit||'',type:'sale',quantity:it.qty,unit_price:it.price,avg_cost:cur.avg||it.price,total:it.qty*it.price,date,notes:notes||null,crop:null,ref_id:id};
+    });
+    await sb.from('inventory_transactions').insert(invRows);
+    window._invStocks = null;
+  }
+
   logActivity('تعديل','deferred_sales','تعديل بيعة آجل: '+desc,total);
   showToast('✅ تم التعديل');
   closeModal();
