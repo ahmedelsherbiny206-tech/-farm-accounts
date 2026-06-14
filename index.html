@@ -2303,12 +2303,12 @@ async function handleAuthRedirect() {
       return;
     }
   }
-  // Normal session check - try real session first
+  // Normal session check
   const {data:sd} = await sb.auth.getSession();
   if(sd?.session?.user){
     initApp(sd.session.user);
   } else {
-    initApp({id:'5efb70e9-c27f-490a-9a8b-94a15215919d', email:'ahmedelsherbiny206@gmail.com', user_metadata:{}});
+    document.getElementById('auth-screen').style.display = 'flex';
   }
 }
 handleAuthRedirect();
