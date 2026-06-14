@@ -979,19 +979,18 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       <button class="btn btn-g" onclick="addIncome()">➕ إضافة</button>
     </div>
     <div class="filter-section">
-      <div class="filter-row">
-        <span class="filter-label">من:</span><input type="date" id="inc-from" class="filter-input">
-        <span class="filter-label">إلى:</span><input type="date" id="inc-to" class="filter-input">
-        <div class="filter-btns"><button class="filter-btn" onclick="renderIncomeList()">عرض</button><button class="clear-btn" onclick="clearIncFilter()">الكل</button></div>
+      <div class="filter-row" style="margin-bottom:8px;">
+        <span class="filter-label">من:</span>
+        <input type="date" id="inc-from" class="filter-input" onchange="renderIncomeList()">
+        <span class="filter-label">إلى:</span>
+        <input type="date" id="inc-to" class="filter-input" onchange="renderIncomeList()">
+        <button class="btn-sm outline" onclick="clearIncFilter()">الكل</button>
       </div>
-      <div class="filter-row">
-        <span class="filter-label">النوع:</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
         <select id="inc-filter-type" class="filter-input" onchange="renderIncomeList()"><option value="">كل الأنواع</option></select>
-        <span class="filter-label">المحصول:</span>
         <select id="inc-filter-crop" class="filter-input" onchange="renderIncomeList()"><option value="">كل المحاصيل</option></select>
-        <span class="filter-label">الدفع:</span>
         <select id="inc-filter-pay" class="filter-input" onchange="renderIncomeList()">
-          <option value="">الكل</option>
+          <option value="">كل الدفع</option>
           <option value="full">✅ كاش</option>
           <option value="ajal">⏳ آجل</option>
           <option value="partial">💵 جزئي</option>
@@ -1042,23 +1041,22 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       <button class="btn btn-r" onclick="addExpense()">➕ إضافة</button>
     </div>
     <div class="filter-section">
-      <div class="filter-row">
-        <span class="filter-label">من:</span><input type="date" id="exp-from" class="filter-input">
-        <span class="filter-label">إلى:</span><input type="date" id="exp-to" class="filter-input">
-        <div class="filter-btns"><button class="filter-btn" onclick="renderExpenseList()">عرض</button><button class="clear-btn" onclick="clearExpFilter()">الكل</button></div>
+      <div class="filter-row" style="margin-bottom:8px;">
+        <span class="filter-label">من:</span>
+        <input type="date" id="exp-from" class="filter-input" onchange="renderExpenseList()">
+        <span class="filter-label">إلى:</span>
+        <input type="date" id="exp-to" class="filter-input" onchange="renderExpenseList()">
+        <button class="btn-sm outline" onclick="clearExpFilter()">الكل</button>
       </div>
-      <div class="filter-row">
-        <span class="filter-label">التصنيف:</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
         <select id="exp-filter-cat" class="filter-input" onchange="renderExpenseList()"><option value="">كل التصنيفات</option></select>
-        <span class="filter-label">الدفع:</span>
+        <select id="exp-filter-crop" class="filter-input" onchange="renderExpenseList()"><option value="">كل المحاصيل</option></select>
         <select id="exp-filter-pay" class="filter-input" onchange="renderExpenseList()">
-          <option value="">الكل</option>
+          <option value="">كل الدفع</option>
           <option value="full">✅ كاش</option>
           <option value="ajal">⏳ آجل</option>
           <option value="partial">💵 جزئي</option>
         </select>
-        <span class="filter-label">المحصول:</span>
-        <select id="exp-filter-crop" class="filter-input" onchange="renderExpenseList()"><option value="">كل المحاصيل</option></select>
       </div>
     </div>
     <div class="results-header">
