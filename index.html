@@ -1238,14 +1238,16 @@ body.dark-mode .ss-option{color:#e0e0e0;}
 
       <!-- فلاتر -->
       <div class="filter-section">
-        <div class="filter-row">
+        <!-- تاريخ -->
+        <div class="filter-row" style="margin-bottom:8px;">
           <span class="filter-label">من:</span>
           <input type="date" id="ds-from" class="filter-input" onchange="renderDeferredSales()">
           <span class="filter-label">إلى:</span>
           <input type="date" id="ds-to" class="filter-input" onchange="renderDeferredSales()">
           <button class="btn-sm outline" onclick="clearDsFilter()">الكل</button>
         </div>
-        <div id="ds-filters-crop" class="filter-row" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+        <!-- فلاتر المحصول -->
+        <div id="ds-filters-crop" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">
           <select id="ds-filter-crop" class="filter-input" onchange="renderDeferredSales()">
             <option value="">كل المحاصيل</option>
           </select>
@@ -1256,7 +1258,8 @@ body.dark-mode .ss-option{color:#e0e0e0;}
             <option value="">كل الأصناف</option>
           </select>
         </div>
-        <div id="ds-filters-product" style="display:none;" class="filter-row" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+        <!-- فلاتر المنتج -->
+        <div id="ds-filters-product" style="display:none;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
           <select id="ds-filter-prod-trader" class="filter-input" onchange="renderDeferredSales()">
             <option value="">كل التجار</option>
           </select>
@@ -1264,10 +1267,11 @@ body.dark-mode .ss-option{color:#e0e0e0;}
             <option value="">كل المنتجات</option>
           </select>
         </div>
-        <div class="filter-row" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);gap:6px;">
-          <button class="filter-btn active" id="dsf-all" onclick="setDsFilter('all',this)">الكل</button>
-          <button class="filter-btn" id="dsf-unpaid" onclick="setDsFilter('unpaid',this)">غير مسددة</button>
-          <button class="filter-btn" id="dsf-paid" onclick="setDsFilter('paid',this)">مسددة</button>
+        <!-- حالة السداد -->
+        <div class="tab-toggle" style="margin-bottom:0;">
+          <button class="active" id="dsf-all" onclick="setDsFilter('all',this)">الكل</button>
+          <button id="dsf-unpaid" onclick="setDsFilter('unpaid',this)">غير مسددة</button>
+          <button id="dsf-paid" onclick="setDsFilter('paid',this)">مسددة</button>
         </div>
       </div>
       <!-- ملخص الإجماليات -->
