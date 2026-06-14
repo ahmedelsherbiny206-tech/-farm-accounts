@@ -6436,7 +6436,13 @@ async function saveDsSaleCollect(id, total, paidSoFar){
   if(!date) return;
   const newPaid = paidSoFar + amt;
   const isFullyPaid = newPaid >= total - 0.001;
-  await sb.from('vault').insert({user_id:currentUser.id,type:'in',description:'تحصيل مبيعات',amount:amt,date,category:'سداد_مبيعات',ref_id:id});
+  // جيب بيانات الفاتورة عشان نعرف التاجر ونوع البيع
+  const {data:sale} = await sb.from('deferred_sales').select('trader,sale_type').eq('id',id).single();
+  const saleType = sale?.sale_type || 'crop';
+  const trader = sale?.trader || '';
+  const cat = saleType==='product' ? 'سداد_مبيعات_منتج' : 'سداد_مبيعات';
+  const desc = saleType==='product' ? 'سداد مبيعات منتج: '+trader : 'سداد مبيعات: '+trader;
+  await sb.from('vault').insert({user_id:currentUser.id,type:'in',description:desc,amount:amt,date,category:cat,ref_id:id});
   if(isFullyPaid) await sb.from('deferred_sales').update({paid:true,paid_at:new Date().toISOString()}).eq('id',id).eq('user_id',currentUser.id);
   closeModal(); renderDeferredSales(); renderHome();
 }
