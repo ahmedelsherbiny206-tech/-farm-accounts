@@ -4324,10 +4324,13 @@ wa.me/201062025577`;
 
 function _applyFarmSettings(){
   const s = _farmSettingsCache || {name:'حسابات المزرعة', area:0, phone:''};
+  const name = s.name||'حسابات المزرعة';
   const title = document.getElementById('farm-title');
-  if(title) title.textContent = '🌿 ' + (s.name||'حسابات المزرعة');
+  if(title) title.textContent = '🌿 ' + name;
+  const badge = document.getElementById('user-badge');
+  if(badge) badge.textContent = '👤 ' + name;
   const disp = document.getElementById('farm-name-display');
-  if(disp) disp.textContent = s.name||'حسابات المزرعة';
+  if(disp) disp.textContent = name;
   const areaDisp = document.getElementById('farm-area-display');
   if(areaDisp) areaDisp.textContent = s.area ? s.area+' فدان' : 'غير محددة';
   const phoneDisp = document.getElementById('farm-phone-display');
