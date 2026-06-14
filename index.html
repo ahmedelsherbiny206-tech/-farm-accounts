@@ -8227,7 +8227,11 @@ async function openCropStorage(){
   const unitOpts = units.map(u=>`<option>${s(u)}</option>`).join('');
   document.getElementById('modal-title').textContent='🌾 تخزين محصول';
   document.getElementById('modal-body').innerHTML=`
-    <div class="edit-modal-row"><label>المحصول</label>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+      <label style="font-size:0.75rem;font-weight:700;color:var(--muted);">المحصول</label>
+      <button onclick="openCropManager()" style="background:none;border:none;font-size:0.75rem;color:var(--g3);font-family:Cairo,sans-serif;cursor:pointer;font-weight:700;">🌾 إدارة المحاصيل</button>
+    </div>
+    <div class="edit-modal-row" style="margin-top:0;">
       <select id="cs-crop" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.88rem;">
         <option value="">-- اختار المحصول --</option>${cropOpts}
       </select></div>
