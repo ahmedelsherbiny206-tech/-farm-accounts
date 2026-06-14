@@ -2744,7 +2744,7 @@ async function renderExpenseList() {
       </div>
       <div class="i-actions">
         <div class="i-amt">${fmt(x.amount)}</div>
-        ${needsPay?`<button class="btn-sm" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;" onclick="event.stopPropagation();openExpPayModal('${x.id}','${s(x.description).replace(/'/g,"\\'")}',${x.amount},${paidSoFar})">💵 سداد</button>`:''}
+        ${needsPay?`<button class="btn-sm" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;" onclick="event.stopPropagation();openExpPayModal('${x.id}','${s(x.description).replace(/'/g,"\\'")}',${x.amount},${paidSoFar})">💵 تحصيل</button>`:''}
         <button class="btn-sm" style="background:var(--blue-p);color:var(--blue);" onclick="event.stopPropagation();editItem('expense',${JSON.stringify(x).replace(/"/g,'&quot;')})">✏️</button>
         <button class="del-btn" onclick="event.stopPropagation();delItem('expenses','${x.id}')">✕</button>
       </div>
