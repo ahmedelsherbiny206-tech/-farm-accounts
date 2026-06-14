@@ -1478,6 +1478,9 @@ body.dark-mode .ss-option{color:#e0e0e0;}
         <span>📦 الجرد الحالي</span>
         <div class="lbl-actions"><button onclick="openInvItemManager()">⚙️ إدارة الأصناف</button></div>
       </div>
+      <div style="margin-bottom:8px;">
+        <input type="text" id="inv-stock-search" class="filter-input" placeholder="🔍 بحث سريع في الجرد..." oninput="renderInvStock()" style="width:100%;box-sizing:border-box;">
+      </div>
       <div id="inv-stock-table"><div class="loading">⏳</div></div>
     </div>
 
@@ -8002,7 +8005,8 @@ async function renderInvStock(){
   const el = document.getElementById('inv-stock-table');
   if(!el) return;
   const stocks = await calcAllStock();
-  const active = stocks.filter(r=>Math.abs(r.qty)>0.001);
+  const searchQ = (document.getElementById('inv-stock-search')?.value||'').trim().toLowerCase();
+  const active = stocks.filter(r=>!searchQ || r.item.toLowerCase().includes(searchQ));
   if(!active.length){ el.innerHTML='<div class="empty">المخزن فارغ 📭</div>'; return; }
   const grandTotal = active.reduce((s,r)=>s+r.qty*r.avg_cost,0);
   el.innerHTML=`<div style="overflow-x:auto;">
@@ -8070,9 +8074,13 @@ async function renderInvHistory(){
           </div>
           ${r.notes?`<div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">${s(r.notes)}</div>`:''}
         </div>
-        <div style="text-align:left;white-space:nowrap;">
+        <div style="text-align:left;white-space:nowrap;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
           <div style="font-size:0.9rem;font-weight:900;color:${dirColor[r.type]};">${(r.type==='in'||r.type==='crop_in'||(r.type==='adjust'&&Number(r.quantity)>=0))?'+':'−'}${Math.abs(Number(r.quantity)).toLocaleString('en-US')} ${s(r.unit||'')}</div>
-          <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;">${fmtDate(r.date)}</div>
+          <div style="font-size:0.68rem;color:var(--muted);">${fmtDate(r.date)}</div>
+          ${(r.type==='adjust'||r.type==='usage')?`<div style="display:flex;gap:4px;">
+            <button onclick="editInvTxn('${r.id}')" style="font-size:0.68rem;padding:2px 7px;border-radius:6px;border:1.5px solid var(--primary-border);background:var(--primary-bg);color:var(--primary);font-family:Cairo,sans-serif;font-weight:800;cursor:pointer;">✏️ تعديل</button>
+            <button onclick="deleteInvTxn('${r.id}')" style="font-size:0.68rem;padding:2px 7px;border-radius:6px;border:1.5px solid #fca5a5;background:#fff5f5;color:#dc2626;font-family:Cairo,sans-serif;font-weight:800;cursor:pointer;">🗑️</button>
+          </div>`:''}
         </div>
       </div>
     </div>`).join('');
@@ -8135,6 +8143,57 @@ async function saveInvAdjust(item, unit, currentQty, avgCost){
   showToast('✅ تم حفظ التسوية');
   renderInvStock();
   renderInvHistory();
+}
+
+async function deleteInvTxn(id){
+  if(!await showConfirm('🗑️ سيتم حذف هذه الحركة من المخزن — متأكد؟','🗑️')) return;
+  const {error} = await sb.from('inventory_transactions').delete().eq('id',id).eq('user_id',currentUser.id);
+  if(error){ showToast('❌ خطأ: '+error.message); return; }
+  showToast('✅ تم الحذف');
+  renderInvStock(); renderInvHistory();
+}
+
+async function editInvTxn(id){
+  const {data:r,error} = await sb.from('inventory_transactions').select('*').eq('id',id).eq('user_id',currentUser.id).single();
+  if(error||!r){ showToast('❌ لم يتم العثور على الحركة'); return; }
+  const isAdjust = r.type==='adjust';
+  document.getElementById('modal-title').textContent = isAdjust ? '⚖️ تعديل تسوية' : '✏️ تعديل صرف';
+  document.getElementById('modal-body').innerHTML=`
+    <div class="edit-modal-row"><label>الصنف</label>
+      <input type="text" id="eit-item" value="${s(r.item)}" readonly style="background:var(--g5);color:var(--muted);">
+    </div>
+    <div class="edit-modal-row"><label>${isAdjust?'الكمية (الفرق + أو −)':'الكمية المصروفة'}</label>
+      <input type="text" inputmode="decimal" id="eit-qty" value="${r.quantity}">
+    </div>
+    <div class="edit-modal-row"><label>سعر الوحدة</label>
+      <input type="text" inputmode="decimal" id="eit-price" value="${r.unit_price||0}">
+    </div>
+    <div class="edit-modal-row"><label>التاريخ</label>
+      <input type="date" id="eit-date" value="${r.date}">
+    </div>
+    <div class="edit-modal-row"><label>ملاحظات</label>
+      <input type="text" id="eit-notes" value="${s(r.notes||'')}">
+    </div>
+    <button class="btn btn-g" style="margin-top:4px;" onclick="saveEditInvTxn('${id}','${r.type}')">💾 حفظ التعديل</button>
+  `;
+  document.getElementById('detail-overlay').classList.add('open');
+}
+
+async function saveEditInvTxn(id, type){
+  const qty = parseFloat(document.getElementById('eit-qty').value);
+  if(isNaN(qty)){ showToast('❌ ادخل كمية صحيحة'); return; }
+  if(type==='usage' && qty<=0){ showToast('❌ كمية الصرف يجب أن تكون موجبة'); return; }
+  const price = parseFloat(document.getElementById('eit-price').value)||0;
+  const date  = document.getElementById('eit-date').value||today();
+  const notes = document.getElementById('eit-notes').value||null;
+  const {error} = await sb.from('inventory_transactions').update({
+    quantity:qty, unit_price:price, avg_cost:price,
+    total:Math.abs(qty)*price, date, notes
+  }).eq('id',id).eq('user_id',currentUser.id);
+  if(error){ showToast('❌ خطأ: '+error.message); return; }
+  document.getElementById('detail-overlay').classList.remove('open');
+  showToast('✅ تم حفظ التعديل');
+  renderInvStock(); renderInvHistory();
 }
 
 function clearInvFilter(){
