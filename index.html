@@ -5035,7 +5035,7 @@ async function addDeferredPurchase() {
       const newAvg = cur.qty>0 ? (cur.qty*cur.avg + it.qty*it.price)/(cur.qty+it.qty) : it.price;
       // تحديث stockMap للعناصر التالية في نفس الفاتورة
       stockMap[it.name] = {qty:(cur.qty+it.qty), avg:newAvg};
-      return {user_id:currentUser.id,item:it.name,unit:it.unit||'',type:'in',quantity:it.qty,unit_price:it.price,avg_cost:newAvg,total:it.qty*it.price,date,notes:notes||null,crop:null};
+      return {user_id:currentUser.id,item:it.name,unit:it.unit||'',type:'in',quantity:it.qty,unit_price:it.price,avg_cost:newAvg,total:it.qty*it.price,date,notes:notes||null,crop:null,ref_id:purchaseId};
     });
     await sb.from('inventory_transactions').insert(invRows);
   } else {
@@ -5144,36 +5144,46 @@ async function payDeferredPurchase(id) {
 }
 
 async function deleteDeferredPurchase(id, isPaid) {
-  // جيب بيانات الفاتورة أولاً عشان نعرف كم اتدفع
-  const {data:purData} = await sb.from('deferred_purchases').select('*').eq('user_id',currentUser.id).eq('id',id).limit(1);
+  // جيب كل البيانات أولاً
+  const [{data:purData}, {data:vEntries}, {data:invTxns}] = await Promise.all([
+    sb.from('deferred_purchases').select('*').eq('user_id',currentUser.id).eq('id',id).limit(1),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('ref_id',id).in('category',['سداد_مشتريات','مشتريات_آجل','مرتجع_مشتريات']),
+    sb.from('inventory_transactions').select('id,item,quantity').eq('user_id',currentUser.id).eq('ref_id',id).eq('type','in')
+  ]);
   const pur = purData?.[0];
-  const {data:vEntries} = await sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('ref_id',id).in('category',['سداد_مشتريات','مشتريات_آجل','مرتجع_مشتريات']);
   const totalPaid = (vEntries||[]).reduce((s,x)=>s+Number(x.amount||0),0);
 
-  const msg = pur?.is_return
-    ? `🔄 حذف فاتورة المرتجع${totalPaid>0?' وسيتم حذف حركة الخزنة المرتبطة بها ('+Number(totalPaid).toLocaleString('en-US')+' ج)':''} — متأكد؟`
-    : totalPaid>0
-      ? `⚠️ هذه الفاتورة عليها مدفوعات (${Number(totalPaid).toLocaleString('en-US')} ج) ستُحذف من الخزنة كذلك — متأكد؟`
-      : '🗑️ سيتم حذف الفاتورة ومقابلها من المصاريف — متأكد؟';
-
-  if(!await showConfirm(msg, totalPaid>0||pur?.is_return?'⚠️':'🗑️')) return;
-
-  await sb.from('deferred_purchases').delete().eq('id',id).eq('user_id',currentUser.id);
-
-  if(pur){
-    await sb.from('expenses').delete().eq('user_id',currentUser.id).eq('category','مشتريات آجل').eq('amount',pur.total).eq('date',pur.date);
+  // تحقق من صرف لاحق على نفس الأصناف
+  let hasUsage = false;
+  if(invTxns?.length){
+    const itemNames = [...new Set(invTxns.map(t=>t.item))];
+    const {data:usageTxns} = await sb.from('inventory_transactions').select('id').eq('user_id',currentUser.id).in('item',itemNames).in('type',['usage','sale','crop_out']).limit(1);
+    hasUsage = usageTxns?.length > 0;
   }
 
-  // دايماً احذف كل vault entries مرتبطة بالفاتورة
-  await sb.from('vault').delete().eq('user_id',currentUser.id).eq('ref_id',id);
+  // رسالة تحذير واحدة شاملة
+  let msgParts = [];
+  if(pur?.is_return) msgParts.push('🔄 حذف فاتورة مرتجع');
+  else msgParts.push('🗑️ حذف فاتورة المشتريات');
+  if(totalPaid>0) msgParts.push(`💵 سيتم حذف مدفوعات (${Number(totalPaid).toLocaleString('en-US')} ج) من الخزنة`);
+  if(invTxns?.length) msgParts.push(`📦 سيتم حذف ${invTxns.length} حركة من المخزن`);
+  if(hasUsage) msgParts.push('⚠️ تحذير: اتصرف من هذه الأصناف، الكميات قد تصبح بالسالب');
+  msgParts.push('متأكد؟');
 
-  // للسجلات القديمة اللي مش فيها ref_id (لو isPaid)
-  if(isPaid==='true' && pur){
-    await sb.from('vault').delete().eq('user_id',currentUser.id).eq('category','مشتريات_آجل').eq('amount',pur.total).is('ref_id',null);
-  }
+  const isRisky = totalPaid>0 || invTxns?.length || pur?.is_return;
+  if(!await showConfirm(msgParts.join('\n\n'), isRisky?'⚠️':'🗑️')) return;
+
+  await Promise.all([
+    sb.from('deferred_purchases').delete().eq('id',id).eq('user_id',currentUser.id),
+    sb.from('vault').delete().eq('user_id',currentUser.id).eq('ref_id',id),
+    invTxns?.length ? sb.from('inventory_transactions').delete().eq('user_id',currentUser.id).eq('ref_id',id) : Promise.resolve()
+  ]);
+
+  if(pur) await sb.from('expenses').delete().eq('user_id',currentUser.id).eq('category','مشتريات آجل').eq('amount',pur.total).eq('date',pur.date);
+  if(isPaid==='true' && pur) await sb.from('vault').delete().eq('user_id',currentUser.id).eq('category','مشتريات_آجل').eq('amount',pur.total).is('ref_id',null);
 
   logActivity('حذف','deferred_purchases','حذف فاتورة مشتريات آجل'+(pur?.trader?' - '+pur.trader:''));
-  showToast('🗑️ تم الحذف'+(totalPaid>0?' وإزالة المدفوعات من الخزنة':''));
+  showToast('🗑️ تم الحذف'+(totalPaid>0?' وإزالة المدفوعات من الخزنة':'')+(invTxns?.length?' وحركات المخزن':''));
   renderDeferredPurchases(); renderHome();
 }
 
@@ -6059,7 +6069,7 @@ async function addDeferredSaleProd() {
     });
     const invRows = validItems.map(it=>{
       const cur = stockMap[it.name]||{qty:0,avg:0};
-      return {user_id:currentUser.id,item:it.name,unit:it.unit||'',type:'sale',quantity:it.qty,unit_price:it.price,avg_cost:cur.avg||it.price,total:it.qty*it.price,date,notes:notes||null,crop:null};
+      return {user_id:currentUser.id,item:it.name,unit:it.unit||'',type:'sale',quantity:it.qty,unit_price:it.price,avg_cost:cur.avg||it.price,total:it.qty*it.price,date,notes:notes||null,crop:null,ref_id:saleId};
     });
     await sb.from('inventory_transactions').insert(invRows);
   } else {
@@ -6552,41 +6562,45 @@ async function payDeferredSale(id){
 
 // حذف بيعة
 async function deleteDeferredSale(id, isPaid){
-  // جيب بيانات البيعة أولاً عشان نعرف كم اتحصّل
-  const {data:saleData} = await sb.from('deferred_sales').select('*').eq('id',id).eq('user_id',currentUser.id).limit(1);
+  // جيب كل البيانات أولاً
+  const [{data:saleData}, {data:vEntries}, {data:invTxns}] = await Promise.all([
+    sb.from('deferred_sales').select('*').eq('id',id).eq('user_id',currentUser.id).limit(1),
+    sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('ref_id',id).in('category',['سداد_مبيعات','سداد_مبيعات_منتج','تسوية_مبيعات','تسوية_مبيعات_منتج','مرتجع_مبيعات']),
+    sb.from('inventory_transactions').select('id,item,quantity').eq('user_id',currentUser.id).eq('ref_id',id).eq('type','sale')
+  ]);
   const sale = saleData?.[0];
-  const {data:vEntries} = await sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('ref_id',id).in('category',['سداد_مبيعات','سداد_مبيعات_منتج','تسوية_مبيعات','تسوية_مبيعات_منتج','مرتجع_مبيعات']);
   const totalPaid = (vEntries||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const hasInvTxns = invTxns?.length > 0;
 
-  let msg = sale?.is_return
-    ? `🔄 حذف فاتورة المرتجع${totalPaid>0?' وسيتم حذف حركة الخزنة المرتبطة بها ('+Number(totalPaid).toLocaleString('en-US')+' ج)':''} — متأكد؟`
-    : totalPaid>0
-      ? `⚠️ هذه البيعة عليها مدفوعات (${Number(totalPaid).toLocaleString('en-US')} ج) ستُحذف من الخزنة كذلك — متأكد؟`
-      : '🗑️ سيتم حذف البيعة ومقابلها من الوارد — متأكد؟';
+  // رسالة تحذير واحدة شاملة
+  let msgParts = [];
+  if(sale?.is_return) msgParts.push('🔄 حذف فاتورة مرتجع');
+  else msgParts.push('🗑️ حذف فاتورة المبيعات');
+  if(totalPaid>0) msgParts.push(`💵 سيتم حذف تحصيلات (${Number(totalPaid).toLocaleString('en-US')} ج) من الخزنة`);
+  if(hasInvTxns) msgParts.push(`📦 سيتم إرجاع ${invTxns.length} حركة بيع للمخزن (الكميات ستزيد)`);
+  msgParts.push('متأكد؟');
 
-  if(!await showConfirm(msg, totalPaid>0||sale?.is_return?'⚠️':'🗑️')) return;
+  const isRisky = totalPaid>0 || sale?.is_return || hasInvTxns;
+  if(!await showConfirm(msgParts.join('\n\n'), isRisky?'⚠️':'🗑️')) return;
 
-  // حذف من deferred_sales
-  await sb.from('deferred_sales').delete().eq('id',id).eq('user_id',currentUser.id);
+  await Promise.all([
+    sb.from('deferred_sales').delete().eq('id',id).eq('user_id',currentUser.id),
+    sb.from('vault').delete().eq('user_id',currentUser.id).eq('ref_id',id),
+    hasInvTxns ? sb.from('inventory_transactions').delete().eq('user_id',currentUser.id).eq('ref_id',id) : Promise.resolve()
+  ]);
 
-  // حذف من income
   if(sale){
     await sb.from('income').delete().eq('user_id',currentUser.id).eq('ref_id', sale.id);
     const incDesc = 'بيع آجل: '+(sale.description||'');
     await sb.from('income').delete().eq('user_id',currentUser.id).eq('category','مبيعات آجل').eq('amount',sale.total).ilike('description', incDesc+'%').is('ref_id',null);
   }
-
-  // دايماً احذف كل vault entries مرتبطة بالفاتورة (تحصيل جزئي أو كامل أو مرتجع)
-  await sb.from('vault').delete().eq('user_id',currentUser.id).eq('ref_id',id);
-
-  // للسجلات القديمة اللي مش فيها ref_id (لو isPaid)
   if(isPaid && sale){
     const vDesc = 'سداد مبيعات: '+(sale.trader||'');
     await sb.from('vault').delete().eq('user_id',currentUser.id).eq('category','سداد_مبيعات').eq('amount',sale.total).ilike('description', vDesc+'%').is('ref_id',null);
   }
 
   logActivity('حذف','deferred_sales','حذف بيعة آجل: '+(sale?.description||''));
-  showToast('🗑️ تم الحذف'+(totalPaid>0?' وإزالة المدفوعات من الخزنة':''));
+  showToast('🗑️ تم الحذف'+(totalPaid>0?' وإزالة التحصيلات من الخزنة':'')+(hasInvTxns?' وتحديث المخزن':''));
   renderDeferredSales();
   renderHome();
 }
