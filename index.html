@@ -1310,7 +1310,8 @@ body.dark-mode .ss-option{color:#e0e0e0;}
         <select id="dp-trader"><option value="">-- اختار التاجر --</option></select>
       </div>
 
-      <div class="form-row"><label>المحصول / التوزيع</label>
+      <div class="section-lbl"><span>المحصول / التوزيع</span><div class="lbl-actions"><button onclick="openCropManager()">🌾 إدارة المحاصيل</button></div></div>
+      <div class="form-row">
         <select id="dp-crop"><option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option></select>
       </div>
 
@@ -1821,7 +1822,8 @@ body.dark-mode .ss-option{color:#e0e0e0;}
     <div class="card">
       <div class="card-title">🌱 موسم زراعي جديد</div>
       <div class="form-row"><label>اسم الموسم</label><input type="text" id="season-name" placeholder="مثال: موسم قمح 2026"></div>
-      <div class="form-row"><label>المحصول</label>
+      <div class="section-lbl"><span>المحصول</span><div class="lbl-actions"><button onclick="openCropManager()">🌾 إدارة المحاصيل</button></div></div>
+      <div class="form-row">
         <select id="season-crop"><option value="">-- اختار المحصول --</option></select>
       </div>
       <div class="form-row"><label>تاريخ البداية</label><input type="date" id="season-start"></div>
@@ -3891,6 +3893,14 @@ async function populateCatSelects(){
   // مشتريات آجل - crop selector
   const dpCrop = document.getElementById('dp-crop');
   if(dpCrop){ dpCrop.innerHTML='<option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option><option value="المخزن 🏪">📦 البيع من المخزن</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${s(c)}</option>`).join(''); }
+  // المواسم - crop selector
+  const seasonCrop = document.getElementById('season-crop');
+  if(seasonCrop){ seasonCrop.innerHTML='<option value="">-- اختار المحصول --</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${s(c)}</option>`).join(''); }
+  // مبيعات محصول - crop items list
+  if(typeof _dsCropCrops !== 'undefined'){ _dsCropCrops = crops; }
+  // ds-filter-crop
+  const dsFiltCrop = document.getElementById('ds-filter-crop');
+  if(dsFiltCrop){ dsFiltCrop.innerHTML='<option value="">كل المحاصيل</option>'+crops.map(c=>`<option>${s(c)}</option>`).join(''); }
 }
 
 let catManagerType = '';
