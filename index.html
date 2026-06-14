@@ -7682,6 +7682,7 @@ async function openReturnModal(tableType, origId, trader, saleType, origTotal){
   window._retTrader    = trader;
   window._retSaleType  = saleType;
   window._retIsSale    = isSale;
+  window._retTotalPaid = totalPaid;
 
   document.getElementById('detail-overlay').classList.add('open');
 }
@@ -7744,11 +7745,12 @@ async function saveReturn(){
       user_id:currentUser.id, description:desc, category:'مرتجع_مبيعات',
       crop:o.crop||null, amount:-Math.abs(amount), date, notes:notes||null
     });
-    // خزنة: لو فيه رد نقدية → يخرج من الخزنة
+    // خزنة: لو فيه رد نقدية → يخرج من الخزنة بمقدار اللي اتحصل فعلاً
     if(retCash){
-      await sb.from('vault').insert({
+      const cashAmt = window._retTotalPaid > 0 ? window._retTotalPaid : Math.abs(amount);
+      if(cashAmt > 0) await sb.from('vault').insert({
         user_id:currentUser.id, type:'out', description:desc,
-        amount:Math.abs(amount), date, notes:notes||null, category:'مرتجع_مبيعات'
+        amount:cashAmt, date, notes:notes||null, category:'مرتجع_مبيعات'
       });
     }
   } else {
@@ -7765,11 +7767,12 @@ async function saveReturn(){
       user_id:currentUser.id, description:desc, category:'مرتجع_مشتريات',
       crop:o.crop||null, amount:-Math.abs(amount), date, notes:notes||null
     });
-    // خزنة: لو استلمنا نقدية → يدخل للخزنة
+    // خزنة: لو استلمنا نقدية → يدخل للخزنة بمقدار اللي اتدفع فعلاً
     if(retCash){
-      await sb.from('vault').insert({
+      const cashAmt = window._retTotalPaid > 0 ? window._retTotalPaid : Math.abs(amount);
+      if(cashAmt > 0) await sb.from('vault').insert({
         user_id:currentUser.id, type:'in', description:desc,
-        amount:Math.abs(amount), date, notes:notes||null, category:'مرتجع_مشتريات'
+        amount:cashAmt, date, notes:notes||null, category:'مرتجع_مشتريات'
       });
     }
   }
