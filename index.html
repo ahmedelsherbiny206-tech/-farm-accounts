@@ -2312,8 +2312,8 @@ async function handleAuthRedirect() {
     document.getElementById('auth-screen').style.display = 'flex';
   }
 }
-// تأجيل فحص الجلسة لحد ما كل أكواد الصفحة تتحمّل (تفادي خطأ "الدالة مش متعرّفة")
-if(document.readyState==='loading'){ window.addEventListener('DOMContentLoaded', handleAuthRedirect); } else { handleAuthRedirect(); }
+// تأجيل فحص الجلسة لحد ما كل أكواد الصفحة تتحمّل بالكامل (تفادي خطأ "الدالة مش متعرّفة")
+if(document.readyState==='complete'){ handleAuthRedirect(); } else { window.addEventListener('load', handleAuthRedirect); }
 
 // Handle auth state changes
 sb.auth.onAuthStateChange((event, session) => {
