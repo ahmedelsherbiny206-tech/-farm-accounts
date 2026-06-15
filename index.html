@@ -2312,7 +2312,8 @@ async function handleAuthRedirect() {
     document.getElementById('auth-screen').style.display = 'flex';
   }
 }
-handleAuthRedirect();
+// تأجيل فحص الجلسة لحد ما كل أكواد الصفحة تتحمّل (تفادي خطأ "الدالة مش متعرّفة")
+if(document.readyState==='loading'){ window.addEventListener('DOMContentLoaded', handleAuthRedirect); } else { handleAuthRedirect(); }
 
 // Handle auth state changes
 sb.auth.onAuthStateChange((event, session) => {
