@@ -6465,7 +6465,11 @@ function setDsSource(src){
 
 async function addDsStorageItem(){
   const stocks = window._invStocks || await calcAllStock();
-  const availStocks = stocks.filter(r=>r.qty>0.001);
+  // فلتر محاصيل مخزنة فقط (crop_in)
+  const {data:cropTxns} = await sb.from('inventory_transactions')
+    .select('item,crop').eq('user_id',currentUser.id).eq('type','crop_in');
+  const cropItems = [...new Set((cropTxns||[]).map(r=>r.item).filter(Boolean))];
+  const availStocks = stocks.filter(r=>cropItems.includes(r.item)&&r.qty>0.001);
   _dsStorageItems.push({item:'',crop:'',qty:'',unit:'',price:0,avail:0});
   renderDsStorageItemsForm(availStocks);
 }
