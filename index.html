@@ -6355,9 +6355,18 @@ async function initDeferredSalesPage(){
     getDsProdTraders()
   ]);
 
-  try { window._dsProdStocks = (await calcAllStock()).filter(r=>r.qty>0.001); }
-  catch(e){ window._dsProdStocks = []; }
-  _dsProdProducts = dsProds;
+  try {
+    window._dsProdStocks = (await calcAllStock()).filter(r=>r.qty>0.001);
+    // المنتجات اللي اتشترت ودخلت المخزن (type 'in') وعندها رصيد — تتضاف تلقائي
+    const {data:inTxns} = await sb.from('inventory_transactions').select('item').eq('user_id',currentUser.id).eq('type','in');
+    const purchased = [...new Set((inTxns||[]).map(r=>r.item).filter(Boolean))];
+    const stockNames = new Set(window._dsProdStocks.map(r=>r.item));
+    const warehouseProducts = purchased.filter(it=>stockNames.has(it));
+    _dsProdProducts = [...new Set([...warehouseProducts, ...dsProds])];
+  } catch(e){
+    window._dsProdStocks = [];
+    _dsProdProducts = dsProds;
+  }
   _dsProdUnits = units.length ? units : [...DP_DEFAULT_UNITS];
   _dsCropCrops = crops;
   _dsCropUnits = units;
