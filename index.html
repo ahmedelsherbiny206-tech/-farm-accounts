@@ -6215,9 +6215,9 @@ function renderDsProdItemsForm() {
   }
   el.innerHTML = _dsProdItems.map((item,i)=>`
     <div class="inv-row" style="grid-template-columns:1fr 30px;gap:5px;margin-bottom:6px;">
-      <select class="inv-field" onchange="_dsProdItems[${i}].name=this.value;(()=>{const st=(window._dsProdStocks||[]).find(r=>r.item===this.value);if(st){_dsProdItems[${i}].unit=st.unit||_dsProdUnits[0]||'';renderDsProdItemsForm();}})()">
+      <select class="inv-field" onchange="_dsProdItems[${i}].name=this.value">
         <option value="">-- اختار منتج --</option>
-        ${(window._dsProdStocks||[]).length?window._dsProdStocks.map(st=>`<option value="${s(st.item)}" ${item.name===st.item?'selected':''}>${s(st.item)} (${Number(st.qty).toLocaleString('en-US')} ${s(st.unit)})</option>`).join(''):_dsProdProducts.map(p=>`<option ${item.name===p?'selected':''}>${s(p)}</option>`).join('')}
+        ${_dsProdProducts.map(p=>{const st=(window._dsProdStocks||[]).find(r=>r.item===p);return `<option value="${s(p).replace(/"/g,'&quot;')}" ${item.name===p?'selected':''}>${s(p)}${st?` (${Number(st.qty).toLocaleString('en-US')} ${s(st.unit)})`:''}</option>`;}).join('')}
       </select>
       <button class="inv-del" onclick="removeDsProdItem(${i})">✕</button>
       <div style="display:grid;grid-template-columns:1fr 0.7fr 1fr;gap:5px;grid-column:1/-1;">
@@ -6348,9 +6348,9 @@ async function initDeferredSalesPage(){
     getDsProdTraders()
   ]);
 
-  const allStocks = await calcAllStock();
-  window._dsProdStocks = allStocks.filter(r=>r.qty>0.001);
-  _dsProdProducts = window._dsProdStocks.length ? window._dsProdStocks.map(r=>r.item) : dsProds;
+  try { window._dsProdStocks = (await calcAllStock()).filter(r=>r.qty>0.001); }
+  catch(e){ window._dsProdStocks = []; }
+  _dsProdProducts = dsProds;
   _dsProdUnits = units.length ? units : [...DP_DEFAULT_UNITS];
   _dsCropCrops = crops;
   _dsCropUnits = units;
