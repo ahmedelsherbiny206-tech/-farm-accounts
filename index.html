@@ -5122,7 +5122,7 @@ async function initDeferredPurchasesPage() {
   const fProd = document.getElementById('dp-filter-product');
   if(fProd) fProd.innerHTML = '<option value="">كل المنتجات</option>'+_dpProducts.map(p=>`<option>${s(p)}</option>`).join('');
   const dpCropSel = document.getElementById('dp-crop');
-  if(dpCropSel) dpCropSel.innerHTML='<option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${s(c)}</option>`).join('');
+  if(dpCropSel) dpCropSel.innerHTML='<option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option><option value="المخزن 🏪">المخزن 🏪</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${s(c)}</option>`).join('');
   const dpDate = document.getElementById('dp-date');
   if(dpDate && !dpDate.value) dpDate.value = today();
   renderDeferredPurchases();
