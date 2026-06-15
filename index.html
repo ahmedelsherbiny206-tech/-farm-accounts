@@ -2276,6 +2276,12 @@ async function doLogout() {
 
 // ===== INIT =====
 async function initApp(user) {
+  // لو الصفحة لسه بتحمّل، استنى لحد ما كل الأكواد تخلص (تفادي خطأ "الدالة مش متعرّفة")
+  if(document.readyState !== 'complete'){
+    window.addEventListener('load', ()=>initApp(user), {once:true});
+    return;
+  }
+  if(currentUser && currentUser.id === user.id) return; // متفعّل بالفعل
   currentUser = user;
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
