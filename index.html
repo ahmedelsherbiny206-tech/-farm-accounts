@@ -4064,7 +4064,7 @@ async function populateCatSelects(){
   if(dsProdCrop){ dsProdCrop.innerHTML='<option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option><option value="المخزن 🏪">📦 البيع من المخزن</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${s(c)}</option>`).join(''); }
   // مشتريات آجل - crop selector
   const dpCrop = document.getElementById('dp-crop');
-  if(dpCrop){ dpCrop.innerHTML='<option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option><option value="المخزن 🏪">📦 البيع من المخزن</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${s(c)}</option>`).join(''); }
+  if(dpCrop){ dpCrop.innerHTML='<option value="">-- بدون تخصيص موسم --</option><option value="عام 🌍">عام 🌍 (يوزع على كل المواسم)</option><option value="المخزن 🏪">المخزن 🏪</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${s(c)}</option>`).join(''); }
   // المواسم - crop selector
   const seasonCrop = document.getElementById('season-crop');
   if(seasonCrop){ seasonCrop.innerHTML='<option value="">-- اختار المحصول --</option>'+crops.filter(c=>c!=='عام 🌍').map(c=>`<option>${s(c)}</option>`).join(''); }
