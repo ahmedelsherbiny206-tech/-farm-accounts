@@ -2119,7 +2119,8 @@ function today() { return new Date().toISOString().split('T')[0]; }
 // Global error safety net
 window.addEventListener('unhandledrejection', e => {
   console.error('unhandled rejection:', e.reason);
-  showToast('❌ خطأ غير متوقع، حاول تاني');
+  const _m = (e.reason && (e.reason.message || e.reason.msg)) || String(e.reason||'');
+  showToast('❌ DEBUG: '+_m);
 });
 async function sbRun(fn) {
   const r = await fn();
