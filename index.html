@@ -6288,11 +6288,25 @@ async function addDeferredSaleProd() {
       if(r.type==='in'){ stockMap[r.item].avg=r.avg_cost||0; stockMap[r.item].qty+=Number(r.quantity||0); }
       else stockMap[r.item].qty-=Number(r.quantity||0);
     });
+    let cogs = 0;
     const invRows = validItems.map(it=>{
       const cur = stockMap[it.name]||{qty:0,avg:0};
-      return {user_id:currentUser.id,item:it.name,unit:it.unit||'',type:'sale',quantity:it.qty,unit_price:it.price,avg_cost:cur.avg||it.price,total:it.qty*it.price,date,notes:notes||null,crop:null,ref_id:saleId};
+      const unitCost = cur.avg||it.price;
+      cogs += unitCost * it.qty;
+      return {user_id:currentUser.id,item:it.name,unit:it.unit||'',type:'sale',quantity:it.qty,unit_price:it.price,avg_cost:unitCost,total:it.qty*it.price,date,notes:notes||null,crop:null,ref_id:saleId};
     });
     await sb.from('inventory_transactions').insert(invRows);
+    // تقرير الأرباح: الوارد = قيمة البيع، الصادر = تكلفة البضاعة المباعة (مربوطين بفاتورة البيع)
+    await sb.from('income').insert({
+      user_id: currentUser.id,
+      description: 'بيع منتج من المخزن'+(trader?' - '+trader:'')+(desc?' - '+desc:''),
+      category: 'مبيعات آجل', crop: null, amount: total, date, notes: notes||null, ref_id: saleId
+    });
+    if(cogs>0) await sb.from('expenses').insert({
+      user_id: currentUser.id,
+      description: 'تكلفة بضاعة مباعة'+(desc?' - '+desc:''),
+      category: 'تكلفة بضاعة مباعة', crop: null, amount: cogs, date, notes: notes||null, ref_id: saleId
+    });
   } else {
     await sb.from('income').insert({
       user_id: currentUser.id,
@@ -6836,6 +6850,8 @@ async function deleteDeferredSale(id, isPaid){
   if(sale){
     // مسح income المرتبطة (سواء بـ ref_id أو بدونه للسجلات القديمة)
     await sb.from('income').delete().eq('user_id',currentUser.id).eq('ref_id', sale.id);
+    // مسح صادر تكلفة البضاعة المباعة المرتبط بفاتورة البيع
+    await sb.from('expenses').delete().eq('user_id',currentUser.id).eq('ref_id', sale.id);
     if(sale.is_return){
       const retDesc = 'مرتجع مبيعات' + (sale.trader?' - '+sale.trader:'');
       // مسح income المرتجع (بأي ref_id)
