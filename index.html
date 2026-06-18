@@ -6585,7 +6585,7 @@ async function addDeferredSale(){
       await sb.from('inventory_transactions').insert({
         user_id:currentUser.id, item:it.name, unit:it.unit||'', type:'crop_out',
         quantity:it.qty, unit_price:it.price, avg_cost:st?.avg_cost||0,
-        total:(it.qty||0)*(it.price||0), date, notes:'بيع محصول مخزن: '+desc, crop:it.storage_crop||it.name
+        total:(it.qty||0)*(it.price||0), date, notes:'بيع محصول مخزن: '+desc, crop:it.storage_crop||it.name, ref_id:saleId
       });
     }
     window._invStocks = await calcAllStock();
