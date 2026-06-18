@@ -5218,7 +5218,7 @@ async function addDeferredPurchase() {
     });
     await sb.from('inventory_transactions').insert(invRows);
   } else {
-    await sb.from('expenses').insert({user_id:currentUser.id,description:expDesc,amount:total,category:'مشتريات آجل',crop:dpCropVal||null,date,notes:notes||null});
+    await sb.from('expenses').insert({user_id:currentUser.id,description:expDesc,amount:total,category:'مشتريات آجل',crop:dpCropVal||null,date,notes:notes||null,ref_id:purchaseId});
   }
 
   if(_dpPayType==='full'||_dpPayType==='partial'){
