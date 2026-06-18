@@ -8568,6 +8568,7 @@ async function onInvItemChange(){
   // fill unit
   const unitEl=document.getElementById('inv-m-unit');
   if(unitEl&&st?.unit) unitEl.value=st.unit;
+  calcInvTotal(type);
 }
 
 function calcInvTotal(type){
@@ -8576,7 +8577,16 @@ function calcInvTotal(type){
   const box   = document.getElementById('inv-m-total-box');
   const span  = document.getElementById('inv-m-total');
   if(!box||!span) return;
-  if((type==='in'||type==='sale')&&qty>0&&price>0){
+  if(type==='usage'){
+    // الصرف بيتحسب بمتوسط تكلفة المنتج من المخزن
+    const item = document.getElementById('inv-m-item')?.value;
+    const st = (window._invStocks||[]).find(r=>r.item===item);
+    const avg = st?.avg_cost||0;
+    if(qty>0 && avg>0){
+      box.style.display='block';
+      span.textContent=Number(qty*avg).toLocaleString('en-US')+' (بمتوسط التكلفة '+Number(avg).toLocaleString('en-US')+' ج)';
+    } else { box.style.display='none'; }
+  } else if((type==='in'||type==='sale')&&qty>0&&price>0){
     box.style.display='block';
     span.textContent=Number(qty*price).toLocaleString('en-US');
   } else { box.style.display='none'; }
