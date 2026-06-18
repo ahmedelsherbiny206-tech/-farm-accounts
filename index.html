@@ -6975,11 +6975,18 @@ async function saveDsEdit(id){
       if(r.type==='in'){ stockMap[r.item].avg=r.avg_cost||0; stockMap[r.item].qty+=Number(r.quantity||0); }
       else stockMap[r.item].qty-=Number(r.quantity||0);
     });
+    let cogs = 0;
     const invRows = validItems.map(it=>{
       const cur = stockMap[it.name]||{qty:0,avg:0};
-      return {user_id:currentUser.id,item:it.name,unit:it.unit||'',type:'sale',quantity:it.qty,unit_price:it.price,avg_cost:cur.avg||it.price,total:it.qty*it.price,date,notes:notes||null,crop:null,ref_id:id};
+      const unitCost = cur.avg||it.price;
+      cogs += unitCost * it.qty;
+      return {user_id:currentUser.id,item:it.name,unit:it.unit||'',type:'sale',quantity:it.qty,unit_price:it.price,avg_cost:unitCost,total:it.qty*it.price,date,notes:notes||null,crop:null,ref_id:id};
     });
     await sb.from('inventory_transactions').insert(invRows);
+    // تحديث صادر تكلفة البضاعة المباعة المرتبط بالفاتورة
+    const cogsDesc = 'تكلفة بضاعة مباعة'+(desc?' - '+desc:'');
+    const {data:eu} = await sb.from('expenses').update({description:cogsDesc,amount:cogs,date}).eq('user_id',currentUser.id).eq('ref_id',id).select('id');
+    if(!eu?.length && cogs>0) await sb.from('expenses').insert({user_id:currentUser.id,description:cogsDesc,category:'تكلفة بضاعة مباعة',crop:null,amount:cogs,date,notes:notes||null,ref_id:id});
     window._invStocks = null;
   }
 
