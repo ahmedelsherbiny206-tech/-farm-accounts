@@ -8533,8 +8533,8 @@ async function openInvModal(type){
       <input type="text" inputmode="decimal" id="inv-m-price" placeholder="0" oninput="calcInvTotal('${type}')"></div>`:''}
     ${type==='sale'?`<div class="edit-modal-row"><label>سعر البيع للوحدة</label>
       <input type="text" inputmode="decimal" id="inv-m-price" placeholder="0" oninput="calcInvTotal('${type}')"></div>`:''}
-    <div class="edit-modal-row"><label>الوحدة</label>
-      <input type="text" id="inv-m-unit" placeholder="كيلو / لتر / كيس ..."></div>
+    <div class="edit-modal-row"><label>الوحدة${type==='usage'?' <span style="color:var(--muted);font-size:0.7rem;">(وحدة المنتج المسجّلة)</span>':''}</label>
+      <input type="text" id="inv-m-unit" placeholder="كيلو / لتر / كيس ..." ${type==='usage'?'readonly style="background:var(--g5);color:var(--muted);cursor:not-allowed;"':''}></div>
     ${type==='usage'?`<div class="edit-modal-row"><label>🌾 المحصول <span style="color:var(--red);font-size:0.7rem;">* إجباري</span></label>
       <select id="inv-m-crop" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.88rem;">
         <option value="">-- اختار المحصول --</option><option value="عام 🌍">عام 🌍</option>${cropOpts}
