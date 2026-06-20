@@ -2290,8 +2290,7 @@ async function initApp(user) {
   document.getElementById('hdr-date').textContent = new Date().toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   checkBackupInfo();
   populateCatSelects();
-  const lastPage = localStorage.getItem('lastPage') || 'home';
-  showPage(lastPage, document.getElementById('bnav-'+lastPage) || null);
+  showPage('home', document.getElementById('bnav-home'));
   checkAjalAlerts();
   await loadFarmSettings();
   setDateInputs();
