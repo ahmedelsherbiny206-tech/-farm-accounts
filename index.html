@@ -585,9 +585,6 @@ button,a,[onclick]{-webkit-tap-highlight-color:transparent;touch-action:manipula
 .season-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
 .season-name{font-size:0.9rem;font-weight:900;color:var(--text);}
 .season-dates{font-size:0.68rem;color:var(--muted);}
-.search-bar{display:flex;gap:8px;margin-bottom:12px;}
-.search-input{flex:1;padding:11px 15px;border-radius:12px;border:1.5px solid var(--border);background:var(--card);font-family:Cairo,sans-serif;font-size:0.88rem;color:var(--text);outline:none;transition:border-color 0.2s;}
-.search-input:focus{border-color:var(--primary);}
 .forecast-card{background:linear-gradient(135deg,var(--primary-dark),var(--primary));border-radius:16px;padding:18px;color:#fff;margin-bottom:12px;}
 
 /* Season Detail */
@@ -1801,40 +1798,6 @@ body.dark-mode .ss-option{color:#e0e0e0;}
     </div>
   </div>
 
-  <!-- SEARCH PAGE -->
-  <div class="page" id="page-search">
-    <div class="card">
-      <div class="chart-title">🔍 بحث في السجلات</div>
-      <div class="search-bar">
-        <input class="search-input" id="search-input" placeholder="ابحث عن أي حاجة..." oninput="doSearch()">
-      </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
-        <button class="chart-tab active" id="search-all" onclick="setSearchType('all',this)">الكل</button>
-        <button class="chart-tab" id="search-income" onclick="setSearchType('income',this)">وارد</button>
-        <button class="chart-tab" id="search-expense" onclick="setSearchType('expense',this)">صادر</button>
-        <button class="chart-tab" id="search-ajal" onclick="setSearchType('ajal',this)">آجل</button>
-        <button class="chart-tab" id="search-vault" onclick="setSearchType('vault',this)">خزنة</button>
-      </div>
-      <!-- فلتر متقدم -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-        <div><label style="font-size:0.72rem;color:var(--muted);font-weight:700;">من تاريخ</label>
-          <input type="date" id="search-from" onchange="doSearch()" style="width:100%;padding:7px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;"></div>
-        <div><label style="font-size:0.72rem;color:var(--muted);font-weight:700;">إلى تاريخ</label>
-          <input type="date" id="search-to" onchange="doSearch()" style="width:100%;padding:7px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;"></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-        <div><label style="font-size:0.72rem;color:var(--muted);font-weight:700;">المحصول</label>
-          <select id="search-crop" onchange="doSearch()" style="width:100%;padding:7px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;">
-            <option value="">كل المحاصيل</option>
-          </select>
-        </div>
-        <div><label style="font-size:0.72rem;color:var(--muted);font-weight:700;">من مبلغ</label>
-          <input type="text" inputmode="decimal" id="search-min-amt" placeholder="0" onchange="doSearch()" style="width:100%;padding:7px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-family:Cairo,sans-serif;font-size:0.78rem;"></div>
-      </div>
-    </div>
-    <div id="search-results"><div class="empty">ابحث عن أي حاجة...</div></div>
-  </div>
-
   </div> <!-- end page-ajal -->
 
   <!-- SEASONS PAGE -->
@@ -2372,7 +2335,6 @@ function showPage(name, btn) {
   if(name==='vault') { renderVaultList(); renderVaultSummary(); }
   if(name==='log') renderLogList();
   if(name==='analytics') renderAnalytics();
-  if(name==='search'){ populateSearchCrops(); }
   if(name==='seasons') renderSeasons();
   if(name==='report') { renderReport(); }
   localStorage.setItem('lastPage', name);
@@ -4986,57 +4948,6 @@ async function renderAnalytics(){
 }
 
 // ===== SEARCH =====
-let searchType='all';
-
-function setSearchType(type, btn){
-  searchType=type;
-  document.querySelectorAll('#page-search .chart-tab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
-  doSearch();
-}
-
-async function populateSearchCrops(){
-  const crops=await getCrops();
-  const sel=document.getElementById('search-crop');
-  if(sel) sel.innerHTML='<option value="">كل المحاصيل</option>'+crops.map(c=>`<option>${s(c)}</option>`).join('');
-}
-
-async function doSearch(){
-  const q=document.getElementById('search-input').value.trim().toLowerCase();
-  const from=document.getElementById('search-from').value;
-  const to=document.getElementById('search-to').value;
-  const crop=document.getElementById('search-crop').value;
-  const minAmt=parseNum(document.getElementById('search-min-amt').value)||0;
-  const el=document.getElementById('search-results');
-  if(!q&&!from&&!to&&!crop&&!minAmt){ el.innerHTML='<div class="empty">ابحث عن أي حاجة...</div>'; return; }
-  el.innerHTML='<div class="loading">⏳ جاري البحث...</div>';
-  // الخزنة بتظهر بس السندات اليدوية (قبض وصرف) مش الأوتوماتيك
-  const tables=searchType==='all'?['income','expenses','ajal','vault']:
-               searchType==='income'?['income']:
-               searchType==='expense'?['expenses']:
-               searchType==='ajal'?['ajal']:['vault'];
-  let all=[];
-  for(const table of tables){
-    let qb=sb.from(table).select('*').eq('user_id',currentUser.id);
-    if(from) qb=qb.gte('date',from);
-    if(to) qb=qb.lte('date',to);
-    if(minAmt) qb=qb.gte('amount',minAmt);
-    if(crop&&(table==='income'||table==='expenses')) qb=qb.eq('crop',crop);
-    // الخزنة: بس السندات اليدوية (in, out) مش الأوتوماتيك
-    if(table==='vault') qb=qb.in('type',['in','out']);
-    const {data}=await qb.order('date',{ascending:false}).limit(50);
-    if(data) all.push(...data.map(x=>({...x,_table:table})));
-  }
-  if(q) all=all.filter(x=>[x.description,x.name,x.reason,x.category,x.crop,x.notes].join(' ').toLowerCase().includes(q));
-  if(!all.length){ el.innerHTML='<div class="empty">مفيش نتائج</div>'; return; }
-  const tLabel={income:'وارد',expenses:'صادر',ajal:'آجل',vault:'خزنة'};
-  const tColor={income:'var(--g2)',expenses:'var(--red)',ajal:'var(--gold)',vault:'var(--blue)'};
-  el.innerHTML=`<div style="font-size:0.75rem;color:var(--muted);margin-bottom:8px;">${all.length} نتيجة</div>`+all.map(x=>{
-    const desc=x.description||x.name||x.reason||'';
-    const color=tColor[x._table]||'var(--muted)';
-    return `<div class="item"><div class="i-info"><div class="i-title">${s(desc)}</div><div class="i-sub">${fmtDate(x.date)} · <span style="color:${color};font-weight:800;">${tLabel[x._table]||''}</span>${x.crop?' 🌾 '+s(x.crop):''}</div></div><div class="i-actions"><div class="i-amt" style="color:${color}">${x.amount?fmt(x.amount):''}</div></div></div>`;
-  }).join('');
-}
 
 // ===== DEFERRED PURCHASES =====
 
