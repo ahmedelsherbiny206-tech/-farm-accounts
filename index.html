@@ -1548,6 +1548,16 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       <div class="card-title">📋 سجل الحركات</div>
       <div class="filter-section">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
+          <div class="date-wrap">
+            <input type="date" id="inv-from" class="filter-input" style="min-width:0;padding:6px 9px;font-size:0.78rem;" oninput="this.classList.toggle('has-value',!!this.value);renderInvHistory()">
+            <span class="date-ph-label">من</span>
+          </div>
+          <div class="date-wrap">
+            <input type="date" id="inv-to" class="filter-input" style="min-width:0;padding:6px 9px;font-size:0.78rem;" oninput="this.classList.toggle('has-value',!!this.value);renderInvHistory()">
+            <span class="date-ph-label">إلى</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
           <select id="inv-filter-item" class="filter-input" style="min-width:0;padding:6px 9px;font-size:0.78rem;" onchange="renderInvHistory()">
             <option value="">كل الأصناف</option>
           </select>
@@ -1560,16 +1570,6 @@ body.dark-mode .ss-option{color:#e0e0e0;}
             <option value="usage">📤 صادر (صرف)</option>
             <option value="adjust">⚖️ تسوية</option>
           </select>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
-          <div class="date-wrap">
-            <input type="date" id="inv-from" class="filter-input" style="min-width:0;padding:6px 9px;font-size:0.78rem;" oninput="this.classList.toggle('has-value',!!this.value);renderInvHistory()">
-            <span class="date-ph-label">من</span>
-          </div>
-          <div class="date-wrap">
-            <input type="date" id="inv-to" class="filter-input" style="min-width:0;padding:6px 9px;font-size:0.78rem;" oninput="this.classList.toggle('has-value',!!this.value);renderInvHistory()">
-            <span class="date-ph-label">إلى</span>
-          </div>
         </div>
         <button class="btn-sm outline" style="width:100%;" onclick="clearInvFilter()">🔄 عرض الكل</button>
       </div>
