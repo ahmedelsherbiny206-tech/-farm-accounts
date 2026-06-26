@@ -5675,6 +5675,16 @@ async function openSeasonDetail(seasonId){
   incData.forEach(x=>{ incByCat[x.category||'أخرى']=(incByCat[x.category||'أخرى']||0)+Number(x.amount); });
   if(genIncTotal>0) incByCat['عام (نصيب الموسم)'] = genIncTotal;
 
+  // قوائم السجل: بنود المحصول + البنود العامة (بنصيب الموسم)
+  const incLog = [
+    ...incData.map(x=>({desc:x.description,date:x.date,cat:x.category,amt:Number(x.amount),gen:false})),
+    ...genInc.map(x=>({desc:x.description,date:x.date,cat:x.category,amt:Number(x.amount)*ratio,gen:true}))
+  ];
+  const expLog = [
+    ...expData.map(x=>({desc:x.description,date:x.date,cat:x.category,amt:Number(x.amount),gen:false})),
+    ...genExp.map(x=>({desc:x.description,date:x.date,cat:x.category,amt:Number(x.amount)*ratio,gen:true}))
+  ];
+
   const html = `
     <!-- هيدر الموسم -->
     <div class="season-detail-header">
@@ -5769,27 +5779,27 @@ async function openSeasonDetail(seasonId){
 
     <!-- سجل الإيرادات -->
     <div class="season-section">
-      <div class="season-section-title">📋 سجل الإيرادات (${incData.length})</div>
-      ${incData.length ? incData.map(x=>`
+      <div class="season-section-title">📋 سجل الإيرادات (${incLog.length})</div>
+      ${incLog.length ? incLog.map(x=>`
         <div class="season-cat-item">
           <div style="flex:1;min-width:0;">
-            <div class="season-cat-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s(x.description||'')}</div>
-            <div style="font-size:0.62rem;color:var(--muted)">${fmtDate(x.date)}${x.category?' · '+s(x.category):''}</div>
+            <div class="season-cat-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${x.gen?'<span style="color:#1565C0;font-weight:900;">🌍 عام · </span>':''}${s(x.desc||'')}</div>
+            <div style="font-size:0.62rem;color:var(--muted)">${fmtDate(x.date)}${x.cat?' · '+s(x.cat):''}${x.gen?' · نصيب الموسم':''}</div>
           </div>
-          <div class="season-cat-val" style="color:var(--g2);flex-shrink:0;margin-right:8px">${Number(x.amount).toLocaleString('en-US')} ج</div>
+          <div class="season-cat-val" style="color:var(--g2);flex-shrink:0;margin-right:8px">${Number(x.amt).toLocaleString('en-US')} ج</div>
         </div>`).join('') : '<div class="empty">لا يوجد</div>'}
     </div>
 
     <!-- سجل المصاريف -->
     <div class="season-section">
-      <div class="season-section-title">📋 سجل المصاريف (${expData.length})</div>
-      ${expData.length ? expData.map(x=>`
+      <div class="season-section-title">📋 سجل المصاريف (${expLog.length})</div>
+      ${expLog.length ? expLog.map(x=>`
         <div class="season-cat-item">
           <div style="flex:1;min-width:0;">
-            <div class="season-cat-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s(x.description||'')}</div>
-            <div style="font-size:0.62rem;color:var(--muted)">${fmtDate(x.date)}${x.category?' · '+s(x.category):''}</div>
+            <div class="season-cat-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${x.gen?'<span style="color:#1565C0;font-weight:900;">🌍 عام · </span>':''}${s(x.desc||'')}</div>
+            <div style="font-size:0.62rem;color:var(--muted)">${fmtDate(x.date)}${x.cat?' · '+s(x.cat):''}${x.gen?' · نصيب الموسم':''}</div>
           </div>
-          <div class="season-cat-val" style="color:var(--red);flex-shrink:0;margin-right:8px">${Number(x.amount).toLocaleString('en-US')} ج</div>
+          <div class="season-cat-val" style="color:var(--red);flex-shrink:0;margin-right:8px">${Number(x.amt).toLocaleString('en-US')} ج</div>
         </div>`).join('') : '<div class="empty">لا يوجد</div>'}
     </div>
 
@@ -5831,8 +5841,10 @@ async function exportSeasonToExcel(seasonId){
 
   const incData=incRes.data||[];
   const expData=expRes.data||[];
-  const genIncTotal=(genIncRes.data||[]).reduce((s,x)=>s+Number(x.amount),0)*ratio;
-  const genExpTotal=(genExpRes.data||[]).reduce((s,x)=>s+Number(x.amount),0)*ratio;
+  const genIncData=genIncRes.data||[];
+  const genExpData=genExpRes.data||[];
+  const genIncTotal=genIncData.reduce((s,x)=>s+Number(x.amount),0)*ratio;
+  const genExpTotal=genExpData.reduce((s,x)=>s+Number(x.amount),0)*ratio;
   const totalInc=incData.reduce((s,x)=>s+Number(x.amount),0)+genIncTotal;
   const totalExp=expData.reduce((s,x)=>s+Number(x.amount),0)+genExpTotal;
   const profit=totalInc-totalExp;
@@ -5870,7 +5882,7 @@ async function exportSeasonToExcel(seasonId){
   // Sheet 2: الإيرادات
   const incRows=[['#','الوصف','النوع','المبلغ (ج)','التاريخ','ملاحظات']];
   incData.forEach((x,i)=>incRows.push([i+1,x.description||'',x.category||'',Number(x.amount||0),fmtD(x.date),x.notes||'']));
-  if(genIncTotal>0) incRows.push(['*','نصيب الموسم من الإيرادات العامة','عام',genIncTotal,'','']);
+  genIncData.forEach((x,i)=>incRows.push(['🌍','عام - '+(x.description||''),x.category||'عام',Number(x.amount||0)*ratio,fmtD(x.date),'نصيب الموسم']));
   incRows.push(['','','الإجمالي',totalInc,'','']);
   const wsInc=XLSX.utils.aoa_to_sheet(incRows);
   wsInc['!cols']=[{wch:5},{wch:32},{wch:16},{wch:14},{wch:14},{wch:25}];
@@ -5881,7 +5893,7 @@ async function exportSeasonToExcel(seasonId){
   // Sheet 3: المصاريف
   const expRows=[['#','الوصف','التصنيف','المبلغ (ج)','التاريخ','ملاحظات']];
   expData.forEach((x,i)=>expRows.push([i+1,x.description||'',x.category||'',Number(x.amount||0),fmtD(x.date),x.notes||'']));
-  if(genExpTotal>0) expRows.push(['*','نصيب الموسم من المصاريف العامة','عام',genExpTotal,'','']);
+  genExpData.forEach((x,i)=>expRows.push(['🌍','عام - '+(x.description||''),x.category||'عام',Number(x.amount||0)*ratio,fmtD(x.date),'نصيب الموسم']));
   expRows.push(['','','الإجمالي',totalExp,'','']);
   const wsExp=XLSX.utils.aoa_to_sheet(expRows);
   wsExp['!cols']=[{wch:5},{wch:32},{wch:16},{wch:14},{wch:14},{wch:25}];
