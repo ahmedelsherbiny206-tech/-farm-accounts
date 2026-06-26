@@ -699,6 +699,22 @@ button,a,[onclick]{-webkit-tap-highlight-color:transparent;touch-action:manipula
 .tab-toggle.sub button.active{
   background:var(--card);color:var(--g2);box-shadow:0 1px 4px rgba(0,0,0,0.12);border:1px solid var(--border);
 }
+/* ==== اختيار نوع البيعة (كروت) ==== */
+.sale-mode-chooser{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+.sale-mode{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:14px;border:1.5px solid var(--border);background:var(--card);cursor:pointer;font-family:Cairo,sans-serif;text-align:right;transition:all 0.18s ease;width:100%;}
+.sale-mode:hover{border-color:var(--g3);}
+.sale-mode .sm-icon{font-size:1.4rem;flex-shrink:0;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--g5);border-radius:12px;transition:all 0.18s;}
+.sale-mode .sm-text{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0;}
+.sale-mode .sm-title{font-size:0.92rem;font-weight:900;color:var(--text);}
+.sale-mode .sm-sub{font-size:0.71rem;color:var(--muted);font-weight:600;}
+.sale-mode .sm-check{flex-shrink:0;width:24px;height:24px;border-radius:50%;border:2px solid var(--border);color:transparent;display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:900;transition:all 0.18s;}
+.sale-mode.active{border-color:var(--g2);background:linear-gradient(135deg,rgba(45,106,79,0.09),rgba(45,106,79,0.02));box-shadow:0 3px 12px rgba(45,106,79,0.13);}
+.sale-mode.active .sm-icon{background:var(--g2);}
+.sale-mode.active .sm-check{background:var(--g2);border-color:var(--g2);color:#fff;}
+body.dark-mode .sale-mode .sm-icon{background:#2a2f38;}
+body.dark-mode .sale-mode.active{background:rgba(82,183,136,0.12);border-color:#52b788;}
+body.dark-mode .sale-mode.active .sm-icon{background:#2d6a4f;}
+body.dark-mode .sale-mode.active .sm-check{background:#2d6a4f;border-color:#2d6a4f;}
 body.dark-mode .tab-toggle{background:#1c1f26;}
 body.dark-mode .tab-toggle.sub{background:#14171c;}
 body.dark-mode .tab-toggle button:hover:not(.active){background:rgba(255,255,255,0.05);}
@@ -1132,16 +1148,23 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       <div class="card">
         <div class="card-title">🛒 بيعة جديدة</div>
 
-        <!-- التوجل: محصول أو منتج -->
-        <div class="tab-toggle" style="margin-bottom:6px;">
-          <button id="ds-type-crop-btn" onclick="setDsSaleType('crop')" class="active">🌾 بيع محصول</button>
-          <button id="ds-type-prod-btn" onclick="setDsSaleType('product')">📦 بيع منتج</button>
-        </div>
-
-        <!-- مصدر البيع - يظهر بس لما اختار بيع محصول -->
-        <div id="ds-src-toggle" class="tab-toggle sub">
-          <button id="ds-src-harvest-btn" onclick="setDsSource('harvest')" class="active">🌾 حصاد جديد</button>
-          <button id="ds-src-storage-btn" onclick="setDsSource('storage')">📦 من المخزن</button>
+        <!-- اختيار نوع البيعة: 3 كروت واضحة -->
+        <div class="sale-mode-chooser">
+          <button type="button" class="sale-mode active" id="sm-crop-harvest" onclick="setSaleMode('crop-harvest')">
+            <span class="sm-icon">🌾</span>
+            <span class="sm-text"><span class="sm-title">بيع محصول — حصاد جديد</span><span class="sm-sub">محصول طازة من الأرض مباشرة</span></span>
+            <span class="sm-check">✓</span>
+          </button>
+          <button type="button" class="sale-mode" id="sm-crop-storage" onclick="setSaleMode('crop-storage')">
+            <span class="sm-icon">📦</span>
+            <span class="sm-text"><span class="sm-title">بيع محصول — من المخزن</span><span class="sm-sub">محصول مخزّن قبل كده</span></span>
+            <span class="sm-check">✓</span>
+          </button>
+          <button type="button" class="sale-mode" id="sm-product" onclick="setSaleMode('product')">
+            <span class="sm-icon">🛒</span>
+            <span class="sm-text"><span class="sm-title">بيع منتج</span><span class="sm-sub">منتج جاهز من المخزن (سماد، مبيد...)</span></span>
+            <span class="sm-check">✓</span>
+          </button>
         </div>
 
         <!-- فورم المحصول -->
@@ -6095,6 +6118,16 @@ function setDsSaleType(type) {
   renderDeferredSales();
 }
 
+// اختيار نوع البيعة من الكروت الـ 3
+function setSaleMode(mode){
+  document.querySelectorAll('.sale-mode').forEach(b=>b.classList.remove('active'));
+  const card = document.getElementById('sm-'+mode);
+  if(card) card.classList.add('active');
+  if(mode==='crop-harvest'){ setDsSaleType('crop'); setDsSource('harvest'); }
+  else if(mode==='crop-storage'){ setDsSaleType('crop'); setDsSource('storage'); }
+  else if(mode==='product'){ setDsSaleType('product'); }
+}
+
 async function getDsProducts() {
   return getInvItems();
 }
@@ -6358,7 +6391,7 @@ async function initDeferredSalesPage(){
   _dsProdItems = [{name:'', qty:'', unit:_dsProdUnits[0]||'', price:0}];
   renderDsProdItemsForm();
   calcDsProdTotal();
-  setDsSaleType('crop');
+  setSaleMode('crop-harvest');
 
   renderDeferredSales();
 }
