@@ -9182,7 +9182,7 @@ function makeSearchable(selectEl) {
     bd.classList.add('open');
     bd.onclick = closeDropdown;
     dropdown.classList.add('open');
-    searchInput.focus();
+    // لا نفتح الكيبورد تلقائياً — يفتح فقط لما المستخدم يدوس على خانة البحث
     const hi = dropdown.querySelector('.highlighted');
     if (hi) hi.scrollIntoView({ block: 'nearest' });
   }
