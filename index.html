@@ -782,6 +782,8 @@ body.dark-mode .tab-toggle.sub button.active{background:#2a2f38;color:#52b788;bo
 .ss-wrap select{display:none!important;}
 .ss-input{width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.88rem;box-sizing:border-box;cursor:pointer;outline:none;transition:border-color 0.2s;}
 .ss-input:focus{border-color:var(--primary);}
+/* نسخة مصغّرة لقوائم الفلتر فقط (نفس ارتفاع خانات التاريخ) */
+.ss-input.ss-compact{padding:6px 9px;font-size:0.8rem;border-radius:8px;}
 .ss-input::placeholder{color:var(--muted);}
 .ss-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99998;display:none;}
 .ss-backdrop.open{display:block;}
@@ -9090,7 +9092,7 @@ function makeSearchable(selectEl) {
   wrap.appendChild(selectEl);
 
   const displayInput = document.createElement('input');
-  displayInput.className = 'ss-input';
+  displayInput.className = 'ss-input' + (selectEl.classList.contains('filter-input') ? ' ss-compact' : '');
   displayInput.type = 'text';
   displayInput.readOnly = true;
   displayInput.setAttribute('autocomplete', 'off');
