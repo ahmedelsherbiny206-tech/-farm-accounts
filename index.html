@@ -8345,32 +8345,87 @@ async function renderInvHistory(){
   const dirColor={'in':'#2d6a4f','sale':'#c0392b','usage':'#c0392b','adjust':'#1565C0','crop_in':'#e65100','crop_out':'#2d6a4f'};
   const subLabel={'in':'استلام','sale':'بيع','usage':'صرف','adjust':'تسوية','crop_in':'تخزين','crop_out':'بيع محصول'};
   const getDirLabel=(r)=> r.type==='adjust' ? (Number(r.quantity)>=0?'⚖️ تسوية +':'⚖️ تسوية −') : (dirLabel[r.type]||r.type);
+  const isPlus=(r)=> r.type==='in'||r.type==='crop_in'||(r.type==='adjust'&&Number(r.quantity)>=0);
   el.innerHTML=data.map(r=>`
-    <div class="item" style="padding:10px 14px;border-bottom:1px solid var(--border);">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;">
-            <span style="font-size:0.78rem;font-weight:900;background:${dirColor[r.type]}22;color:${dirColor[r.type]};border-radius:6px;padding:2px 8px;">${getDirLabel(r)}</span>
-            <span style="font-size:0.7rem;color:var(--muted);font-weight:700;">${subLabel[r.type]||''}</span>
-            <span style="font-size:0.85rem;font-weight:800;">${s(r.item)}</span>
-          </div>
-          <div style="font-size:0.78rem;color:var(--muted);">
-            الكمية: <strong style="color:var(--text);">${Number(r.quantity).toLocaleString('en-US')} ${s(r.unit||'')}</strong>
-            ${r.unit_price?` · سعر الوحدة: <strong style="color:var(--text);">${Number(r.unit_price).toLocaleString('en-US')} ج</strong>`:''}
-            ${r.crop?` · 🌾 ${s(r.crop)}`:''}
-          </div>
+    <div class="item" id="inv-txn-${r.id}" onclick="openInvTxnDetail('${r.id}')" style="display:block;padding:11px 14px;border-bottom:1px solid var(--border);cursor:pointer;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:0;">
+          <span style="font-size:0.76rem;font-weight:900;background:${dirColor[r.type]}22;color:${dirColor[r.type]};border-radius:6px;padding:2px 8px;white-space:nowrap;">${getDirLabel(r)}</span>
+          <span style="font-size:0.88rem;font-weight:800;">${s(r.item)}</span>
+        </div>
+        <div style="font-size:0.92rem;font-weight:900;color:${dirColor[r.type]};white-space:nowrap;">${isPlus(r)?'+':'−'}${Math.abs(Number(r.quantity)).toLocaleString('en-US')} ${s(r.unit||'')}</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:8px;margin-top:5px;">
+        <div style="font-size:0.76rem;color:var(--muted);flex:1;min-width:0;">
+          الكمية: <strong style="color:var(--text);">${Number(r.quantity).toLocaleString('en-US')} ${s(r.unit||'')}</strong>${r.unit_price?` · سعر الوحدة: <strong style="color:var(--text);">${Number(r.unit_price).toLocaleString('en-US')} ج</strong>`:''}${r.crop?` · 🌾 ${s(r.crop)}`:''}
           ${r.notes?`<div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">${s(r.notes)}</div>`:''}
         </div>
-        <div style="text-align:left;white-space:nowrap;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
-          <div style="font-size:0.9rem;font-weight:900;color:${dirColor[r.type]};">${(r.type==='in'||r.type==='crop_in'||(r.type==='adjust'&&Number(r.quantity)>=0))?'+':'−'}${Math.abs(Number(r.quantity)).toLocaleString('en-US')} ${s(r.unit||'')}</div>
-          <div style="font-size:0.68rem;color:var(--muted);">${fmtDate(r.date)}</div>
-          ${(r.type==='adjust'||r.type==='usage')?`<div style="display:flex;gap:4px;">
-            <button onclick="editInvTxn('${r.id}')" style="font-size:0.68rem;padding:2px 7px;border-radius:6px;border:1.5px solid var(--primary-border);background:var(--primary-bg);color:var(--primary);font-family:Cairo,sans-serif;font-weight:800;cursor:pointer;">✏️ تعديل</button>
-            <button onclick="deleteInvTxn('${r.id}')" style="font-size:0.68rem;padding:2px 7px;border-radius:6px;border:1.5px solid #fca5a5;background:#fff5f5;color:#dc2626;font-family:Cairo,sans-serif;font-weight:800;cursor:pointer;">🗑️</button>
-          </div>`:''}
-        </div>
+        <div style="font-size:0.68rem;color:var(--muted);white-space:nowrap;">📅 ${fmtDate(r.date)}</div>
       </div>
+      ${(r.type==='adjust'||r.type==='usage')?`<div style="display:flex;gap:6px;margin-top:7px;justify-content:flex-end;">
+        <button onclick="event.stopPropagation();editInvTxn('${r.id}')" style="font-size:0.68rem;padding:3px 9px;border-radius:6px;border:1.5px solid var(--primary-border);background:var(--primary-bg);color:var(--primary);font-family:Cairo,sans-serif;font-weight:800;cursor:pointer;">✏️ تعديل</button>
+        <button onclick="event.stopPropagation();deleteInvTxn('${r.id}')" style="font-size:0.68rem;padding:3px 9px;border-radius:6px;border:1.5px solid #fca5a5;background:#fff5f5;color:#dc2626;font-family:Cairo,sans-serif;font-weight:800;cursor:pointer;">🗑️</button>
+      </div>`:''}
     </div>`).join('');
+}
+
+// تفاصيل حركة المخزن + زرار الذهاب للمصدر
+async function openInvTxnDetail(id){
+  document.getElementById('modal-title').textContent='📦 تفاصيل الحركة';
+  document.getElementById('detail-overlay').classList.add('open');
+  document.getElementById('modal-body').innerHTML='<div class="loading">⏳ جاري التحميل...</div>';
+  const {data:r,error}=await sb.from('inventory_transactions').select('*').eq('id',id).eq('user_id',currentUser.id).single();
+  if(error||!r){ document.getElementById('modal-body').innerHTML='<div class="empty">❌ تعذّر تحميل الحركة</div>'; return; }
+  const typeName={'in':'📥 وارد (استلام شراء)','sale':'📤 صادر (بيع منتج)','usage':'📤 صادر (صرف)','adjust':'⚖️ تسوية مخزن','crop_in':'🌾 تخزين محصول','crop_out':'💰 بيع محصول من المخزن'};
+  // مصدر الحركة: in→مشتريات، sale/crop_out→مبيعات
+  const srcMap={'in':{page:'deferred-purchases',label:'فاتورة المشتريات'},'sale':{page:'deferred',mode:'product',label:'فاتورة المبيعات'},'crop_out':{page:'deferred',mode:'crop',label:'فاتورة المبيعات'}};
+  const src=srcMap[r.type];
+  const hasSource = src && r.ref_id;
+  const row=(lbl,val)=> val?`<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);"><span style="color:var(--muted);font-size:0.8rem;font-weight:700;">${lbl}</span><span style="font-weight:800;font-size:0.85rem;text-align:left;">${val}</span></div>`:'';
+  document.getElementById('modal-body').innerHTML=`
+    <div style="margin-bottom:6px;">
+      ${row('نوع الحركة', typeName[r.type]||r.type)}
+      ${row('الصنف', s(r.item))}
+      ${row('الكمية', `${Number(r.quantity).toLocaleString('en-US')} ${s(r.unit||'')}`)}
+      ${row('سعر الوحدة', r.unit_price?`${Number(r.unit_price).toLocaleString('en-US')} ج`:'')}
+      ${row('الإجمالي', r.total?`${Number(r.total).toLocaleString('en-US')} ج`:'')}
+      ${row('المحصول/الموسم', r.crop?`🌾 ${s(r.crop)}`:'')}
+      ${row('التاريخ', '📅 '+fmtDate(r.date))}
+      ${row('ملاحظات', r.notes?s(r.notes):'')}
+    </div>
+    ${hasSource
+      ? `<button class="btn btn-g" style="width:100%;margin-top:8px;" onclick="goToInvSource('${r.type}','${r.ref_id}')">🔗 الذهاب إلى ${src.label}</button>`
+      : `<div style="text-align:center;font-size:0.76rem;color:var(--muted);margin-top:10px;background:var(--g5);border-radius:10px;padding:10px;">📌 دي عملية مسجّلة يدوياً في المخزن — مصدرها هو نفسها</div>`}`;
+}
+
+// ينقل لصفحة المصدر ويعلّم على الفاتورة
+async function goToInvSource(type, refId){
+  if(!refId) return showToast('❌ مفيش مصدر مرتبط');
+  closeModal();
+  const srcMap={'in':{page:'deferred-purchases',rowId:'dp-item-'+refId},'sale':{page:'deferred',mode:'product',rowId:'ds-item-'+refId},'crop_out':{page:'deferred',mode:'crop',rowId:'ds-item-'+refId}};
+  const src=srcMap[type];
+  if(!src) return showToast('❌ نوع غير معروف');
+  showPage(src.page);
+  setTimeout(async ()=>{
+    try{
+      if(src.page==='deferred'){
+        setSaleMode(src.mode==='product'?'product':'crop-harvest');
+        await renderDeferredSales();
+      }
+      highlightSourceRow(src.rowId);
+    }catch(e){ highlightSourceRow(src.rowId); }
+  }, 850);
+}
+
+function highlightSourceRow(rowId){
+  const row=document.getElementById(rowId);
+  if(!row){ showToast('⚠️ الفاتورة مش ظاهرة — ممكن تكون متفلتر'); return; }
+  row.scrollIntoView({behavior:'smooth',block:'center'});
+  const prevBg=row.style.background, prevShadow=row.style.boxShadow;
+  row.style.transition='background 0.4s, box-shadow 0.4s';
+  row.style.background='#fff8e1';
+  row.style.boxShadow='0 0 0 3px #f59e0b';
+  setTimeout(()=>{ row.style.background=prevBg; row.style.boxShadow=prevShadow; }, 2600);
 }
 
 async function openInvAdjust(item, _unused, unit, avgCost){
