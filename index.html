@@ -747,9 +747,11 @@ button,a,[onclick]{-webkit-tap-highlight-color:transparent;touch-action:manipula
 .ss-input{width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.88rem;box-sizing:border-box;cursor:pointer;outline:none;transition:border-color 0.2s;}
 .ss-input:focus{border-color:var(--primary);}
 .ss-input::placeholder{color:var(--muted);}
-.ss-dropdown{position:absolute;top:calc(100% + 4px);right:0;left:0;background:var(--card);border:1.5px solid var(--border);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.15);z-index:9999;max-height:220px;overflow-y:auto;display:none;}
+.ss-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99998;display:none;}
+.ss-backdrop.open{display:block;}
+.ss-dropdown{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:440px;background:var(--card);border:1.5px solid var(--border);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.4);z-index:99999;max-height:75vh;overflow-y:auto;display:none;}
 .ss-dropdown.open{display:block;}
-.ss-search-box{padding:8px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);}
+.ss-search-box{padding:10px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);}
 .ss-search-box input{width:100%;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:Cairo,sans-serif;font-size:0.82rem;outline:none;box-sizing:border-box;}
 .ss-option{padding:10px 14px;cursor:pointer;font-size:0.88rem;color:var(--text);transition:background 0.15s;}
 .ss-option:hover,.ss-option.highlighted{background:var(--g5);color:var(--g2);}
@@ -9003,18 +9005,33 @@ function makeSearchable(selectEl) {
     }
   }
 
+  function ensureBackdrop() {
+    if (!window._ssBackdrop) {
+      const b = document.createElement('div');
+      b.className = 'ss-backdrop';
+      document.body.appendChild(b);
+      window._ssBackdrop = b;
+    }
+    return window._ssBackdrop;
+  }
+
   function openDropdown() {
     searchInput.value = '';
     buildOptions('');
+    // انقل القائمة للـ body عشان تظهر في نص الشاشة فوق أي حاجة
+    document.body.appendChild(dropdown);
+    const bd = ensureBackdrop();
+    bd.classList.add('open');
+    bd.onclick = closeDropdown;
     dropdown.classList.add('open');
     searchInput.focus();
-    // scroll highlighted into view
     const hi = dropdown.querySelector('.highlighted');
     if (hi) hi.scrollIntoView({ block: 'nearest' });
   }
 
   function closeDropdown() {
     dropdown.classList.remove('open');
+    if (window._ssBackdrop) window._ssBackdrop.classList.remove('open');
     searchInput.value = '';
   }
 
@@ -9034,7 +9051,7 @@ function makeSearchable(selectEl) {
   });
 
   document.addEventListener('click', e => {
-    if (!wrap.contains(e.target)) closeDropdown();
+    if (!wrap.contains(e.target) && !dropdown.contains(e.target)) closeDropdown();
   }, true);
 
   // watch for option changes (dynamic population)
