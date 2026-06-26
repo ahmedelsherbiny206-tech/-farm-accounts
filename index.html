@@ -735,6 +735,13 @@ body.dark-mode .tab-toggle.sub button.active{background:#2a2f38;color:#52b788;bo
   transition:border-color 0.2s;
 }
 .filter-input:focus{border-color:var(--primary);}
+/* placeholder جوّا خانة التاريخ: تظهر "من"/"إلى" وتختفي عند اختيار تاريخ */
+.date-wrap{position:relative;}
+.date-wrap input{width:100%;box-sizing:border-box;}
+.date-wrap input:not(.has-value)::-webkit-datetime-edit{color:transparent;}
+.date-wrap input.has-value::-webkit-datetime-edit{color:inherit;}
+.date-ph-label{position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:0.78rem;font-weight:700;pointer-events:none;}
+.date-wrap input.has-value ~ .date-ph-label{display:none;}
 .filter-select{
   flex:1;padding:8px 10px;border-radius:8px;border:1.5px solid var(--border);
   background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;
@@ -1555,13 +1562,13 @@ body.dark-mode .ss-option{color:#e0e0e0;}
           </select>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
-          <div>
-            <div class="filter-label" style="margin-bottom:3px;">من</div>
-            <input type="date" id="inv-from" class="filter-input" style="width:100%;min-width:0;box-sizing:border-box;padding:6px 9px;font-size:0.78rem;" onchange="renderInvHistory()">
+          <div class="date-wrap">
+            <input type="date" id="inv-from" class="filter-input" style="min-width:0;padding:6px 9px;font-size:0.78rem;" oninput="this.classList.toggle('has-value',!!this.value);renderInvHistory()">
+            <span class="date-ph-label">من</span>
           </div>
-          <div>
-            <div class="filter-label" style="margin-bottom:3px;">إلى</div>
-            <input type="date" id="inv-to" class="filter-input" style="width:100%;min-width:0;box-sizing:border-box;padding:6px 9px;font-size:0.78rem;" onchange="renderInvHistory()">
+          <div class="date-wrap">
+            <input type="date" id="inv-to" class="filter-input" style="min-width:0;padding:6px 9px;font-size:0.78rem;" oninput="this.classList.toggle('has-value',!!this.value);renderInvHistory()">
+            <span class="date-ph-label">إلى</span>
           </div>
         </div>
         <button class="btn-sm outline" style="width:100%;" onclick="clearInvFilter()">🔄 عرض الكل</button>
@@ -8576,8 +8583,9 @@ async function saveEditInvTxn(id, type){
 }
 
 function clearInvFilter(){
-  document.getElementById('inv-from').value='';
-  document.getElementById('inv-to').value='';
+  const f=document.getElementById('inv-from'), t=document.getElementById('inv-to');
+  f.value=''; f.classList.remove('has-value');
+  t.value=''; t.classList.remove('has-value');
   document.getElementById('inv-filter-item').value='';
   document.getElementById('inv-filter-type').value='';
   renderInvHistory();
