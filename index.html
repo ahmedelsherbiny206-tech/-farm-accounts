@@ -4077,6 +4077,15 @@ async function populateCatSelects(){
   // ds-filter-crop
   const dsFiltCrop = document.getElementById('ds-filter-crop');
   if(dsFiltCrop){ dsFiltCrop.innerHTML='<option value="">كل المحاصيل</option>'+crops.map(c=>`<option>${s(c)}</option>`).join(''); }
+  // أعد رسم الفورمات الديناميكية لو مفتوحة عشان المحصول الجديد يبان علطول
+  refreshDynamicForms();
+}
+
+// إعادة رسم فورمات الأصناف الديناميكية (محاصيل/منتجات/مشتريات) عشان أي إضافة جديدة تبان فوراً بدون خروج من الصفحة
+function refreshDynamicForms(){
+  try{ if(typeof renderDsCropItemsForm==='function' && document.getElementById('ds-crop-items-list')) renderDsCropItemsForm(); }catch(e){}
+  try{ if(typeof renderDsProdItemsForm==='function' && document.getElementById('ds-prod-items-list')) renderDsProdItemsForm(); }catch(e){}
+  try{ if(typeof renderDpItemsForm==='function' && document.getElementById('dp-items-list')) renderDpItemsForm(); }catch(e){}
 }
 
 let catManagerType = '';
@@ -5101,12 +5110,14 @@ async function openDpUnitManager() {
     _dpUnits = units;
     inp.value='';
     refresh();
+    refreshDynamicForms();
   };
   window._dpUnitDel = async (i) => {
     units.splice(i,1);
     saveDpUnits(units);
     _dpUnits = units;
     refresh();
+    refreshDynamicForms();
   };
   document.getElementById('detail-overlay').classList.add('open');
 }
@@ -6325,9 +6336,9 @@ async function openDsUnitManager() {
     const inp=document.getElementById('new-ds-unit'); const name=inp?.value.trim();
     if(!name) return showToast('❌ اكتب الوحدة');
     if(units.includes(name)) return showToast('❌ موجودة بالفعل');
-    units.push(name); saveDsProdUnits(units); inp.value=''; refresh();
+    units.push(name); saveDsProdUnits(units); inp.value=''; refresh(); refreshDynamicForms();
   };
-  window._dsUnitMgrDel = async (i) => { units.splice(i,1); saveDsProdUnits(units); refresh(); };
+  window._dsUnitMgrDel = async (i) => { units.splice(i,1); saveDsProdUnits(units); refresh(); refreshDynamicForms(); };
   document.getElementById('detail-overlay').classList.add('open');
 }
 
@@ -7000,6 +7011,8 @@ async function addUnit(){
   document.getElementById('new-unit-input').value='';
   const unitSel=document.getElementById('ds-unit');
   if(unitSel) unitSel.innerHTML=units.map(u=>`<option>${u}</option>`).join('');
+  _dsCropUnits=units; _dsProdUnits=units;
+  refreshDynamicForms();
   showToast('✅ تم الإضافة');
 }
 async function deleteUnit(i){
@@ -7013,6 +7026,8 @@ async function deleteUnit(i){
   document.getElementById('units-list').innerHTML=renderUnitsList(units);
   const unitSel=document.getElementById('ds-unit');
   if(unitSel) unitSel.innerHTML=units.map(u=>`<option>${u}</option>`).join('');
+  _dsCropUnits=units; _dsProdUnits=units;
+  refreshDynamicForms();
   showToast('🗑️ تم الحذف');
 }
 
@@ -8697,14 +8712,17 @@ async function openInvItemManager(){
     _dpProducts=[...items];_dsProdProducts=[...items];
     const sel=document.getElementById('inv-filter-item');
     if(sel) sel.innerHTML='<option value="">كل الأصناف</option>'+items.map(i=>`<option>${s(i)}</option>`).join('');
+    refreshDynamicForms();
   };
   window._invItemDel=async(i)=>{
     const name=items[i];
     const used=await itemHasUsage(name);
     if(used) return showToast('⚠️ الصنف له عمليات — استخدم تعديل الاسم');
     items.splice(i,1);saveInvItems(items);refresh();
+    _dpProducts=[...items];_dsProdProducts=[...items];
     const sel=document.getElementById('inv-filter-item');
     if(sel) sel.innerHTML='<option value="">كل الأصناف</option>'+items.map(i=>`<option>${s(i)}</option>`).join('');
+    refreshDynamicForms();
   };
   window._invItemRename=async(i)=>{
     const oldName=items[i];
@@ -8725,6 +8743,7 @@ async function openInvItemManager(){
     items=await renameItem(oldName,newName);
     _dpProducts=[...items];_dsProdProducts=[...items];
     refresh();
+    refreshDynamicForms();
     showToast('✅ تم تعديل الاسم في كل مكان');
   };
   document.getElementById('detail-overlay').classList.add('open');
