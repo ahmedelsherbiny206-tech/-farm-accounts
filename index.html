@@ -3229,20 +3229,23 @@ function showDetail(type, item) {
       expense_auto: {label:'💸 المصاريف', page:'expense', prefix:'exp-item-'},
       capital_auto: {label:'📦 رأس المال', page:'capital', prefix:'cap-item-'},
     };
-    const isSales = item.category==='سداد_مبيعات' || item.category==='تسوية_مبيعات';
+    const cat = item.category||'';
+    const salesCropCats = ['سداد_مبيعات','تسوية_مبيعات','مرتجع_مبيعات'];
+    const salesProdCats = ['سداد_مبيعات_منتج','تسوية_مبيعات_منتج','مرتجع_مبيعات_منتج'];
+    const purchaseCats = ['سداد_مشتريات','مشتريات_آجل','مرتجع_مشتريات','تسوية_مشتريات'];
+    const srcBtn = (onclick,label,color)=>`<div style="margin-top:16px;text-align:center;">
+      <button onclick="${onclick}" style="background:${color};color:#fff;border:none;border-radius:12px;padding:10px 24px;font-family:Cairo,sans-serif;font-size:0.9rem;font-weight:900;cursor:pointer;">
+        ${label} — اذهب للمصدر</button></div>`;
     if(srcMap[item.type]) {
       const {label, page, prefix} = srcMap[item.type];
       const elemId = item.ref_id ? prefix + item.ref_id : null;
-      extraHtml = `<div style="margin-top:16px;text-align:center;">
-        <button onclick="goToSource('${page}','${elemId}')" style="background:var(--g2);color:#fff;border:none;border-radius:12px;padding:10px 24px;font-family:Cairo,sans-serif;font-size:0.9rem;font-weight:900;cursor:pointer;">
-          ${label} — اذهب للمصدر
-        </button></div>`;
-    } else if(isSales) {
-      const elemId = item.ref_id ? 'ds-item-' + item.ref_id : null;
-      extraHtml = `<div style="margin-top:16px;text-align:center;">
-        <button onclick="goToSource('deferred','${elemId}')" style="background:#1565C0;color:#fff;border:none;border-radius:12px;padding:10px 24px;font-family:Cairo,sans-serif;font-size:0.9rem;font-weight:900;cursor:pointer;">
-          🛒 مبيعات — اذهب للمصدر
-        </button></div>`;
+      extraHtml = srcBtn(`goToSource('${page}','${elemId}')`, label, 'var(--g2)');
+    } else if(item.ref_id && salesCropCats.includes(cat)) {
+      extraHtml = srcBtn(`goToSaleSource('${item.ref_id}','crop')`, '🛒 مبيعات', '#1565C0');
+    } else if(item.ref_id && salesProdCats.includes(cat)) {
+      extraHtml = srcBtn(`goToSaleSource('${item.ref_id}','product')`, '🛒 مبيعات منتج', '#1565C0');
+    } else if(item.ref_id && purchaseCats.includes(cat)) {
+      extraHtml = srcBtn(`goToSource('deferred-purchases','dp-item-${item.ref_id}')`, '🛍️ مشتريات', '#e65100');
     }
   }
   document.getElementById('modal-body').innerHTML =
@@ -3296,6 +3299,34 @@ function goToSource(page, itemId) {
     if(Date.now() - start < 4000) setTimeout(poll, 100);
   };
   setTimeout(poll, 150);
+}
+
+// انتقال لفاتورة المبيعات مع ضبط نوع البيعة (محصول/منتج) قبل التعليم عليها
+function goToSaleSource(refId, mode) {
+  closeModal();
+  if(!refId) return;
+  showPage('deferred', null);
+  setTimeout(async () => {
+    try {
+      setSaleMode(mode==='product' ? 'product' : 'crop-harvest');
+      await renderDeferredSales();
+    } catch(e){}
+    const id = 'ds-item-' + refId;
+    const start = Date.now();
+    const poll = () => {
+      const el = document.getElementById(id);
+      if(el) {
+        el.scrollIntoView({behavior:'smooth', block:'center'});
+        el.style.transition = 'box-shadow 0.3s, outline 0.3s';
+        el.style.outline = '3px solid var(--g2)';
+        el.style.boxShadow = '0 0 0 4px rgba(76,175,80,0.25)';
+        setTimeout(() => { el.style.outline=''; el.style.boxShadow=''; }, 2000);
+        return;
+      }
+      if(Date.now() - start < 4000) setTimeout(poll, 100);
+    };
+    poll();
+  }, 500);
 }
 
 // ===== REPORT =====
