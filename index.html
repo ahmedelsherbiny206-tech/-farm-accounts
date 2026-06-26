@@ -1541,10 +1541,10 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       <div class="card-title">📋 سجل الحركات</div>
       <div class="filter-section">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
-          <select id="inv-filter-item" class="filter-input" style="min-width:0;" onchange="renderInvHistory()">
+          <select id="inv-filter-item" class="filter-input" style="min-width:0;padding:6px 9px;font-size:0.78rem;" onchange="renderInvHistory()">
             <option value="">كل الأصناف</option>
           </select>
-          <select id="inv-filter-type" class="filter-input" style="min-width:0;" onchange="renderInvHistory()">
+          <select id="inv-filter-type" class="filter-input" style="min-width:0;padding:6px 9px;font-size:0.78rem;" onchange="renderInvHistory()">
             <option value="">كل الحركات</option>
             <option value="in">📥 وارد (استلام)</option>
             <option value="crop_in">🌾 تخزين محصول</option>
@@ -1554,11 +1554,15 @@ body.dark-mode .ss-option{color:#e0e0e0;}
             <option value="adjust">⚖️ تسوية</option>
           </select>
         </div>
-        <div style="display:grid;grid-template-columns:auto 1fr auto 1fr;gap:6px;align-items:center;margin-bottom:8px;">
-          <span class="filter-label">من</span>
-          <input type="date" id="inv-from" class="filter-input" style="min-width:0;" onchange="renderInvHistory()">
-          <span class="filter-label">إلى</span>
-          <input type="date" id="inv-to" class="filter-input" style="min-width:0;" onchange="renderInvHistory()">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+          <div>
+            <div class="filter-label" style="margin-bottom:3px;">من</div>
+            <input type="date" id="inv-from" class="filter-input" style="width:100%;min-width:0;box-sizing:border-box;padding:6px 9px;font-size:0.78rem;" onchange="renderInvHistory()">
+          </div>
+          <div>
+            <div class="filter-label" style="margin-bottom:3px;">إلى</div>
+            <input type="date" id="inv-to" class="filter-input" style="width:100%;min-width:0;box-sizing:border-box;padding:6px 9px;font-size:0.78rem;" onchange="renderInvHistory()">
+          </div>
         </div>
         <button class="btn-sm outline" style="width:100%;" onclick="clearInvFilter()">🔄 عرض الكل</button>
       </div>
