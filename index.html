@@ -1540,18 +1540,11 @@ body.dark-mode .ss-option{color:#e0e0e0;}
     <div class="card">
       <div class="card-title">📋 سجل الحركات</div>
       <div class="filter-section">
-        <div class="filter-row" style="margin-bottom:8px;">
-          <span class="filter-label">من:</span>
-          <input type="date" id="inv-from" class="filter-input" onchange="renderInvHistory()">
-          <span class="filter-label">إلى:</span>
-          <input type="date" id="inv-to" class="filter-input" onchange="renderInvHistory()">
-          <button class="btn-sm outline" onclick="clearInvFilter()">الكل</button>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-          <select id="inv-filter-item" class="filter-input" onchange="renderInvHistory()">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
+          <select id="inv-filter-item" class="filter-input" style="min-width:0;" onchange="renderInvHistory()">
             <option value="">كل الأصناف</option>
           </select>
-          <select id="inv-filter-type" class="filter-input" onchange="renderInvHistory()">
+          <select id="inv-filter-type" class="filter-input" style="min-width:0;" onchange="renderInvHistory()">
             <option value="">كل الحركات</option>
             <option value="in">📥 وارد (استلام)</option>
             <option value="crop_in">🌾 تخزين محصول</option>
@@ -1561,6 +1554,13 @@ body.dark-mode .ss-option{color:#e0e0e0;}
             <option value="adjust">⚖️ تسوية</option>
           </select>
         </div>
+        <div style="display:grid;grid-template-columns:auto 1fr auto 1fr;gap:6px;align-items:center;margin-bottom:8px;">
+          <span class="filter-label">من</span>
+          <input type="date" id="inv-from" class="filter-input" style="min-width:0;" onchange="renderInvHistory()">
+          <span class="filter-label">إلى</span>
+          <input type="date" id="inv-to" class="filter-input" style="min-width:0;" onchange="renderInvHistory()">
+        </div>
+        <button class="btn-sm outline" style="width:100%;" onclick="clearInvFilter()">🔄 عرض الكل</button>
       </div>
       <div id="inv-history"><div class="loading">⏳</div></div>
     </div>
