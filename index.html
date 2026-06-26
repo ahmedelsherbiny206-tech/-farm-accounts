@@ -4086,6 +4086,7 @@ function refreshDynamicForms(){
   try{ if(typeof renderDsCropItemsForm==='function' && document.getElementById('ds-crop-items-list')) renderDsCropItemsForm(); }catch(e){}
   try{ if(typeof renderDsProdItemsForm==='function' && document.getElementById('ds-prod-items-list')) renderDsProdItemsForm(); }catch(e){}
   try{ if(typeof renderDpItemsForm==='function' && document.getElementById('dp-items-list')) renderDpItemsForm(); }catch(e){}
+  try{ if(typeof renderDseItemsForm==='function' && document.getElementById('dse-items-list')) renderDseItemsForm(_dsCropCrops,_dsCropUnits); }catch(e){}
 }
 
 let catManagerType = '';
