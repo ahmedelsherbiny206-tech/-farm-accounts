@@ -723,28 +723,28 @@ body.dark-mode .tab-toggle.sub button.active{background:#2a2f38;color:#52b788;bo
 /* ======= FILTER SECTION ======= */
 .filter-section{
   background:var(--card);border:1px solid var(--border);border-radius:12px;
-  padding:12px 14px;margin-bottom:12px;
+  padding:10px 12px;margin-bottom:12px;
 }
-.filter-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:0;}
+.filter-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:0;}
 .filter-row+.filter-row{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
 .filter-label{font-size:0.72rem;font-weight:700;color:var(--muted);white-space:nowrap;}
 .filter-input{
-  flex:1;min-width:100px;padding:8px 10px;border-radius:8px;
+  flex:1;min-width:90px;padding:6px 9px;border-radius:8px;
   border:1.5px solid var(--border);background:var(--bg);
-  font-family:Cairo,sans-serif;font-size:0.82rem;color:var(--text);outline:none;
+  font-family:Cairo,sans-serif;font-size:0.8rem;color:var(--text);outline:none;
   transition:border-color 0.2s;
 }
 .filter-input:focus{border-color:var(--primary);}
 /* placeholder جوّا خانة التاريخ: تظهر "من"/"إلى" وتختفي عند اختيار تاريخ */
-.date-wrap{position:relative;min-width:0;}
+.date-wrap{position:relative;min-width:0;flex:1;}
 .date-wrap input{width:100%;box-sizing:border-box;}
 .date-wrap input:not(.has-value)::-webkit-datetime-edit{color:transparent;}
 .date-wrap input.has-value::-webkit-datetime-edit{color:inherit;}
 .date-ph-label{position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:0.78rem;font-weight:700;pointer-events:none;}
 .date-wrap input.has-value ~ .date-ph-label{display:none;}
 .filter-select{
-  flex:1;padding:8px 10px;border-radius:8px;border:1.5px solid var(--border);
-  background:var(--bg);font-family:Cairo,sans-serif;font-size:0.82rem;
+  flex:1;padding:6px 9px;border-radius:8px;border:1.5px solid var(--border);
+  background:var(--bg);font-family:Cairo,sans-serif;font-size:0.8rem;
   color:var(--text);outline:none;
 }
 .filter-btns{display:flex;gap:6px;}
@@ -1021,11 +1021,9 @@ body.dark-mode .ss-option{color:#e0e0e0;}
     </div>
     <div class="filter-section">
       <div class="filter-row" style="margin-bottom:8px;">
-        <span class="filter-label">من:</span>
-        <input type="date" id="inc-from" class="filter-input" onchange="renderIncomeList()">
-        <span class="filter-label">إلى:</span>
-        <input type="date" id="inc-to" class="filter-input" onchange="renderIncomeList()">
-        <button class="btn-sm outline" onclick="clearIncFilter()">الكل</button>
+        <div class="date-wrap"><input type="date" id="inc-from" class="filter-input" onchange="renderIncomeList()"><span class="date-ph-label">من</span></div>
+        <div class="date-wrap"><input type="date" id="inc-to" class="filter-input" onchange="renderIncomeList()"><span class="date-ph-label">إلى</span></div>
+        <button class="btn-sm outline" onclick="clearIncFilter();syncDatePh()">الكل</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
         <select id="inc-filter-type" class="filter-input" onchange="renderIncomeList()"><option value="">كل الأنواع</option></select>
@@ -1083,11 +1081,9 @@ body.dark-mode .ss-option{color:#e0e0e0;}
     </div>
     <div class="filter-section">
       <div class="filter-row" style="margin-bottom:8px;">
-        <span class="filter-label">من:</span>
-        <input type="date" id="exp-from" class="filter-input" onchange="renderExpenseList()">
-        <span class="filter-label">إلى:</span>
-        <input type="date" id="exp-to" class="filter-input" onchange="renderExpenseList()">
-        <button class="btn-sm outline" onclick="clearExpFilter()">الكل</button>
+        <div class="date-wrap"><input type="date" id="exp-from" class="filter-input" onchange="renderExpenseList()"><span class="date-ph-label">من</span></div>
+        <div class="date-wrap"><input type="date" id="exp-to" class="filter-input" onchange="renderExpenseList()"><span class="date-ph-label">إلى</span></div>
+        <button class="btn-sm outline" onclick="clearExpFilter();syncDatePh()">الكل</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
         <select id="exp-filter-cat" class="filter-input" onchange="renderExpenseList()"><option value="">كل التصنيفات</option></select>
@@ -1286,11 +1282,9 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       <div class="filter-section">
         <!-- تاريخ -->
         <div class="filter-row" style="margin-bottom:8px;">
-          <span class="filter-label">من:</span>
-          <input type="date" id="ds-from" class="filter-input" onchange="renderDeferredSales()">
-          <span class="filter-label">إلى:</span>
-          <input type="date" id="ds-to" class="filter-input" onchange="renderDeferredSales()">
-          <button class="btn-sm outline" onclick="clearDsFilter()">الكل</button>
+          <div class="date-wrap"><input type="date" id="ds-from" class="filter-input" onchange="renderDeferredSales()"><span class="date-ph-label">من</span></div>
+          <div class="date-wrap"><input type="date" id="ds-to" class="filter-input" onchange="renderDeferredSales()"><span class="date-ph-label">إلى</span></div>
+          <button class="btn-sm outline" onclick="clearDsFilter();syncDatePh()">الكل</button>
         </div>
         <!-- فلاتر المحصول -->
         <div id="ds-filters-crop" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">
@@ -1405,9 +1399,9 @@ body.dark-mode .ss-option{color:#e0e0e0;}
 
     <div class="filter-section">
       <div class="filter-row">
-        <span class="filter-label">من:</span><input type="date" id="dp-from" class="filter-input" autocomplete="off" onchange="renderDeferredPurchases()">
-        <span class="filter-label">إلى:</span><input type="date" id="dp-to" class="filter-input" autocomplete="off" onchange="renderDeferredPurchases()">
-        <div class="filter-btns"><button class="clear-btn" onclick="clearDpFilter()">الكل</button></div>
+        <div class="date-wrap"><input type="date" id="dp-from" class="filter-input" autocomplete="off" onchange="renderDeferredPurchases()"><span class="date-ph-label">من</span></div>
+        <div class="date-wrap"><input type="date" id="dp-to" class="filter-input" autocomplete="off" onchange="renderDeferredPurchases()"><span class="date-ph-label">إلى</span></div>
+        <div class="filter-btns"><button class="clear-btn" onclick="clearDpFilter();syncDatePh()">الكل</button></div>
       </div>
       <div class="filter-row">
         <select id="dp-filter-trader" class="filter-input" onchange="renderDeferredPurchases()"><option value="">كل التجار</option></select>
@@ -1499,11 +1493,9 @@ body.dark-mode .ss-option{color:#e0e0e0;}
     <div id="dpp-history-section" style="display:none;">
       <div class="filter-section" style="margin-top:12px;">
         <div class="filter-row">
-          <span class="filter-label">من:</span>
-          <input type="date" id="dpp-from" class="filter-input" onchange="renderDpPayments()">
-          <span class="filter-label">إلى:</span>
-          <input type="date" id="dpp-to" class="filter-input" onchange="renderDpPayments()">
-          <button class="btn-sm outline" onclick="clearDppFilter()">الكل</button>
+          <div class="date-wrap"><input type="date" id="dpp-from" class="filter-input" onchange="renderDpPayments()"><span class="date-ph-label">من</span></div>
+          <div class="date-wrap"><input type="date" id="dpp-to" class="filter-input" onchange="renderDpPayments()"><span class="date-ph-label">إلى</span></div>
+          <button class="btn-sm outline" onclick="clearDppFilter();syncDatePh()">الكل</button>
         </div>
       </div>
       <div class="total-display" style="margin-bottom:10px;">
@@ -1625,11 +1617,9 @@ body.dark-mode .ss-option{color:#e0e0e0;}
     <div id="sp-history-section" style="display:none;">
       <div class="filter-section" style="margin-top:12px;">
         <div class="filter-row">
-          <span class="filter-label">من:</span>
-          <input type="date" id="sp-from" class="filter-input" onchange="renderSalesPayments()">
-          <span class="filter-label">إلى:</span>
-          <input type="date" id="sp-to" class="filter-input" onchange="renderSalesPayments()">
-          <button class="btn-sm outline" onclick="clearSpFilter()">الكل</button>
+          <div class="date-wrap"><input type="date" id="sp-from" class="filter-input" onchange="renderSalesPayments()"><span class="date-ph-label">من</span></div>
+          <div class="date-wrap"><input type="date" id="sp-to" class="filter-input" onchange="renderSalesPayments()"><span class="date-ph-label">إلى</span></div>
+          <button class="btn-sm outline" onclick="clearSpFilter();syncDatePh()">الكل</button>
         </div>
       </div>
       <div class="total-display" style="margin-bottom:10px;">
@@ -1684,12 +1674,10 @@ body.dark-mode .ss-option{color:#e0e0e0;}
     </div>
     <div class="filter-section">
       <div class="filter-row">
-        <span class="filter-label">من:</span>
-        <input type="date" id="cap-from" class="filter-input">
-        <span class="filter-label">إلى:</span>
-        <input type="date" id="cap-to" class="filter-input">
+        <div class="date-wrap"><input type="date" id="cap-from" class="filter-input"><span class="date-ph-label">من</span></div>
+        <div class="date-wrap"><input type="date" id="cap-to" class="filter-input"><span class="date-ph-label">إلى</span></div>
         <button class="btn-sm primary" onclick="renderCapitalList()">عرض</button>
-        <button class="btn-sm outline" onclick="clearCapFilter()">الكل</button>
+        <button class="btn-sm outline" onclick="clearCapFilter();syncDatePh()">الكل</button>
       </div>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:0 2px;">
@@ -1766,12 +1754,10 @@ body.dark-mode .ss-option{color:#e0e0e0;}
     <!-- Filter -->
     <div class="filter-section">
       <div class="filter-row">
-        <span class="filter-label">من:</span>
-        <input type="date" id="vault-from" class="filter-input">
-        <span class="filter-label">إلى:</span>
-        <input type="date" id="vault-to" class="filter-input">
+        <div class="date-wrap"><input type="date" id="vault-from" class="filter-input"><span class="date-ph-label">من</span></div>
+        <div class="date-wrap"><input type="date" id="vault-to" class="filter-input"><span class="date-ph-label">إلى</span></div>
         <button class="btn-sm primary" onclick="renderVaultList()">عرض</button>
-        <button class="btn-sm outline" onclick="clearVaultFilter()">الكل</button>
+        <button class="btn-sm outline" onclick="clearVaultFilter();syncDatePh()">الكل</button>
       </div>
       <div class="filter-row" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
         <span class="filter-label">النوع:</span>
@@ -2369,6 +2355,7 @@ function showPage(name, btn) {
     inventory: ['inv-from','inv-to'],
   };
   (filterMap[name]||[]).forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  if(typeof syncDatePh==='function') syncDatePh();
 
   if(name==='home') renderHome();
   if(name==='income') { renderIncomeList(); populateCatSelects(); }
@@ -9261,4 +9248,20 @@ _ssBodyObserver.observe(document.body, { childList: true, subtree: true });
 
 // Init after DOM ready
 document.addEventListener('DOMContentLoaded', () => initAllSearchable());
+
+// ===== مزامنة placeholder خانات التاريخ (من/إلى داخل الخانة) عبر كل الصفحات =====
+function syncDatePh(){
+  document.querySelectorAll('.date-wrap input[type=date]').forEach(i=>{
+    i.classList.toggle('has-value', !!i.value);
+  });
+}
+// أي تغيير في خانة تاريخ (اختيار/مسح) يحدّث ظهور الكلمة فوراً
+document.addEventListener('input', e=>{
+  const t=e.target;
+  if(t && t.matches && t.matches('.date-wrap input[type=date]')) t.classList.toggle('has-value', !!t.value);
+}, true);
+document.addEventListener('change', e=>{
+  const t=e.target;
+  if(t && t.matches && t.matches('.date-wrap input[type=date]')) t.classList.toggle('has-value', !!t.value);
+}, true);
 </script>
