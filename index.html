@@ -5045,23 +5045,23 @@ function renderDpItemsForm() {
     return;
   }
   el.innerHTML = _dpItems.map((item,i)=>`
-    <div class="inv-row inv-row-4">
+    <div class="inv-row" style="grid-template-columns:1fr 30px;gap:5px;margin-bottom:6px;">
       <select class="inv-field" onchange="_dpItems[${i}].name=this.value">
         <option value="">-- اختار منتج --</option>
         ${_dpProducts.map(p=>`<option ${item.name===p?'selected':''}>${s(p)}</option>`).join('')}
       </select>
-      <div class="inv-row-qty">
+      <button class="inv-del" onclick="removeDpItem(${i})">✕</button>
+      <div style="display:grid;grid-template-columns:1fr 0.7fr 1fr;gap:5px;grid-column:1/-1;">
         <input type="text" inputmode="decimal" placeholder="الكمية" value="${item.qty||''}" class="inv-field"
           oninput="_dpItems[${i}].qty=parseNum(this.value);calcDpTotal()">
         <select class="inv-field" onchange="_dpItems[${i}].unit=this.value">
           ${_dpUnits.map(u=>`<option ${item.unit===u?'selected':''}>${s(u)}</option>`).join('')}
         </select>
+        <input type="text" inputmode="decimal" placeholder="السعر ج" value="${item.price||''}" class="inv-field"
+          oninput="_dpItems[${i}].price=parseNum(this.value);calcDpTotal()"
+          onblur="if(_dpItems[${i}].name&&_dpItems[${i}].qty>0&&_dpItems[${i}].price>0&&${i}===_dpItems.length-1){_dpItems.push({name:'',qty:'',unit:_dpUnits[0]||'',price:0});renderDpItemsForm();}"
+          onkeydown="if(event.key==='Enter'&&_dpItems[${i}].name&&_dpItems[${i}].qty>0&&_dpItems[${i}].price>0){event.preventDefault();_dpItems.push({name:'',qty:'',unit:_dpUnits[0]||'',price:0});renderDpItemsForm();}">
       </div>
-      <input type="text" inputmode="decimal" placeholder="السعر ج" value="${item.price||''}" class="inv-field"
-        oninput="_dpItems[${i}].price=parseNum(this.value);calcDpTotal()"
-        onblur="if(_dpItems[${i}].name&&_dpItems[${i}].qty>0&&_dpItems[${i}].price>0&&${i}===_dpItems.length-1){_dpItems.push({name:'',qty:'',unit:_dpUnits[0]||'',price:0});renderDpItemsForm();}"
-        onkeydown="if(event.key==='Enter'&&_dpItems[${i}].name&&_dpItems[${i}].qty>0&&_dpItems[${i}].price>0){event.preventDefault();_dpItems.push({name:'',qty:'',unit:_dpUnits[0]||'',price:0});renderDpItemsForm();}">
-      <button class="inv-del" onclick="removeDpItem(${i})">✕</button>
     </div>
     <div class="inv-subtotal">${fmt((item.qty||0)*(item.price||0))} ج</div>
   `).join('');
