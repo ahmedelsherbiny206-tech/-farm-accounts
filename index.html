@@ -8374,6 +8374,8 @@ async function renderInvHistory(){
   const type  = document.getElementById('inv-filter-type')?.value||'';
   const from  = document.getElementById('inv-from')?.value||'';
   const to    = document.getElementById('inv-to')?.value||'';
+  // زامن إظهار/إخفاء placeholder من/إلى حسب وجود قيمة
+  ['inv-from','inv-to'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.toggle('has-value',!!e.value);});
   let q = sb.from('inventory_transactions').select('*').eq('user_id',currentUser.id).order('date',{ascending:false}).order('created_at',{ascending:false});
   if(item) q=q.eq('item',item);
   if(type) q=q.eq('type',type);
