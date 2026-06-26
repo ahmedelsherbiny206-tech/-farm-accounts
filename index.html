@@ -8560,7 +8560,7 @@ async function saveInvTransaction(type){
     await sb.from('expenses').insert({
       user_id:currentUser.id,
       description:'صرف مخزن: '+item+(notes?' - '+notes:''),
-      amount:total, category:'مستلزمات', crop:crop||null, date, notes:notes||null
+      amount:total, category:'صرف من المخزن', crop:crop||null, date, notes:notes||null
     });
   }
 
