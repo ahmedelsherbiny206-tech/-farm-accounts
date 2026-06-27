@@ -740,8 +740,9 @@ body.dark-mode .tab-toggle.sub button.active{background:#2a2f38;color:#52b788;bo
 .date-wrap input{width:100%;min-width:0;box-sizing:border-box;}
 /* زر "الكل" جوّا صف الفلتر ماياخدش أكبر من محتواه وماينزنقش */
 .filter-row > button{flex:0 0 auto;white-space:nowrap;}
-.date-wrap input:not(.has-value)::-webkit-datetime-edit{color:transparent;}
-.date-wrap input.has-value::-webkit-datetime-edit{color:inherit;}
+/* إخفاء نص التاريخ لما الخانة فاضية (طريقة مضمونة على iOS/أندرويد/ماك) ويظهر بدله الـ placeholder */
+.date-wrap input:not(.has-value){color:transparent!important;-webkit-text-fill-color:transparent;}
+.date-wrap input.has-value{color:var(--text);-webkit-text-fill-color:var(--text);}
 .date-ph-label{position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:0.78rem;font-weight:700;pointer-events:none;}
 .date-wrap input.has-value ~ .date-ph-label{display:none;}
 .filter-select{
