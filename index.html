@@ -9257,6 +9257,11 @@ function syncDatePh(){
     i.classList.toggle('has-value', !!i.value);
   });
 }
+// مستمع عام: يخفي/يظهر placeholder (من/إلى) تلقائياً على أي خانة تاريخ في أي صفحة عند تغيير قيمتها
+['change','input'].forEach(ev=>document.addEventListener(ev, e=>{
+  const t=e.target;
+  if(t && t.matches && t.matches('.date-wrap input[type=date]')) t.classList.toggle('has-value', !!t.value);
+}, true));
 // أي تغيير في خانة تاريخ (اختيار/مسح) يحدّث ظهور الكلمة فوراً
 document.addEventListener('input', e=>{
   const t=e.target;
