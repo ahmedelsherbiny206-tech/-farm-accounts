@@ -1838,6 +1838,14 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       <div class="chart-title">🌿 تفاصيل المحاصيل</div>
       <div id="crops-detail-list"><div class="loading">⏳</div></div>
     </div>
+
+    <!-- تحليل المخزن -->
+    <div class="chart-container">
+      <div class="chart-title">🏪 قيمة المخزن</div>
+      <div id="inv-analysis-summary"></div>
+      <canvas id="inv-chart" height="180"></canvas>
+      <div id="inv-analysis-list"><div class="loading">⏳</div></div>
+    </div>
   </div>
 
   </div> <!-- end page-ajal -->
@@ -3338,13 +3346,17 @@ async function renderReport() {
   const from=document.getElementById('rep-from').value;
   const to=document.getElementById('rep-to').value;
   if(!from||!to) return showToast('❌ اختار الفترة');
-  const [rInc,rExp,rAjRec,rAjPay,rCap]=await Promise.all([
+  const [rInc,rExp,rAjRec,rAjPay,rCap,invStock,rInvTypes]=await Promise.all([
     sb.from('income').select('amount,description,date').eq('user_id',currentUser.id),
     sb.from('expenses').select('amount,description,date,category').eq('user_id',currentUser.id),
     sb.from('ajal').select('amount').eq('user_id',currentUser.id).eq('type','receivable').eq('paid',false),
     sb.from('ajal').select('amount').eq('user_id',currentUser.id).eq('type','payable').eq('paid',false),
     sb.from('capital').select('amount,date').eq('user_id',currentUser.id).order('date',{ascending:false}).limit(1),
+    calcAllStock(),
+    sb.from('inventory_transactions').select('item,type').eq('user_id',currentUser.id),
   ]);
+  // أصناف المحاصيل (ليها crop_in) مقابل المنتجات (ليها in) للتفرقة في تقرير المخزن
+  const cropItemsSet = new Set((rInvTypes.data||[]).filter(r=>r.type==='crop_in').map(r=>r.item));
   // client-side date filter
   const fromD=new Date(from); const toD=new Date(to); toD.setHours(23,59,59);
   const inRange=(d)=>{ const dd=new Date(d); return dd>=fromD && dd<=toD; };
@@ -3360,6 +3372,16 @@ async function renderReport() {
   const cats={};
   expData.forEach(x=>{const c=x.category||'أخرى';cats[c]=(cats[c]||0)+Number(x.amount);});
   const catRows=Object.entries(cats).map(([c,v])=>`<div class="rep-row red"><span>${s(c)}</span><span class="rv">${fmt(v)}</span></div>`).join('');
+  // ===== المخزن: قيمة الجرد الحالية (لقطة وقتية كأصول) =====
+  const stockItems=(invStock||[]).filter(r=>r.qty>0.001);
+  const cropsStock=stockItems.filter(r=>cropItemsSet.has(r.item));
+  const prodStock=stockItems.filter(r=>!cropItemsSet.has(r.item));
+  const stockVal=(arr)=>arr.reduce((sm,r)=>sm+(Number(r.qty)||0)*(Number(r.avg_cost)||0),0);
+  const cropsVal=stockVal(cropsStock), prodVal=stockVal(prodStock), totalStockVal=cropsVal+prodVal;
+  const invItemRows=stockItems
+    .map(r=>({...r,val:(Number(r.qty)||0)*(Number(r.avg_cost)||0)}))
+    .sort((a,b)=>b.val-a.val)
+    .map(r=>`<div class="rep-row"><span>${cropItemsSet.has(r.item)?'🌾':'📦'} ${s(r.item)} <span style="color:var(--muted);font-size:0.72rem;">(${Number(r.qty).toLocaleString('en-US')} ${s(r.unit||'')})</span></span><span class="rv">${fmt(r.val)}</span></div>`).join('');
   document.getElementById('report-content').innerHTML=`
     <p style="font-size:0.75rem;color:var(--muted);margin-bottom:14px;">من ${fmtDate(from)} إلى ${fmtDate(to)}</p>
     <div class="rep-section">
@@ -3380,6 +3402,13 @@ async function renderReport() {
       <h4>🕐 الآجل (إجمالي)</h4>
       <div class="rep-row grn"><span>ديون لي</span><span class="rv">${fmt(ajalRec)}</span></div>
       <div class="rep-row red"><span>ديون عليَّ</span><span class="rv">${fmt(ajalPay)}</span></div>
+    </div>
+    <div class="rep-section">
+      <h4>🏪 المخزن (القيمة الحالية)</h4>
+      <div class="rep-row grn"><span>إجمالي قيمة المخزن</span><span class="rv">${fmt(totalStockVal)}</span></div>
+      ${cropsVal>0?`<div class="rep-row"><span>🌾 محاصيل مخزّنة (${cropsStock.length})</span><span class="rv">${fmt(cropsVal)}</span></div>`:''}
+      ${prodVal>0?`<div class="rep-row"><span>📦 منتجات (${prodStock.length})</span><span class="rv">${fmt(prodVal)}</span></div>`:''}
+      ${invItemRows||'<div class="rep-row"><span style="color:var(--muted);">لا يوجد رصيد في المخزن</span><span></span></div>'}
     </div>
     <div class="rep-section">
       <h4>📦 رأس المال</h4>
@@ -3934,12 +3963,19 @@ async function exportReportToExcel() {
 
   const farmName = localStorage.getItem('farmName') || 'حسابات المزرعة';
 
-  const [rInc, rExp, rCap, rAjal] = await Promise.all([
+  const [rInc, rExp, rCap, rAjal, invStock, rInvTypes] = await Promise.all([
     sb.from('income').select('*').eq('user_id',currentUser.id).gte('date',from).lte('date',to).order('date',{ascending:false}),
     sb.from('expenses').select('*').eq('user_id',currentUser.id).gte('date',from).lte('date',to).order('date',{ascending:false}),
     sb.from('capital').select('*').eq('user_id',currentUser.id).order('date',{ascending:false}).limit(1),
     sb.from('ajal').select('*').eq('user_id',currentUser.id).eq('paid',false),
+    calcAllStock(),
+    sb.from('inventory_transactions').select('item,type').eq('user_id',currentUser.id),
   ]);
+  const cropItemsSet = new Set((rInvTypes.data||[]).filter(r=>r.type==='crop_in').map(r=>r.item));
+  const invRowsData = (invStock||[]).filter(r=>r.qty>0.001)
+    .map(r=>({item:r.item,unit:r.unit||'',qty:Number(r.qty)||0,avg:Number(r.avg_cost)||0,val:(Number(r.qty)||0)*(Number(r.avg_cost)||0),isCrop:cropItemsSet.has(r.item)}))
+    .sort((a,b)=>b.val-a.val);
+  const totalStockVal = invRowsData.reduce((s,r)=>s+r.val,0);
 
   const wb = XLSX.utils.book_new();
   const fmtNum = n => Number(n||0).toLocaleString('en-US');
@@ -4000,6 +4036,21 @@ async function exportReportToExcel() {
   const ajalLak = (rAjal.data||[]).filter(x=>x.type==='receivable').reduce((s,x)=>s+Number(x.amount||0),0);
   const ajalAlaik = (rAjal.data||[]).filter(x=>x.type==='payable').reduce((s,x)=>s+Number(x.amount||0),0);
 
+  // ===== Sheet: المخزن (قيمة الجرد الحالية) =====
+  const invSheetRows = [
+    ['#', 'الصنف', 'النوع', 'الكمية', 'الوحدة', 'متوسط التكلفة (ج)', 'القيمة (ج)']
+  ];
+  invRowsData.forEach((r,i)=>{
+    invSheetRows.push([i+1, r.item, r.isCrop?'محصول مخزّن':'منتج', r.qty, r.unit, r.avg, r.val]);
+  });
+  invSheetRows.push(['', '', '', '', '', '', '']);
+  invSheetRows.push(['', 'إجمالي قيمة المخزن', '', '', '', '', totalStockVal]);
+  const wsInv = XLSX.utils.aoa_to_sheet(invSheetRows);
+  wsInv['!cols'] = [{wch:5},{wch:24},{wch:14},{wch:12},{wch:10},{wch:18},{wch:16}];
+  xlStyle(wsInv, 0, [invSheetRows.length-1, invSheetRows.length-2]);
+  xlPrependTitle(wsInv, 'المخزن - القيمة الحالية', 7);
+  XLSX.utils.book_append_sheet(wb, wsInv, 'المخزن');
+
   const sumRows = [
     [farmName, '', '', ''],
     [''],
@@ -4011,6 +4062,7 @@ async function exportReportToExcel() {
     [''],
     [profit>=0?'صافي الربح':'صافي الخسارة', Math.abs(profit), '', ''],
     [''],
+    ['قيمة المخزن الحالية', totalStockVal, '', ''],
     ['رأس المال', capVal, '', ''],
     ['آجل لك (غير مسدد)', ajalLak, '', ''],
     ['آجل عليك (غير مسدد)', ajalAlaik, '', ''],
@@ -4022,11 +4074,11 @@ async function exportReportToExcel() {
   const wsSummary = XLSX.utils.aoa_to_sheet(sumRows);
   wsSummary['!cols'] = [{wch:30},{wch:18},{wch:14},{wch:18}];
   wsSummary['!merges'] = [{s:{r:0,c:0},e:{r:0,c:3}}];
-  xlStyle(wsSummary, 4, [5,6,8,10,11,12,14,15], {titleRow:0});
+  xlStyle(wsSummary, 4, [5,6,8,10,11,12,13,15,16], {titleRow:0});
   XLSX.utils.book_append_sheet(wb, wsSummary, 'ملخص');
 
   // ترتيب الشيتس - الملخص أول
-  wb.SheetNames = ['ملخص', 'الإيرادات', 'المصاريف', 'الآجل'];
+  wb.SheetNames = ['ملخص', 'الإيرادات', 'المصاريف', 'المخزن', 'الآجل'];
 
   XLSX.writeFile(wb, farmName+'-'+from+'-'+to+'.xlsx');
   showToast('✅ تم التصدير بنجاح!');
@@ -4944,6 +4996,7 @@ function closeConfirm(){
 // ===== ANALYTICS =====
 let mainChart = null;
 let cropChart = null;
+let invChart = null;
 let chartPeriod = 'monthly';
 
 function setChartPeriod(period, btn){
@@ -5030,6 +5083,42 @@ async function renderAnalytics(){
     document.getElementById('forecast-val').textContent=Number(avg).toLocaleString('en-US')+' ج';
     document.getElementById('forecast-val').style.color=avg>=0?'#d4e8a0':'#ff6b6b';
   }
+
+  // ===== تحليل المخزن =====
+  try {
+    const [stock, invTypes] = await Promise.all([
+      calcAllStock(),
+      sb.from('inventory_transactions').select('item,type').eq('user_id',currentUser.id),
+    ]);
+    const cropSet = new Set((invTypes.data||[]).filter(r=>r.type==='crop_in').map(r=>r.item));
+    const items=(stock||[]).filter(r=>r.qty>0.001)
+      .map(r=>({item:r.item,unit:r.unit||'',qty:Number(r.qty)||0,val:(Number(r.qty)||0)*(Number(r.avg_cost)||0),isCrop:cropSet.has(r.item)}))
+      .sort((a,b)=>b.val-a.val);
+    const total=items.reduce((s,r)=>s+r.val,0);
+    const cropsV=items.filter(r=>r.isCrop).reduce((s,r)=>s+r.val,0);
+    const prodsV=total-cropsV;
+    const sumEl=document.getElementById('inv-analysis-summary');
+    if(sumEl) sumEl.innerHTML=`<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:90px;background:var(--g5);border-radius:10px;padding:8px 10px;text-align:center;"><div style="font-size:0.66rem;color:var(--muted);">إجمالي القيمة</div><div style="font-weight:900;color:var(--g2);">${Number(total).toLocaleString('en-US')} ج</div></div>
+      <div style="flex:1;min-width:90px;background:var(--g5);border-radius:10px;padding:8px 10px;text-align:center;"><div style="font-size:0.66rem;color:var(--muted);">🌾 محاصيل</div><div style="font-weight:900;color:#e65100;">${Number(cropsV).toLocaleString('en-US')} ج</div></div>
+      <div style="flex:1;min-width:90px;background:var(--g5);border-radius:10px;padding:8px 10px;text-align:center;"><div style="font-size:0.66rem;color:var(--muted);">📦 منتجات</div><div style="font-weight:900;color:var(--blue);">${Number(prodsV).toLocaleString('en-US')} ج</div></div>
+    </div>`;
+    const ctx3=document.getElementById('inv-chart');
+    if(invChart) invChart.destroy();
+    const topItems=items.slice(0,10);
+    if(ctx3 && topItems.length){
+      ctx3.style.display='block';
+      invChart=new Chart(ctx3,{
+        type:'bar',
+        data:{labels:topItems.map(r=>r.item),datasets:[{label:'قيمة المخزون',data:topItems.map(r=>r.val),backgroundColor:topItems.map(r=>r.isCrop?'rgba(230,81,0,0.85)':'rgba(21,101,192,0.85)'),borderRadius:6}]},
+        options:{responsive:true,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{font:{family:'Cairo'},color:'#888',callback:v=>v.toLocaleString('en-US')}},y:{ticks:{font:{family:'Cairo'},color:'#888'}}}}
+      });
+    } else if(ctx3){ ctx3.style.display='none'; }
+    const listEl=document.getElementById('inv-analysis-list');
+    if(listEl) listEl.innerHTML = items.length
+      ? items.map(r=>`<div class="crop-card"><div class="crop-name">${r.isCrop?'🌾':'📦'} ${s(r.item)}</div><div class="crop-stats"><div class="crop-stat"><div class="crop-stat-val">${r.qty.toLocaleString('en-US')} ${s(r.unit)}</div><div class="crop-stat-lbl">الكمية</div></div><div class="crop-stat"><div class="crop-stat-val" style="color:var(--g2)">${Number(r.val).toLocaleString('en-US')} ج</div><div class="crop-stat-lbl">القيمة</div></div></div></div>`).join('')
+      : '<div class="empty">لا يوجد رصيد في المخزن</div>';
+  } catch(e){ console.error('inv analysis:',e); }
 }
 
 // ===== SEARCH =====
