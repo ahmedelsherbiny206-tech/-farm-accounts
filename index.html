@@ -6402,11 +6402,16 @@ async function addDeferredSaleProd() {
       return {user_id:currentUser.id,item:it.name,unit:it.unit||'',type:'sale',quantity:it.qty,unit_price:it.price,avg_cost:unitCost,total:it.qty*it.price,date,notes:notes||null,crop:null,ref_id:saleId};
     });
     await sb.from('inventory_transactions').insert(invRows);
-    // نظام نقدي: الشراء اتسجل مصروف وقت الشراء، والبيع يتسجل إيراد — الفرق هو المكسب/الخسارة (بدون تسجيل تكلفة بضاعة مباعة لتفادي ازدواج المصروف)
+    // المخزن أصول: الشراء للمخزن مش بيتسجّل مصروف، فعند البيع نسجّل الإيراد + تكلفة البضاعة المباعة (تكلفة الكمية المباعة فقط) — والمكسب = الفرق
     await sb.from('income').insert({
       user_id: currentUser.id,
       description: 'بيع منتج من المخزن'+(trader?' - '+trader:'')+(desc?' - '+desc:''),
       category: 'مبيعات آجل', crop: null, amount: total, date, notes: notes||null, ref_id: saleId
+    });
+    if(cogs>0) await sb.from('expenses').insert({
+      user_id: currentUser.id,
+      description: 'تكلفة بضاعة مباعة'+(desc?' - '+desc:''),
+      category: 'تكلفة بضاعة مباعة', crop: null, amount: cogs, date, notes: notes||null, ref_id: saleId
     });
   } else {
     await sb.from('income').insert({
@@ -7084,8 +7089,10 @@ async function saveDsEdit(id){
       return {user_id:currentUser.id,item:it.name,unit:it.unit||'',type:'sale',quantity:it.qty,unit_price:it.price,avg_cost:unitCost,total:it.qty*it.price,date,notes:notes||null,crop:null,ref_id:id};
     });
     await sb.from('inventory_transactions').insert(invRows);
-    // نظام نقدي: مفيش تسجيل تكلفة بضاعة مباعة — واحذف أي تكلفة قديمة مربوطة بالفاتورة من النظام السابق
-    await sb.from('expenses').delete().eq('user_id',currentUser.id).eq('ref_id',id).eq('category','تكلفة بضاعة مباعة');
+    // تحديث تكلفة البضاعة المباعة المرتبطة بالفاتورة (تكلفة الكمية المباعة)
+    const cogsDesc = 'تكلفة بضاعة مباعة'+(desc?' - '+desc:'');
+    const {data:eu} = await sb.from('expenses').update({description:cogsDesc,amount:cogs,date}).eq('user_id',currentUser.id).eq('ref_id',id).eq('category','تكلفة بضاعة مباعة').select('id');
+    if(!eu?.length && cogs>0) await sb.from('expenses').insert({user_id:currentUser.id,description:cogsDesc,category:'تكلفة بضاعة مباعة',crop:null,amount:cogs,date,notes:notes||null,ref_id:id});
     window._invStocks = null;
   }
 
