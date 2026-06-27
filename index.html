@@ -6328,7 +6328,7 @@ function renderDsProdItemsForm() {
   }
   el.innerHTML = _dsProdItems.map((item,i)=>`
     <div class="inv-row" style="grid-template-columns:1fr 30px;gap:5px;margin-bottom:6px;">
-      <select class="inv-field" onchange="_dsProdItems[${i}].name=this.value">
+      <select class="inv-field" onchange="_dsProdItems[${i}].name=this.value;{const st=(window._dsProdStocks||[]).find(r=>r.item===this.value);if(st&&st.unit)_dsProdItems[${i}].unit=st.unit;}renderDsProdItemsForm()">
         <option value="">-- اختار منتج --</option>
         ${_dsProdProducts.map(p=>{const st=(window._dsProdStocks||[]).find(r=>r.item===p);return `<option value="${s(p).replace(/"/g,'&quot;')}" ${item.name===p?'selected':''}>${s(p)}${st?` (${Number(st.qty).toLocaleString('en-US')} ${s(st.unit)})`:''}</option>`;}).join('')}
       </select>
