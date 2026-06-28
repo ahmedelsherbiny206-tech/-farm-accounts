@@ -6328,7 +6328,7 @@ function renderDsProdItemsForm() {
   }
   el.innerHTML = _dsProdItems.map((item,i)=>`
     <div class="inv-row" style="grid-template-columns:1fr 30px;gap:5px;margin-bottom:6px;">
-      <select class="inv-field" onchange="_dsProdItems[${i}].name=this.value;{const st=(window._dsProdStocks||[]).find(r=>r.item===this.value);if(st&&st.unit)_dsProdItems[${i}].unit=st.unit;}renderDsProdItemsForm()">
+      <select class="inv-field" onchange="onDsProdSelect(${i}, this.value)">
         <option value="">-- اختار منتج --</option>
         ${_dsProdProducts.map(p=>{const st=(window._dsProdStocks||[]).find(r=>r.item===p);return `<option value="${s(p).replace(/"/g,'&quot;')}" ${item.name===p?'selected':''}>${s(p)}${st?` (${Number(st.qty).toLocaleString('en-US')} ${s(st.unit)})`:''}</option>`;}).join('')}
       </select>
@@ -6352,6 +6352,23 @@ function calcDsProdTotal() {
   const total = _dsProdItems.reduce((s,x)=>s+(x.qty||0)*(x.price||0),0);
   const el = document.getElementById('ds-prod-total-display');
   if(el) el.textContent = Number(total).toLocaleString('en-US')+' ج';
+}
+// عند اختيار منتج: حدّد وحدته تلقائياً من المخزن (الرصيد الحالي أو من حركات المخزن لو الكمية صفر)
+async function onDsProdSelect(idx, value){
+  _dsProdItems[idx].name = value;
+  let unit = '';
+  const st = (window._dsProdStocks||[]).find(r=>r.item===value);
+  if(st && st.unit) unit = st.unit;
+  else if(value){
+    try{
+      const {data} = await sb.from('inventory_transactions').select('unit')
+        .eq('user_id',currentUser.id).eq('item',value).not('unit','is',null)
+        .order('created_at',{ascending:false}).limit(1);
+      if(data?.[0]?.unit) unit = data[0].unit;
+    }catch(e){}
+  }
+  if(unit) _dsProdItems[idx].unit = unit;
+  renderDsProdItemsForm();
 }
 
 async function addDeferredSaleProd() {
