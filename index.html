@@ -2148,10 +2148,19 @@ let _isSecondaryUser = false;   // داخل كمستخدم ثانوي (بكود)
 let _secondaryName = '';
 
 // ===== SECURITY =====
-function s(str){ 
+function s(str){
   const d = document.createElement('div');
   d.textContent = str || '';
   return d.innerHTML;
+}
+// تنظيف مسمّى العرض فقط: يشيل كلمة "آجل" من مبيعات/مشتريات (مايأثرش على القيم المخزّنة ولا الحسابات)
+function dlbl(t){
+  if(t==null) return t;
+  return String(t)
+    .replace(/مبيعات آجل/g,'مبيعات')
+    .replace(/مشتريات آجل/g,'مشتريات')
+    .replace(/بيعة آجل/g,'مبيعات')
+    .replace(/بيع آجل/g,'بيع');
 }
 
 
@@ -2598,7 +2607,7 @@ async function renderHome() {
   if(!allRecent.length){recent.innerHTML='<div class="empty">لا يوجد معاملات بعد</div>';return;}
   recent.innerHTML = allRecent.map(x=>`
     <div class="item ${x.t==='expense'?'exp':''}" style="margin-bottom:6px;cursor:default;">
-      <div><div class="i-desc">${s(x.description)}</div><div class="i-sub">${fmtDate(x.date)}</div></div>
+      <div><div class="i-desc">${s(dlbl(x.description))}</div><div class="i-sub">${fmtDate(x.date)}</div></div>
       <div class="i-amt">${x.t==='expense'?'-':'+'} ${fmt(x.amount)}</div>
     </div>`).join('');
   } catch(e) { console.error('renderHome error:', e); }
@@ -2735,7 +2744,7 @@ async function showDsDetail(id){
   document.getElementById('modal-title').textContent='تفاصيل المبيعات 🛒';
   document.getElementById('modal-body').innerHTML=[
     ['التاجر', x.trader?s(x.trader):'-'],
-    ['الوصف', x.description?s(x.description):'-'],
+    ['الوصف', x.description?s(dlbl(x.description)):'-'],
     ['إجمالي المبلغ', fmt(x.total||0)],
     ['التاريخ', fmtDate(x.date)],
     ['المحصول', x.crop?('🌾 '+s(x.crop)):'-'],
@@ -2759,7 +2768,7 @@ async function showDpDetail(id){
   document.getElementById('modal-title').textContent='تفاصيل المشتريات 🛍️';
   document.getElementById('modal-body').innerHTML=[
     ['التاجر', x.trader?s(x.trader):'-'],
-    ['الوصف', x.description?s(x.description):'-'],
+    ['الوصف', x.description?s(dlbl(x.description)):'-'],
     ['إجمالي المبلغ', fmt(x.total||0)],
     ['التاريخ', fmtDate(x.date)],
     ['المحصول', x.crop?('🌾 '+s(x.crop)):'-'],
@@ -2850,12 +2859,12 @@ async function renderIncomeList() {
     <div class="item ${incomeSelected.has(x.id)?'selected':''}" id="inc-item-${x.id}">
       <input type="checkbox" class="item-check" onclick="event.stopPropagation();toggleIncSel('${x.id}')" ${incomeSelected.has(x.id)?'checked':''}>
       <div style="flex:1;cursor:pointer;" onclick="showDetail('income',${JSON.stringify(x).replace(/"/g,'&quot;')})">
-        <div class="i-desc">${s(x.description)} ${_payBadge[pt]||''}</div>
+        <div class="i-desc">${s(dlbl(x.description))} ${_payBadge[pt]||''}</div>
         <div class="i-sub">${fmtDate(x.date)}${x.category?' · '+s(x.category):''}${x.crop?' 🌾 '+s(x.crop):''}${pt==='partial'&&paidSoFar?' · قبض '+fmt(paidSoFar)+' / باقي '+fmt(remaining):pt==='ajal'?' · لم يُحصَّل بعد':''}</div>
       </div>
       <div class="i-actions">
         <div class="i-amt">${fmt(x.amount)}</div>
-        ${needsPay&&canDo('payIncome')?`<button class="btn-sm" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;" onclick="event.stopPropagation();openIncPayModal('${x.id}','${s(x.description).replace(/'/g,"\\'")}',${x.amount},${paidSoFar})">💵 تحصيل</button>`:''}
+        ${needsPay&&canDo('payIncome')?`<button class="btn-sm" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;" onclick="event.stopPropagation();openIncPayModal('${x.id}','${s(dlbl(x.description)).replace(/'/g,"\\'")}',${x.amount},${paidSoFar})">💵 تحصيل</button>`:''}
         ${canDo('editDelIncome')?`<button class="btn-sm" style="background:var(--blue-p);color:var(--blue);" onclick="event.stopPropagation();editItem('income',${JSON.stringify(x).replace(/"/g,'&quot;')})">✏️</button>`:''}
         ${canDo('editDelIncome')?`<button class="del-btn" onclick="event.stopPropagation();delItem('income','${x.id}')">✕</button>`:''}
       </div>
@@ -3038,12 +3047,12 @@ async function renderExpenseList() {
     <div class="item exp ${expSelected.has(x.id)?'selected':''}" id="exp-item-${x.id}">
       <input type="checkbox" class="item-check" onclick="event.stopPropagation();toggleExpSel('${x.id}')" ${expSelected.has(x.id)?'checked':''}>
       <div style="flex:1;cursor:pointer;" onclick="showDetail('expense',${JSON.stringify(x).replace(/"/g,'&quot;')})">
-        <div class="i-desc">${s(x.description)} ${_payBadge[pt]||''}</div>
+        <div class="i-desc">${s(dlbl(x.description))} ${_payBadge[pt]||''}</div>
         <div class="i-sub">${fmtDate(x.date)}${x.category?' · '+s(x.category):''}${x.crop?' 🌾 '+s(x.crop):''}${pt==='partial'&&paidSoFar?' · دفع '+fmt(paidSoFar)+' / باقي '+fmt(remaining):pt==='ajal'?' · لم يُدفع بعد':''}</div>
       </div>
       <div class="i-actions">
         <div class="i-amt">${fmt(x.amount)}</div>
-        ${needsPay&&canDo('payExpense')?`<button class="btn-sm" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;" onclick="event.stopPropagation();openExpPayModal('${x.id}','${s(x.description).replace(/'/g,"\\'")}',${x.amount},${paidSoFar})">💵 تحصيل</button>`:''}
+        ${needsPay&&canDo('payExpense')?`<button class="btn-sm" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;" onclick="event.stopPropagation();openExpPayModal('${x.id}','${s(dlbl(x.description)).replace(/'/g,"\\'")}',${x.amount},${paidSoFar})">💵 تحصيل</button>`:''}
         ${canDo('editDelExpense')?`<button class="btn-sm" style="background:var(--blue-p);color:var(--blue);" onclick="event.stopPropagation();editItem('expense',${JSON.stringify(x).replace(/"/g,'&quot;')})">✏️</button>`:''}
         ${canDo('editDelExpense')?`<button class="del-btn" onclick="event.stopPropagation();delItem('expenses','${x.id}')">✕</button>`:''}
       </div>
@@ -3572,9 +3581,9 @@ async function renderReport() {
         ${salesUnpaid>0?`<div style="font-size:0.7rem;color:#c0392b;margin-top:5px;">⚠️ ${salesUnpaid} فاتورة لسه غير مسددة</div>`:''}
       </div>`)}
 
-    ${sec('💸 توزيع المصاريف', catArr.length ? catArr.map(([c,v])=>bar(c,v,exp,'#c0392b','🔻')).join('') : '<div style="color:var(--muted);font-size:0.8rem;">لا يوجد مصاريف</div>')}
+    ${sec('💸 توزيع المصاريف', catArr.length ? catArr.map(([c,v])=>bar(dlbl(c),v,exp,'#c0392b','🔻')).join('') : '<div style="color:var(--muted);font-size:0.8rem;">لا يوجد مصاريف</div>')}
 
-    ${sec('💰 مصادر الإيرادات', incCatArr.length ? incCatArr.map(([c,v])=>bar(c,v,inc,'#2d6a4f','🔺')).join('') : '<div style="color:var(--muted);font-size:0.8rem;">لا يوجد إيرادات</div>')}
+    ${sec('💰 مصادر الإيرادات', incCatArr.length ? incCatArr.map(([c,v])=>bar(dlbl(c),v,inc,'#2d6a4f','🔺')).join('') : '<div style="color:var(--muted);font-size:0.8rem;">لا يوجد إيرادات</div>')}
 
     ${sec('🌾 ربحية المحاصيل', cropRowsHtml)}
 
@@ -3760,7 +3769,7 @@ async function renderVaultList(){
     <div class="item ${x.type==='out'||x.type==='expense_auto'?'exp':''} ${vaultSelected.has(x.id)?'selected':''}" id="vault-item-${x.id}">
       <input type="checkbox" class="item-check" onclick="event.stopPropagation();toggleVaultSel('${x.id}')" ${vaultSelected.has(x.id)?'checked':''}>
       <div style="flex:1;cursor:pointer;" onclick="showDetail('vault',${JSON.stringify(x).replace(/"/g,'&quot;')})">
-        <div class="i-desc">${s(x.description)}</div>
+        <div class="i-desc">${s(dlbl(x.description))}</div>
         <div class="i-sub">${fmtDate(x.date)} · ${typeLabel[x.type]||x.type}</div>
       </div>
       <div class="i-actions">
@@ -4099,9 +4108,9 @@ async function exportDeferredToExcel(){
     const ws = XLSX.utils.json_to_sheet(data, {header: headers});
     ws['!cols'] = [{wch:24},{wch:16},{wch:9},{wch:9},{wch:11},{wch:13},{wch:16},{wch:13},{wch:13},{wch:22}];
     xlStyle(ws, 0, [data.length]);
-    xlPrependTitle(ws, 'مبيعات منتجات آجل', 10);
+    xlPrependTitle(ws, 'مبيعات منتجات', 10);
     XLSX.utils.book_append_sheet(wb, ws, 'مبيعات منتجات');
-    XLSX.writeFile(wb, 'مبيعات_منتجات_آجل.xlsx');
+    XLSX.writeFile(wb, 'مبيعات_منتجات.xlsx');
   } else {
     // كل فاتورة: سطر لكل محصول في items
     const headers = ['الوصف','المحصول','الكمية','الوحدة','السعر','الإجمالي','التاجر','الصنف','التاريخ','الحالة','ملاحظات'];
@@ -4128,9 +4137,9 @@ async function exportDeferredToExcel(){
     const ws = XLSX.utils.json_to_sheet(data, {header: headers});
     ws['!cols'] = [{wch:24},{wch:14},{wch:9},{wch:9},{wch:11},{wch:13},{wch:16},{wch:12},{wch:13},{wch:13},{wch:22}];
     xlStyle(ws, 0, [data.length]);
-    xlPrependTitle(ws, 'مبيعات محاصيل آجل', 11);
+    xlPrependTitle(ws, 'مبيعات محاصيل', 11);
     XLSX.utils.book_append_sheet(wb, ws, 'مبيعات محاصيل');
-    XLSX.writeFile(wb, 'مبيعات_محاصيل_آجل.xlsx');
+    XLSX.writeFile(wb, 'مبيعات_محاصيل.xlsx');
   }
   showToast('✅ تم التصدير!');
   } catch(e){ showToast('❌ '+arabicError(e.message||String(e))); console.error('exportDeferredToExcel:',e); }
@@ -5260,7 +5269,7 @@ async function renderLogList(){
           <div style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid rgba(0,0,0,0.05);">
             <div style="width:34px;height:34px;border-radius:10px;background:${style.color}18;border:1px solid ${style.color}33;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">${style.icon}</div>
             <div style="flex:1;min-width:0;">
-              <div style="font-size:0.8rem;font-weight:800;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s(x.description||'')}${amt}</div>
+              <div style="font-size:0.8rem;font-weight:800;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s(dlbl(x.description||''))}${amt}</div>
               <div style="font-size:0.65rem;color:var(--muted);margin-top:1px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
                 <span>${x.action} · ${time}</span>
                 ${(()=>{ const sec=x.is_secondary; const who=x.actor||'المالك'; return `<span style="font-weight:800;border-radius:5px;padding:1px 7px;${sec?'background:#fff3e0;color:#e65100;':'background:var(--g5);color:var(--g2);'}">${sec?'👤 '+s(who):'🛡️ '+s(who)}</span>`; })()}
@@ -5403,7 +5412,7 @@ async function renderAnalytics(){
     _dctx.style.display='block'; if(_demp) _demp.style.display='none';
     const _palette=['#2d6a4f','#c0392b','#1565C0','#e65100','#6a1b9a','#00838f','#558b2f','#d84315','#5d4037','#455a64'];
     expDoughnut=new Chart(_dctx,{type:'doughnut',
-      data:{labels:_ecArr.map(e=>e[0]),datasets:[{data:_ecArr.map(e=>e[1]),backgroundColor:_ecArr.map((e,i)=>_palette[i%_palette.length]),borderWidth:2,borderColor:'#fff'}]},
+      data:{labels:_ecArr.map(e=>dlbl(e[0])),datasets:[{data:_ecArr.map(e=>e[1]),backgroundColor:_ecArr.map((e,i)=>_palette[i%_palette.length]),borderWidth:2,borderColor:'#fff'}]},
       options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{family:'Cairo',size:11},color:'#555',padding:8,boxWidth:12}},tooltip:{callbacks:{label:c=>c.label+': '+Number(c.raw).toLocaleString('en-US')+' ج ('+(c.raw/totExp*100).toFixed(0)+'%)'}}}}
     });
   } else if(_dctx){ _dctx.style.display='none'; if(_demp) _demp.style.display='block'; }
@@ -5679,7 +5688,7 @@ async function addDeferredPurchase() {
     });
   }
 
-  logActivity('إضافة','deferred_purchases','فاتورة مشتريات آجل'+(trader?' - '+trader:''), total);
+  logActivity('إضافة','deferred_purchases','فاتورة مشتريات'+(trader?' - '+trader:''), total);
   showToast(_dpPayType==='full'?'✅ تم التسجيل والسداد':_dpPayType==='partial'?'✅ تم التسجيل وسداد جزئي':'✅ تم تسجيل الفاتورة');
   _dpItems = [];
   renderDpItemsForm();
@@ -5734,7 +5743,7 @@ async function renderDeferredPurchases() {
     const badge = _payBadge[pt]||_payBadge.ajal;
     const isReturned = returnedDpIds.has(x.id);
     const needsPay = !isPaid && !x.is_return && !isReturned;
-    const title = x.description ? s(x.description) : (x.trader ? s(x.trader) : 'فاتورة مشتريات');
+    const title = x.description ? s(dlbl(x.description)) : (x.trader ? s(x.trader) : 'فاتورة مشتريات');
     const subDesc = [fmtDate(x.date), x.crop?'🌾 '+s(x.crop):'', x.trader?'👤 '+s(x.trader):''].filter(Boolean).join(' · ');
     return `<div class="item ${isPaid?'':'exp'} ${dpSelected.has(x.id)?'selected':''}" id="dp-item-${x.id}" style="${x.is_return?'border-right:4px solid var(--red);':isReturned?'border-right:4px solid #f97316;opacity:0.75;':''}">
       <input type="checkbox" class="item-check" onclick="event.stopPropagation();toggleDpSel('${x.id}')" ${dpSelected.has(x.id)?'checked':''}>
@@ -5759,11 +5768,11 @@ async function payDeferredPurchase(id) {
     const {data} = await sb.from('deferred_purchases').select('*').eq('id',id).eq('user_id',currentUser.id);
     if(!data?.length) return showToast('❌ مش لاقي الفاتورة');
     const pur = data[0];
-    const {error:ve} = await sb.from('vault').insert({user_id:currentUser.id,type:'out',description:'سداد مشتريات آجل'+(pur.trader?' - '+pur.trader:''),amount:pur.total,date:today(),notes:pur.description||'',category:'مشتريات_آجل',ref_id:pur.id});
+    const {error:ve} = await sb.from('vault').insert({user_id:currentUser.id,type:'out',description:'سداد مشتريات'+(pur.trader?' - '+pur.trader:''),amount:pur.total,date:today(),notes:pur.description||'',category:'مشتريات_آجل',ref_id:pur.id});
     if(ve) return showToast('❌ '+arabicError(ve.message));
     const {error:ue} = await sb.from('deferred_purchases').update({paid:true,paid_at:new Date().toISOString()}).eq('id',id).eq('user_id',currentUser.id);
     if(ue) return showToast('❌ '+arabicError(ue.message));
-    logActivity('تسديد','deferred_purchases','تسديد مشتريات آجل'+(pur.trader?' - '+pur.trader:''),pur.total);
+    logActivity('تسديد','deferred_purchases','تسديد مشتريات'+(pur.trader?' - '+pur.trader:''),pur.total);
     showToast('✅ تم التسديد وخصم من الخزنة');
     renderDeferredPurchases(); renderHome();
   } catch(e){ showToast('❌ '+arabicError(e.message)); }
@@ -5820,7 +5829,7 @@ async function deleteDeferredPurchase(id, isPaid) {
   }
   if(isPaid==='true' && pur && !pur.is_return) await sb.from('vault').delete().eq('user_id',currentUser.id).eq('category','مشتريات_آجل').eq('amount',pur.total).is('ref_id',null);
 
-  logActivity('حذف','deferred_purchases','حذف فاتورة مشتريات آجل'+(pur?.trader?' - '+pur.trader:''));
+  logActivity('حذف','deferred_purchases','حذف فاتورة مشتريات'+(pur?.trader?' - '+pur.trader:''));
   showToast('🗑️ تم الحذف'+(totalPaid>0?' وإزالة المدفوعات من الخزنة':'')+(invTxns?.length?' وحركات المخزن':''));
   renderDeferredPurchases(); renderHome();
 }
@@ -6012,7 +6021,7 @@ async function exportDpToExcel() {
   xlPrependTitle(ws, 'مشتريات', headers.length);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'مشتريات');
-  XLSX.writeFile(wb, 'مشتريات-آجل-'+today()+'.xlsx');
+  XLSX.writeFile(wb, 'مشتريات-'+today()+'.xlsx');
   showToast('✅ تم التصدير!');
   } catch(e){ showToast('❌ '+arabicError(e.message||String(e))); console.error('exportDpToExcel:',e); }
 }
@@ -6819,7 +6828,7 @@ async function addDeferredSaleProd() {
   } else {
     await sb.from('income').insert({
       user_id: currentUser.id,
-      description: 'بيع آجل منتجات'+(trader?' - '+trader:'')+(desc?' - '+desc:''),
+      description: 'بيع منتجات'+(trader?' - '+trader:'')+(desc?' - '+desc:''),
       category: 'مبيعات آجل', crop: dsProdCropVal||null, amount: total, date,
       notes: notes||null, ref_id: saleId
     });
@@ -6834,7 +6843,7 @@ async function addDeferredSaleProd() {
     });
   }
 
-  logActivity('إضافة','deferred_sales','بيعة آجل منتجات'+(trader?' - '+trader:''), total);
+  logActivity('إضافة','deferred_sales','مبيعات منتجات'+(trader?' - '+trader:''), total);
   showToast(_dspPayType==='full'?'✅ تم التسجيل والسداد':_dspPayType==='partial'?'✅ تم التسجيل وسداد جزئي':'✅ تم تسجيل البيعة');
   _dsProdItems = [{name:'', qty:'', unit:_dsProdUnits[0]||'', price:0}];
   renderDsProdItemsForm();
@@ -7118,9 +7127,9 @@ async function addDeferredSale(){
   const itemsNote = validItems.map(x=>`${x.name} ${x.qty} ${x.unit} × ${x.price} ج`).join(' | ');
   await sb.from('income').insert(validItems.map(it=>({
     user_id:currentUser.id,
-    description:'بيع آجل: '+desc+(trader?' - '+trader:''),
+    description:'بيع: '+desc+(trader?' - '+trader:''),
     category:'مبيعات آجل', crop:it.storage_crop||it.name||null,
-    amount:(it.qty||0)*(it.price||0), date, notes:'بيعة آجل - '+itemsNote, ref_id:saleId
+    amount:(it.qty||0)*(it.price||0), date, notes:'مبيعات - '+itemsNote, ref_id:saleId
   })));
 
   // خصم من المخزن لو بيع من المخزن
@@ -7147,7 +7156,7 @@ async function addDeferredSale(){
     });
   }
 
-  logActivity('إضافة','deferred_sales','بيعة آجل: '+desc, total);
+  logActivity('إضافة','deferred_sales','مبيعات: '+desc, total);
   showToast(_dsPayType==='full'?'✅ تم التسجيل والسداد':_dsPayType==='partial'?'✅ تم التسجيل وسداد جزئي':'✅ تم تسجيل البيعة');
 
   document.getElementById('ds-desc').value='';
@@ -7235,7 +7244,7 @@ async function renderDeferredSales(){
     return `<div class="item ${isPaid?'':'exp'} ${dsSelected.has(x.id)?'selected':''}" id="ds-item-${x.id}" style="${x.is_return?'border-right:4px solid var(--red);':isReturned?'border-right:4px solid #f97316;opacity:0.75;':''}">
       <input type="checkbox" class="item-check" onclick="event.stopPropagation();toggleDsSel('${x.id}')" ${dsSelected.has(x.id)?'checked':''}>
       <div style="flex:1;min-width:0;cursor:pointer;" onclick="showDsDetail('${x.id}')">
-        <div class="i-desc">${x.trader?s(x.trader):(x.description?s(x.description):'فاتورة مبيعات')} ${badge}${x.is_return?' <span style="font-size:0.6rem;background:#fdecea;color:var(--red);padding:1px 5px;border-radius:5px;font-weight:800;">🔄 مرتجع</span>':''}${isReturned?' <span style="font-size:0.6rem;background:#fff3e0;color:#c2410c;padding:1px 5px;border-radius:5px;font-weight:800;">🔒 تم الإرجاع</span>':''}</div>
+        <div class="i-desc">${x.trader?s(x.trader):(x.description?s(dlbl(x.description)):'فاتورة مبيعات')} ${badge}${x.is_return?' <span style="font-size:0.6rem;background:#fdecea;color:var(--red);padding:1px 5px;border-radius:5px;font-weight:800;">🔄 مرتجع</span>':''}${isReturned?' <span style="font-size:0.6rem;background:#fff3e0;color:#c2410c;padding:1px 5px;border-radius:5px;font-weight:800;">🔒 تم الإرجاع</span>':''}</div>
         <div class="i-sub">${subDesc}</div>
       </div>
       <div class="i-actions">
@@ -7345,7 +7354,7 @@ async function payDeferredSale(id){
     if(ve) return showToast('❌ '+arabicError(ve.message));
     const {error:de} = await sb.from('deferred_sales').update({paid:true,paid_at:new Date().toISOString()}).eq('id',id).eq('user_id',currentUser.id);
     if(de) return showToast('❌ '+arabicError(de.message));
-    logActivity('تسديد','deferred_sales','تسديد بيعة آجل: '+(sale.description||''),sale.total);
+    logActivity('تسديد','deferred_sales','تسديد مبيعات: '+(sale.description||''),sale.total);
     showToast('✅ تم التسديد وإضافته للخزنة');
     renderDeferredSales();
     renderHome();
@@ -7394,7 +7403,7 @@ async function deleteDeferredSale(id, isPaid){
       // مسح خزنة المرتجع (بأي ref_id)
       await sb.from('vault').delete().eq('user_id',currentUser.id).eq('category','مرتجع_مبيعات').ilike('description',retDesc+'%');
     } else {
-      const incDesc = 'بيع آجل: '+(sale.description||'');
+      const incDesc = 'بيع: '+(sale.description||'');
       await sb.from('income').delete().eq('user_id',currentUser.id).eq('category','مبيعات آجل').eq('amount',sale.total).ilike('description', incDesc+'%').is('ref_id',null);
     }
   }
@@ -7403,7 +7412,7 @@ async function deleteDeferredSale(id, isPaid){
     await sb.from('vault').delete().eq('user_id',currentUser.id).eq('category','سداد_مبيعات').eq('amount',sale.total).ilike('description', vDesc+'%').is('ref_id',null);
   }
 
-  logActivity('حذف','deferred_sales','حذف بيعة آجل: '+(sale?.description||''));
+  logActivity('حذف','deferred_sales','حذف مبيعات: '+(sale?.description||''));
   showToast('🗑️ تم الحذف'+(totalPaid>0?' وإزالة التحصيلات من الخزنة':'')+(hasInvTxns?' وتحديث المخزن':''));
   renderDeferredSales();
   renderHome();
@@ -7495,9 +7504,9 @@ async function saveDsEdit(id){
   const {error} = await sb.from('deferred_sales').update({description:desc,crop:firstCrop,items:validItems,total,trader,date,notes}).eq('id',id).eq('user_id',currentUser.id);
   if(error) return showToast('❌ '+arabicError(error.message));
 
-  const incDesc = 'بيع آجل: '+desc+(trader?' - '+trader:'');
+  const incDesc = 'بيع: '+desc+(trader?' - '+trader:'');
   const itemsNote = validItems.map(x=>`${x.name} ${x.qty} ${x.unit} × ${x.price} ج`).join(' | ');
-  const {data:iu} = await sb.from('income').update({description:incDesc,amount:total,date,crop:firstCrop||null,notes:'بيعة آجل - '+itemsNote}).eq('ref_id',id).eq('user_id',currentUser.id).select('id');
+  const {data:iu} = await sb.from('income').update({description:incDesc,amount:total,date,crop:firstCrop||null,notes:'مبيعات - '+itemsNote}).eq('ref_id',id).eq('user_id',currentUser.id).select('id');
   if(!iu?.length) await sb.from('income').update({description:incDesc,amount:total,date,crop:firstCrop||null}).eq('category','مبيعات آجل').eq('date',date).eq('user_id',currentUser.id);
 
   // لو الفاتورة ليها حركات مخزن (بيع من المخزن) — احذفها وأعد إدخالها
@@ -7526,7 +7535,7 @@ async function saveDsEdit(id){
     window._invStocks = null;
   }
 
-  logActivity('تعديل','deferred_sales','تعديل بيعة آجل: '+desc,total);
+  logActivity('تعديل','deferred_sales','تعديل مبيعات: '+desc,total);
   showToast('✅ تم التعديل');
   closeModal();
   renderDeferredSales();
