@@ -517,6 +517,8 @@ button,a,[onclick]{-webkit-tap-highlight-color:transparent;touch-action:manipula
   transition:left 0.3s;box-shadow:0 1px 4px rgba(0,0,0,0.2);
 }
 .toggle-switch.on::after{left:23px;}
+/* إخفاء عناصر المالك عن المستخدم الثانوي */
+body.secondary-user .owner-only{display:none!important;}
 .settings-btn{
   background:var(--card);color:var(--text);border:1.5px solid var(--border);
   border-radius:10px;padding:7px 14px;font-family:Cairo,sans-serif;
@@ -819,6 +821,7 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       <p>نظام متكامل لإدارة مالية مزرعتك</p>
     </div>
 
+    <div id="auth-main-form">
     <!-- Google Sign In -->
     <button class="btn-google" onclick="doGoogleAuth()">
       <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
@@ -852,6 +855,28 @@ body.dark-mode .ss-option{color:#e0e0e0;}
     </div>
 
     <div class="auth-err" id="auth-err"></div>
+
+    <div style="text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+      <button onclick="showSecondaryLogin(true)" style="background:none;border:none;color:var(--g2);font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:800;cursor:pointer;">👥 دخول كمستخدم ثانوي (بالكود)</button>
+    </div>
+    </div><!-- end auth-main-form -->
+
+    <!-- نموذج دخول المستخدم الثانوي -->
+    <div id="secondary-login-form" style="display:none;">
+      <div style="text-align:center;margin-bottom:14px;">
+        <div style="font-size:2rem;">👥</div>
+        <div style="font-size:0.95rem;font-weight:900;color:var(--text);margin-top:4px;">دخول كمستخدم ثانوي</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">اكتب اسمك وإيميل المالك والكود اللي استلمته</div>
+      </div>
+      <input class="inp" type="text" id="sec-name" placeholder="اسمك">
+      <input class="inp" type="email" id="sec-owner-email" placeholder="إيميل المالك الأساسي">
+      <input class="inp" type="text" id="sec-code" placeholder="الكود" dir="ltr" style="text-align:center;letter-spacing:3px;font-weight:800;">
+      <button class="btn-main" id="sec-login-btn" onclick="loginAsSecondary()">دخول</button>
+      <div class="auth-err" id="sec-err"></div>
+      <div style="text-align:center;margin-top:12px;">
+        <button onclick="showSecondaryLogin(false)" style="background:none;border:none;color:var(--muted);font-family:Cairo,sans-serif;font-size:0.8rem;font-weight:700;cursor:pointer;">↩️ رجوع لتسجيل دخول المالك</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2010,7 +2035,7 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       </div>
 
       <!-- رمز الحذف السري -->
-      <div class="settings-item" style="margin-top:4px;">
+      <div class="settings-item owner-only" style="margin-top:4px;">
         <div class="settings-item-left">
           <div class="settings-item-icon-wrap" style="background:#fff3cd;border-color:#ffc107;">🔐</div>
           <div>
@@ -2022,7 +2047,7 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       </div>
 
       <!-- صلاحيات المستخدم -->
-      <div class="settings-item" style="margin-top:4px;">
+      <div class="settings-item owner-only" style="margin-top:4px;">
         <div class="settings-item-left">
           <div class="settings-item-icon-wrap" style="background:#e7f0ff;border-color:#90caf9;">🛡️</div>
           <div>
@@ -2034,7 +2059,7 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       </div>
 
       <!-- حذف البيانات -->
-      <div class="settings-item" style="margin-top:4px;">
+      <div class="settings-item owner-only" style="margin-top:4px;">
         <div class="settings-item-left">
           <div class="settings-item-icon-wrap" style="background:#fdecea;border-color:#f5c6cb;">🗑️</div>
           <div>
@@ -2109,6 +2134,8 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
+let _isSecondaryUser = false;   // داخل كمستخدم ثانوي (بكود)؟
+let _secondaryName = '';
 
 // ===== SECURITY =====
 function s(str){ 
@@ -2313,6 +2340,48 @@ async function initApp(user) {
   checkAjalAlerts();
   await loadFarmSettings();
   setDateInputs();
+  // لو مستخدم ثانوي: طبّق إخفاء العناصر الممنوعة
+  applySecondaryUI();
+}
+
+// ===== دخول المستخدم الثانوي =====
+function showSecondaryLogin(show){
+  document.getElementById('auth-main-form').style.display = show ? 'none' : '';
+  document.getElementById('secondary-login-form').style.display = show ? '' : 'none';
+  const e=document.getElementById('sec-err'); if(e) e.textContent='';
+}
+async function loginAsSecondary(){
+  const name  = document.getElementById('sec-name').value.trim();
+  const email = document.getElementById('sec-owner-email').value.trim();
+  const code  = document.getElementById('sec-code').value.trim();
+  const errEl = document.getElementById('sec-err');
+  const setErr = (m)=>{ if(errEl) errEl.textContent = '❌ '+m; };
+  if(!name)  return setErr('اكتب اسمك');
+  if(!email) return setErr('اكتب إيميل المالك');
+  if(!code)  return setErr('اكتب الكود');
+  const btn = document.getElementById('sec-login-btn');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ جاري الدخول...'; }
+  const reset = ()=>{ if(btn){ btn.disabled=false; btn.textContent='دخول'; } };
+  try {
+    const anon = await sb.auth.signInAnonymously();
+    if(anon.error){ reset(); return setErr('تعذّر الدخول: '+anon.error.message); }
+    const {data, error} = await sb.rpc('join_farm', {p_email:email, p_code:code, p_name:name});
+    if(error){ await sb.auth.signOut(); reset(); return setErr(error.message); }
+    if(!data?.ok){ await sb.auth.signOut(); reset(); return setErr(data?.error || 'فشل الانضمام'); }
+    await initAsSecondary(data.owner_id, data.name || name);
+  } catch(e){ try{await sb.auth.signOut();}catch(_){} reset(); setErr(e.message||String(e)); }
+}
+async function initAsSecondary(ownerId, name){
+  _isSecondaryUser = true;
+  _secondaryName = name || 'مستخدم ثانوي';
+  const fakeUser = { id: ownerId, email: _secondaryName, user_metadata:{ full_name:_secondaryName } };
+  await initApp(fakeUser);
+  const badge = document.getElementById('user-badge');
+  if(badge) badge.textContent = '👥 ' + _secondaryName.split(' ')[0];
+}
+// إخفاء العناصر الخاصة بالمالك + الأزرار الممنوعة للمستخدم الثانوي
+function applySecondaryUI(){
+  document.body.classList.toggle('secondary-user', _isSecondaryUser);
 }
 
 // Handle OAuth redirect first - check URL hash
@@ -2330,7 +2399,18 @@ async function handleAuthRedirect() {
   // Normal session check
   const {data:sd} = await sb.auth.getSession();
   if(sd?.session?.user){
-    initApp(sd.session.user);
+    if(sd.session.user.is_anonymous){
+      // مستخدم ثانوي - استرجاع العضوية بعد إعادة التحميل
+      const {data:mem} = await sb.from('farm_members').select('owner_id,name,active').eq('member_auth_id',sd.session.user.id).limit(1);
+      if(mem?.length && mem[0].active){
+        await initAsSecondary(mem[0].owner_id, mem[0].name);
+      } else {
+        await sb.auth.signOut();
+        document.getElementById('auth-screen').style.display = 'flex';
+      }
+    } else {
+      initApp(sd.session.user);
+    }
   } else {
     document.getElementById('auth-screen').style.display = 'flex';
   }
@@ -2341,6 +2421,7 @@ if(document.readyState==='complete'){ handleAuthRedirect(); } else { window.addE
 // Handle auth state changes
 sb.auth.onAuthStateChange((event, session) => {
   if(event === 'SIGNED_IN' && session && !currentUser) {
+    if(session.user.is_anonymous) return; // المستخدم الثانوي بيتعالج يدوياً في loginAsSecondary
     initApp(session.user);
   }
   if(event === 'SIGNED_OUT') {
@@ -4846,14 +4927,20 @@ const PERMISSION_ITEMS = [
 ];
 let _permState = {};
 
-// فحص الصلاحية: لو مقفولة يمنع العملية ويظهر تنبيه
+// فحص الصلاحية: المالك مفتوح له كل حاجة، المستخدم الثانوي بيتقيّد بالصلاحيات
 function permAllowed(key){
+  if(!_isSecondaryUser) return true;
   const perms = _farmSettingsCache?.permissions || {};
   if(perms[key] === false){
-    showToast('🔒 الصلاحية دي مقفولة من إعدادات صلاحيات المستخدم');
+    showToast('🔒 مالكش صلاحية للعملية دي');
     return false;
   }
   return true;
+}
+// هل يقدر يعمل العملية؟ (للإخفاء بدون تنبيه) — المالك دايماً نعم
+function canDo(key){
+  if(!_isSecondaryUser) return true;
+  return (_farmSettingsCache?.permissions || {})[key] !== false;
 }
 
 // بوابة الدخول بالباسورد
@@ -4891,6 +4978,8 @@ function renderPermissionsPage(){
   PERMISSION_ITEMS.forEach(it=>{ _permState[it.key] = saved[it.key] !== false; });
   document.getElementById('modal-title').textContent = '🛡️ صلاحيات المستخدمين الثانويين';
   document.getElementById('modal-body').innerHTML = `
+    <div id="farm-codes-section" style="margin-bottom:14px;"></div>
+    <div style="font-size:0.85rem;font-weight:900;margin-bottom:8px;padding-top:10px;border-top:1px solid var(--border);">⚙️ الصلاحيات (لكل المستخدمين الثانويين)</div>
     <div style="font-size:0.78rem;color:var(--muted);margin-bottom:12px;line-height:1.6;">
       فعّل أو أوقف صلاحيات المستخدمين الثانويين للمزرعة. الأخضر = مسموح، الرمادي = ممنوع.
     </div>
@@ -4904,6 +4993,47 @@ function renderPermissionsPage(){
     <button class="btn" style="width:100%;background:var(--g3);color:#fff;border:none;margin-top:16px;padding:13px;border-radius:12px;font-size:0.95rem;font-weight:900;font-family:Cairo,sans-serif;cursor:pointer;"
       onclick="askSavePermissions()">💾 حفظ التغييرات</button>`;
   document.getElementById('detail-overlay').classList.add('open');
+  loadFarmCodes();
+}
+
+// ===== إدارة أكواد المستخدمين الثانويين =====
+function _randCode(){ const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let r=''; for(let i=0;i<6;i++) r+=c[Math.floor(Math.random()*c.length)]; return r; }
+async function loadFarmCodes(){
+  const el = document.getElementById('farm-codes-section');
+  if(!el) return;
+  el.innerHTML = '<div class="loading">⏳</div>';
+  const {data,error} = await sb.from('farm_members').select('id,code,name,member_auth_id,active').eq('owner_id',currentUser.id).order('created_at');
+  if(error){ el.innerHTML='<div class="empty">تعذّر تحميل الأكواد</div>'; return; }
+  const codes = data||[];
+  el.innerHTML = `
+    <div style="font-weight:900;font-size:0.9rem;margin-bottom:8px;">👥 المستخدمون الثانويون (${codes.length}/3)</div>
+    ${codes.map(c=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--g5);border-radius:10px;padding:10px 12px;margin-bottom:6px;">
+        <div style="min-width:0;">
+          <div style="font-weight:800;font-size:0.85rem;">${s(c.name||'لسه مدخلش اسمه')} ${c.member_auth_id?'<span style="font-size:0.62rem;color:#fff;background:var(--g2);border-radius:5px;padding:1px 6px;">نشط</span>':'<span style="font-size:0.62rem;color:var(--muted);background:var(--border);border-radius:5px;padding:1px 6px;">لم ينضم</span>'}</div>
+          <div style="font-size:0.82rem;color:var(--muted);margin-top:2px;">الكود: <strong style="color:var(--text);font-family:monospace;letter-spacing:2px;font-size:0.95rem;">${s(c.code)}</strong></div>
+        </div>
+        <button class="btn-sm btn-r" onclick="revokeFarmCode('${c.id}')">🗑️</button>
+      </div>`).join('')}
+    ${codes.length<3
+      ? `<button class="btn-sm btn-g" style="width:100%;margin-top:4px;padding:9px;" onclick="generateFarmCode()">➕ توليد كود مستخدم جديد</button>`
+      : '<div style="font-size:0.72rem;color:var(--muted);text-align:center;margin-top:4px;">وصلت للحد الأقصى (3 مستخدمين)</div>'}`;
+}
+async function generateFarmCode(){
+  const {data:existing} = await sb.from('farm_members').select('id').eq('owner_id',currentUser.id);
+  if((existing?.length||0) >= 3) return showToast('❌ الحد الأقصى 3 مستخدمين');
+  let code;
+  for(let t=0;t<6;t++){ code=_randCode(); const {data:dup}=await sb.from('farm_members').select('id').eq('owner_id',currentUser.id).eq('code',code); if(!dup?.length) break; }
+  const {error} = await sb.from('farm_members').insert({owner_id:currentUser.id, code, active:true, permissions:{}});
+  if(error) return showToast('❌ '+arabicError(error.message));
+  showToast('✅ تم توليد الكود: '+code);
+  loadFarmCodes();
+}
+async function revokeFarmCode(id){
+  if(!await showConfirm('هتحذف الكود ده؟ المستخدم مش هيقدر يدخل تاني.','🗑️')) return;
+  const {error} = await sb.from('farm_members').delete().eq('id',id).eq('owner_id',currentUser.id);
+  if(error) return showToast('❌ '+arabicError(error.message));
+  showToast('🗑️ تم حذف الكود');
+  loadFarmCodes();
 }
 function togglePerm(key){
   _permState[key] = !_permState[key];
