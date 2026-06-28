@@ -1830,15 +1830,25 @@ body.dark-mode .ss-option{color:#e0e0e0;}
 
   <!-- ANALYTICS PAGE -->
   <div class="page" id="page-analytics">
+    <!-- ملخص المؤشرات -->
+    <div id="analytics-summary" style="margin-bottom:12px;"></div>
+
     <!-- رسم بياني -->
     <div class="chart-container">
-      <div class="chart-title">📊 الإيرادات والمصاريف</div>
+      <div class="chart-title">📊 الإيرادات والمصاريف وصافي الربح</div>
       <div class="chart-tabs">
         <button class="chart-tab active" onclick="setChartPeriod('monthly',this)">شهري</button>
         <button class="chart-tab" onclick="setChartPeriod('weekly',this)">أسبوعي</button>
         <button class="chart-tab" onclick="setChartPeriod('yearly',this)">سنوي</button>
       </div>
       <canvas id="main-chart" height="200"></canvas>
+    </div>
+
+    <!-- توزيع المصاريف -->
+    <div class="chart-container">
+      <div class="chart-title">💸 توزيع المصاريف حسب النوع</div>
+      <canvas id="exp-doughnut" height="180"></canvas>
+      <div id="exp-doughnut-empty" style="display:none;color:var(--muted);font-size:0.8rem;text-align:center;">لا يوجد مصاريف</div>
     </div>
 
     <!-- مقارنة المحاصيل -->
@@ -5311,6 +5321,7 @@ function closeConfirm(){
 let mainChart = null;
 let cropChart = null;
 let invChart = null;
+let expDoughnut = null;
 let chartPeriod = 'monthly';
 
 function setChartPeriod(period, btn){
@@ -5322,8 +5333,32 @@ function setChartPeriod(period, btn){
 
 async function renderAnalytics(){
   const {data:inc} = await sb.from('income').select('amount,date,crop').eq('user_id',currentUser.id).order('date');
-  const {data:exp} = await sb.from('expenses').select('amount,date,crop').eq('user_id',currentUser.id).order('date');
+  const {data:exp} = await sb.from('expenses').select('amount,date,crop,category').eq('user_id',currentUser.id).order('date');
   if(!inc||!exp) return;
+
+  // ===== ملخص المؤشرات =====
+  const totInc=inc.reduce((s,x)=>s+Number(x.amount||0),0);
+  const totExp=exp.reduce((s,x)=>s+Number(x.amount||0),0);
+  const totProfit=totInc-totExp;
+  const totMargin=totInc>0?(totProfit/totInc*100):0;
+  // أفضل محصول
+  const _cRev={},_cCost={};
+  inc.forEach(x=>{if(x.crop&&x.crop!=='المخزن 🏪')_cRev[x.crop]=(_cRev[x.crop]||0)+Number(x.amount||0);});
+  exp.forEach(x=>{if(x.crop&&x.crop!=='المخزن 🏪')_cCost[x.crop]=(_cCost[x.crop]||0)+Number(x.amount||0);});
+  const _cNames=[...new Set([...Object.keys(_cRev),...Object.keys(_cCost)])];
+  const _cNet=_cNames.map(c=>({c,net:(_cRev[c]||0)-(_cCost[c]||0)})).sort((a,b)=>b.net-a.net);
+  const bestCrop=_cNet[0], worstCrop=_cNet.length>1?_cNet[_cNet.length-1]:null;
+  const akpi=(l,v,c)=>`<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:11px 8px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.04);"><div style="font-size:0.64rem;color:var(--muted);font-weight:700;">${l}</div><div style="font-size:0.95rem;font-weight:900;color:${c};margin-top:3px;direction:ltr;">${v}</div></div>`;
+  const sumEl=document.getElementById('analytics-summary');
+  if(sumEl) sumEl.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+    ${akpi('إجمالي الإيرادات', fmt(totInc), '#2d6a4f')}
+    ${akpi('إجمالي المصاريف', fmt(totExp), '#c0392b')}
+    ${akpi(totProfit>=0?'صافي الربح':'صافي الخسارة', fmt(Math.abs(totProfit)), totProfit>=0?'#2d6a4f':'#c0392b')}
+    ${akpi('هامش الربح', totMargin.toFixed(1)+'%', '#1565C0')}
+  </div>${bestCrop?`<div style="display:flex;gap:8px;margin-top:8px;">
+    <div style="flex:1;background:#e8f5e9;border-radius:12px;padding:9px;text-align:center;"><div style="font-size:0.62rem;color:#2d6a4f;">🏆 أعلى محصول ربحاً</div><div style="font-size:0.82rem;font-weight:900;color:#2d6a4f;">${s(bestCrop.c)} (${fmt(bestCrop.net)})</div></div>
+    ${worstCrop&&worstCrop.net<bestCrop.net?`<div style="flex:1;background:#fdecea;border-radius:12px;padding:9px;text-align:center;"><div style="font-size:0.62rem;color:#c0392b;">⚠️ أقل محصول</div><div style="font-size:0.82rem;font-weight:900;color:#c0392b;">${s(worstCrop.c)} (${fmt(worstCrop.net)})</div></div>`:''}
+  </div>`:''}`;
 
   const groupBy = (arr) => {
     const groups = {};
@@ -5350,12 +5385,28 @@ async function renderAnalytics(){
     data:{
       labels: allKeys.map(k=>{ if(chartPeriod==='monthly'){ const [y,m]=k.split('-'); return monthNames[parseInt(m)-1]; } return k; }),
       datasets:[
-        {label:'إيرادات', data:allKeys.map(k=>incGroups[k]||0), backgroundColor:'rgba(90,122,58,0.85)', borderRadius:6},
-        {label:'مصاريف', data:allKeys.map(k=>expGroups[k]||0), backgroundColor:'rgba(192,57,43,0.85)', borderRadius:6}
+        {label:'إيرادات', data:allKeys.map(k=>incGroups[k]||0), backgroundColor:'rgba(90,122,58,0.85)', borderRadius:6, order:2},
+        {label:'مصاريف', data:allKeys.map(k=>expGroups[k]||0), backgroundColor:'rgba(192,57,43,0.85)', borderRadius:6, order:2},
+        {label:'صافي الربح', type:'line', data:allKeys.map(k=>(incGroups[k]||0)-(expGroups[k]||0)), borderColor:'#1565C0', backgroundColor:'#1565C0', borderWidth:2, tension:0.3, pointRadius:3, order:1}
       ]
     },
     options:{responsive:true,plugins:{legend:{labels:{font:{family:'Cairo'},color:'#555'}}},scales:{x:{ticks:{font:{family:'Cairo'},color:'#888'}},y:{ticks:{font:{family:'Cairo'},color:'#888',callback:v=>v.toLocaleString('en-US')}}}}
   });
+
+  // ===== توزيع المصاريف (دائري) =====
+  const _expCats={}; exp.forEach(x=>{const c=x.category||'أخرى';_expCats[c]=(_expCats[c]||0)+Number(x.amount||0);});
+  const _ecArr=Object.entries(_expCats).sort((a,b)=>b[1]-a[1]);
+  const _dctx=document.getElementById('exp-doughnut');
+  const _demp=document.getElementById('exp-doughnut-empty');
+  if(expDoughnut) expDoughnut.destroy();
+  if(_dctx && _ecArr.length){
+    _dctx.style.display='block'; if(_demp) _demp.style.display='none';
+    const _palette=['#2d6a4f','#c0392b','#1565C0','#e65100','#6a1b9a','#00838f','#558b2f','#d84315','#5d4037','#455a64'];
+    expDoughnut=new Chart(_dctx,{type:'doughnut',
+      data:{labels:_ecArr.map(e=>e[0]),datasets:[{data:_ecArr.map(e=>e[1]),backgroundColor:_ecArr.map((e,i)=>_palette[i%_palette.length]),borderWidth:2,borderColor:'#fff'}]},
+      options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{family:'Cairo',size:11},color:'#555',padding:8,boxWidth:12}},tooltip:{callbacks:{label:c=>c.label+': '+Number(c.raw).toLocaleString('en-US')+' ج ('+(c.raw/totExp*100).toFixed(0)+'%)'}}}}
+    });
+  } else if(_dctx){ _dctx.style.display='none'; if(_demp) _demp.style.display='block'; }
 
   // مقارنة المحاصيل
   const cropInc={}, cropExp={};
