@@ -6330,7 +6330,7 @@ function renderDsProdItemsForm() {
     <div class="inv-row" style="grid-template-columns:1fr 30px;gap:5px;margin-bottom:6px;">
       <select class="inv-field" onchange="onDsProdSelect(${i}, this.value)">
         <option value="">-- اختار منتج --</option>
-        ${_dsProdProducts.map(p=>{const st=(window._dsProdStocksAll||[]).find(r=>r.item===p);let suf='';if(st){const q=Number(st.qty);if(q>0.001)suf=` (${q.toLocaleString('en-US')} ${s(st.unit)})`;else if(q<-0.001)suf=` (سالب ${Math.abs(q).toLocaleString('en-US')} ${s(st.unit)})`;else suf=' (كمية صفر)';}return `<option value="${s(p).replace(/"/g,'&quot;')}" ${item.name===p?'selected':''}>${s(p)}${suf}</option>`;}).join('')}
+        ${[..._dsProdProducts].sort((a,b)=>{const sa=(window._dsProdStocksAll||[]).find(r=>r.item===a);const sb2=(window._dsProdStocksAll||[]).find(r=>r.item===b);const va=sa&&Number(sa.qty)>0.001?0:1;const vb=sb2&&Number(sb2.qty)>0.001?0:1;return va-vb;}).map(p=>{const st=(window._dsProdStocksAll||[]).find(r=>r.item===p);let suf='';if(st){const q=Number(st.qty);if(q>0.001)suf=` (${q.toLocaleString('en-US')} ${s(st.unit)})`;else if(q<-0.001)suf=` (سالب ${Math.abs(q).toLocaleString('en-US')} ${s(st.unit)})`;else suf=' (كمية صفر)';}return `<option value="${s(p).replace(/"/g,'&quot;')}" ${item.name===p?'selected':''}>${s(p)}${suf}</option>`;}).join('')}
       </select>
       <button class="inv-del" onclick="removeDsProdItem(${i})">✕</button>
       <div style="display:grid;grid-template-columns:1fr 0.7fr 1fr;gap:5px;grid-column:1/-1;">
@@ -6683,7 +6683,7 @@ function renderDsStorageItemsForm(availStocks){
     <div class="inv-row inv-row-4" style="margin-bottom:6px;">
       <select class="inv-field" onchange="onDsStorageSelect(${i}, this.value)">
         <option value="">-- محصول --</option>
-        ${(availStocks||[]).map(st=>{const q=Number(st.qty);let suf;if(q>0.001)suf=`(${q.toLocaleString('en-US')} ${s(st.unit)})`;else if(q<-0.001)suf=`(سالب ${Math.abs(q).toLocaleString('en-US')} ${s(st.unit)})`;else suf='(كمية صفر)';return `<option value="${s(st.item)}" ${item.item===st.item?'selected':''}>${s(st.item)} ${suf}</option>`;}).join('')}
+        ${[...(availStocks||[])].sort((a,b)=>{const va=Number(a.qty)>0.001?0:1;const vb=Number(b.qty)>0.001?0:1;return va-vb;}).map(st=>{const q=Number(st.qty);let suf;if(q>0.001)suf=`(${q.toLocaleString('en-US')} ${s(st.unit)})`;else if(q<-0.001)suf=`(سالب ${Math.abs(q).toLocaleString('en-US')} ${s(st.unit)})`;else suf='(كمية صفر)';return `<option value="${s(st.item)}" ${item.item===st.item?'selected':''}>${s(st.item)} ${suf}</option>`;}).join('')}
       </select>
       <input type="text" inputmode="decimal" placeholder="الكمية" value="${item.qty||''}" class="inv-field"
         oninput="_dsStorageItems[${i}].qty=parseNum(this.value);calcDsCropTotal()">
