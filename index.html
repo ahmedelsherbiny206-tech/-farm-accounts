@@ -958,8 +958,8 @@ body.dark-mode .ss-option{color:#e0e0e0;}
         <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;" id="sh-exp-count"></div>
         <div class="ico">💸</div>
       </div>
-      <div class="sum-card gold" onclick="showPage('ajal',document.getElementById('bnav-ajal'))" style="cursor:pointer;">
-        <div class="lbl">الآجل المستحق</div><div class="val" id="sh-ajal">0 ج</div>
+      <div class="sum-card gold" onclick="showDuesBreakdown()" style="cursor:pointer;">
+        <div class="lbl">الذمم (ليك)</div><div class="val" id="sh-ajal">0 ج</div>
         <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;" id="sh-ajal-count"></div>
         <div class="ico">🕐</div>
       </div>
@@ -2520,6 +2520,57 @@ function closeMoreMenu() {
   document.getElementById('more-menu').style.display='none';
 }
 
+// ===== حساب الذمم (الفواتير الآجلة غير المسددة) =====
+// المتبقي = إجمالي الفواتير − إجمالي المحصّل/المدفوع (يشمل الجزئي والمرتجع تلقائياً)
+async function computeDues(){
+  const uid = currentUser.id;
+  const SALES_COLL = ['سداد_مبيعات','سداد_مبيعات_منتج','تسوية_مبيعات','تسوية_مبيعات_منتج'];
+  const PURCH_PAY  = ['سداد_مشتريات','مشتريات_آجل','تسوية_مشتريات'];
+  const [ds, dp, vS, vP, aj] = await Promise.all([
+    sb.from('deferred_sales').select('total').eq('user_id',uid),
+    sb.from('deferred_purchases').select('total').eq('user_id',uid),
+    sb.from('vault').select('amount').eq('user_id',uid).in('category',SALES_COLL),
+    sb.from('vault').select('amount').eq('user_id',uid).in('category',PURCH_PAY),
+    sb.from('ajal').select('amount,type').eq('user_id',uid).eq('paid',false),
+  ]);
+  const sum=(arr,f)=>(arr||[]).reduce((s,x)=>s+Number(f(x)||0),0);
+  const salesRec = Math.max(0, sum(ds.data,x=>x.total) - sum(vS.data,x=>x.amount));
+  const purchPay = Math.max(0, sum(dp.data,x=>x.total) - sum(vP.data,x=>x.amount));
+  const manualRec = sum((aj.data||[]).filter(x=>x.type==='receivable'),x=>x.amount);
+  const manualPay = sum((aj.data||[]).filter(x=>x.type==='payable'),x=>x.amount);
+  return {
+    salesRec, purchPay, manualRec, manualPay,
+    receivable: salesRec + manualRec,
+    payable: purchPay + manualPay,
+  };
+}
+
+// تفصيل الذمم (ليك / عليك) في نافذة
+async function showDuesBreakdown(){
+  document.getElementById('modal-title').textContent = '🕐 الذمم (الآجل)';
+  document.getElementById('detail-overlay').classList.add('open');
+  document.getElementById('modal-body').innerHTML = '<div class="loading">⏳ جاري الحساب...</div>';
+  const d = await computeDues();
+  const row=(lbl,val,color)=>`<div class="rep-row"><span>${lbl}</span><span class="rv" style="color:${color}">${fmt(val)}</span></div>`;
+  document.getElementById('modal-body').innerHTML = `
+    <div style="background:#e8f5e9;border-radius:12px;padding:12px;margin-bottom:10px;">
+      <div style="font-size:0.82rem;font-weight:900;color:#2d6a4f;margin-bottom:6px;">📥 فلوس ليك (مستحقة لك)</div>
+      ${row('فواتير مبيعات آجلة', d.salesRec, '#2d6a4f')}
+      ${d.manualRec>0?row('ديون يدوية (لك)', d.manualRec, '#2d6a4f'):''}
+      <div class="rep-row" style="border-top:1.5px solid #c8e6c9;margin-top:4px;padding-top:6px;"><span style="font-weight:900;">الإجمالي ليك</span><span class="rv" style="color:#2d6a4f;font-size:1rem;">${fmt(d.receivable)}</span></div>
+    </div>
+    <div style="background:#fdecea;border-radius:12px;padding:12px;">
+      <div style="font-size:0.82rem;font-weight:900;color:#c0392b;margin-bottom:6px;">📤 فلوس عليك (مستحقة عليك)</div>
+      ${row('فواتير مشتريات آجلة', d.purchPay, '#c0392b')}
+      ${d.manualPay>0?row('ديون يدوية (عليك)', d.manualPay, '#c0392b'):''}
+      <div class="rep-row" style="border-top:1.5px solid #f5c6cb;margin-top:4px;padding-top:6px;"><span style="font-weight:900;">الإجمالي عليك</span><span class="rv" style="color:#c0392b;font-size:1rem;">${fmt(d.payable)}</span></div>
+    </div>
+    <div style="text-align:center;margin-top:12px;padding:10px;background:var(--g5);border-radius:10px;">
+      <div style="font-size:0.72rem;color:var(--muted);">صافي الذمم (ليك − عليك)</div>
+      <div style="font-size:1.2rem;font-weight:900;color:${(d.receivable-d.payable)>=0?'#2d6a4f':'#c0392b'};direction:ltr;">${fmt(d.receivable-d.payable)}</div>
+    </div>`;
+}
+
 // ===== تفصيل الوارد/الصادر من الرئيسية =====
 async function showHomeBreakdown(type){
   const table = type==='income' ? 'income' : 'expenses';
@@ -2580,15 +2631,18 @@ async function renderHome() {
 
   document.getElementById('sh-inc').textContent = fmt(totalInc);
   document.getElementById('sh-exp').textContent = fmt(totalExp);
-  document.getElementById('sh-ajal').textContent = fmt(totalAjal);
   document.getElementById('sh-cap').textContent = fmt(vaultBal);
   document.getElementById('sh-profit').textContent = fmt(Math.abs(profit));
   const incCount = document.getElementById('sh-inc-count');
   if(incCount) incCount.textContent = (rInc.data||[]).length + ' عملية';
   const expCount = document.getElementById('sh-exp-count');
   if(expCount) expCount.textContent = (rExp.data||[]).length + ' عملية';
-  const ajalCount = document.getElementById('sh-ajal-count');
-  if(ajalCount) ajalCount.textContent = (rAjal.data||[]).length + ' دين';
+  // الذمم: تشمل الفواتير الآجلة غير المسددة + الديون اليدوية
+  computeDues().then(d=>{
+    const ajEl=document.getElementById('sh-ajal'); if(ajEl) ajEl.textContent = fmt(d.receivable);
+    const ajC=document.getElementById('sh-ajal-count');
+    if(ajC) ajC.textContent = d.payable>0 ? ('عليك: '+fmt(d.payable)) : 'فلوس ليك';
+  }).catch(()=>{});
   const capEl = document.getElementById('sh-capital-val');
   if(capEl) capEl.textContent = fmt(capVal);
   const pb = document.getElementById('profit-banner');
@@ -3535,8 +3589,10 @@ async function renderReport() {
   // مقارنة بالفترة السابقة
   const pInc=sumIn(rInc.data||[],pFromD,pToD), pExp=sumIn(rExp.data||[],pFromD,pToD), pProfit=pInc-pExp;
   // الآجل والمركز المالي
-  const ajalRec=(rAjRec.data||[]).reduce((s,x)=>s+Number(x.amount||0),0);
-  const ajalPay=(rAjPay.data||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  // الذمم: تشمل الفواتير الآجلة غير المسددة + الديون اليدوية
+  const _dues = await computeDues();
+  const ajalRec=_dues.receivable;
+  const ajalPay=_dues.payable;
   const cap=rCap.data?.length?Number(rCap.data[0].amount):0;
   const vaultBal=(rVault.data||[]).reduce((s,x)=>s+(['in','income_auto','capital_auto','opening'].includes(x.type)?Number(x.amount||0):(['out','expense_auto'].includes(x.type)?-Number(x.amount||0):0)),0);
   // المخزن
