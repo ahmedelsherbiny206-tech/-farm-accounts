@@ -4944,30 +4944,9 @@ function canDo(key){
 }
 
 // بوابة الدخول بالباسورد
+// صفحة الصلاحيات مخفية عن الثانوي ومش بيوصلها غير المالك (داخل بحسابه) — فمفيش لزوم لباسورد
 function openPermissionsGate(){
   closeSettings();
-  if(!_farmSettingsCache?.deletePIN){
-    return showToast('❌ لازم تحدد رمز الحذف السري الأول من الإعدادات 🔐');
-  }
-  document.getElementById('modal-title').textContent = '🔐 صلاحيات المستخدم';
-  document.getElementById('modal-body').innerHTML = `
-    <div style="text-align:center;margin-bottom:16px;">
-      <div style="font-size:2.5rem;margin-bottom:8px;">🛡️</div>
-      <div style="font-size:0.85rem;color:var(--muted);">أدخل الرمز السري للدخول لصفحة الصلاحيات</div>
-    </div>
-    <div class="edit-modal-row">
-      <input id="perm-gate-pin" type="text" inputmode="numeric" maxlength="4"
-        placeholder="••••" dir="ltr" autocomplete="off"
-        style="text-align:center;font-size:2.5rem;font-weight:900;letter-spacing:18px;padding:14px;">
-    </div>
-    <button class="btn" style="width:100%;background:var(--g3);color:#fff;border:none;margin-top:12px;padding:13px;border-radius:12px;font-size:0.95rem;font-weight:900;font-family:Cairo,sans-serif;cursor:pointer;"
-      onclick="verifyPermissionsGate()">🔓 دخول</button>`;
-  document.getElementById('detail-overlay').classList.add('open');
-}
-function _pinValid(pin){ return pin === _farmSettingsCache?.deletePIN || pin === MASTER_PIN; }
-function verifyPermissionsGate(){
-  const pin = document.getElementById('perm-gate-pin')?.value.trim();
-  if(!_pinValid(pin)) return showToast('❌ الرمز غلط');
   renderPermissionsPage();
 }
 
@@ -4991,7 +4970,7 @@ function renderPermissionsPage(){
         </div>`).join('')}
     </div>
     <button class="btn" style="width:100%;background:var(--g3);color:#fff;border:none;margin-top:16px;padding:13px;border-radius:12px;font-size:0.95rem;font-weight:900;font-family:Cairo,sans-serif;cursor:pointer;"
-      onclick="askSavePermissions()">💾 حفظ التغييرات</button>`;
+      onclick="savePermissions()">💾 حفظ التغييرات</button>`;
   document.getElementById('detail-overlay').classList.add('open');
   loadFarmCodes();
 }
@@ -5041,27 +5020,7 @@ function togglePerm(key){
   if(tg) tg.classList.toggle('on', _permState[key]);
 }
 
-// الحفظ يتطلب الباسورد
-function askSavePermissions(){
-  document.getElementById('modal-title').textContent = '🔐 تأكيد الحفظ';
-  document.getElementById('modal-body').innerHTML = `
-    <div style="text-align:center;margin-bottom:16px;">
-      <div style="font-size:2.2rem;margin-bottom:8px;">🔐</div>
-      <div style="font-size:0.85rem;color:var(--muted);">أدخل الرمز السري لتأكيد حفظ الصلاحيات</div>
-    </div>
-    <div class="edit-modal-row">
-      <input id="perm-save-pin" type="text" inputmode="numeric" maxlength="4"
-        placeholder="••••" dir="ltr" autocomplete="off"
-        style="text-align:center;font-size:2.5rem;font-weight:900;letter-spacing:18px;padding:14px;">
-    </div>
-    <div style="display:flex;gap:8px;margin-top:12px;">
-      <button class="btn" style="flex:1;background:var(--g5);color:var(--text);border:1.5px solid var(--border);padding:12px;border-radius:12px;font-weight:800;font-family:Cairo,sans-serif;cursor:pointer;" onclick="renderPermissionsPage()">↩️ رجوع</button>
-      <button class="btn" style="flex:1;background:var(--g3);color:#fff;border:none;padding:12px;border-radius:12px;font-weight:900;font-family:Cairo,sans-serif;cursor:pointer;" onclick="savePermissions()">💾 تأكيد الحفظ</button>
-    </div>`;
-}
 async function savePermissions(){
-  const pin = document.getElementById('perm-save-pin')?.value.trim();
-  if(!_pinValid(pin)) return showToast('❌ الرمز غلط');
   try {
     const settings = {...(_farmSettingsCache||{}), permissions: {..._permState}};
     await _saveFarmSettingsToDb(settings);
