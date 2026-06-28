@@ -948,12 +948,12 @@ body.dark-mode .ss-option{color:#e0e0e0;}
   <!-- HOME -->
   <div class="page active" id="page-home">
     <div class="sum-grid">
-      <div class="sum-card" onclick="showPage('income',document.getElementById('bnav-income'))" style="cursor:pointer;">
+      <div class="sum-card" onclick="showHomeBreakdown('income')" style="cursor:pointer;">
         <div class="lbl">إجمالي الوارد</div><div class="val" id="sh-inc">0 ج</div>
         <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;" id="sh-inc-count"></div>
         <div class="ico">💰</div>
       </div>
-      <div class="sum-card red" onclick="showPage('expense',document.getElementById('bnav-expense'))" style="cursor:pointer;">
+      <div class="sum-card red" onclick="showHomeBreakdown('expense')" style="cursor:pointer;">
         <div class="lbl">إجمالي الصادر</div><div class="val" id="sh-exp">0 ج</div>
         <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;" id="sh-exp-count"></div>
         <div class="ico">💸</div>
@@ -2518,6 +2518,34 @@ function showMoreMenu() {
 }
 function closeMoreMenu() {
   document.getElementById('more-menu').style.display='none';
+}
+
+// ===== تفصيل الوارد/الصادر من الرئيسية =====
+async function showHomeBreakdown(type){
+  const table = type==='income' ? 'income' : 'expenses';
+  const title = type==='income' ? '💰 مصادر الوارد' : '💸 أوجه الصادر';
+  const color = type==='income' ? '#2d6a4f' : '#c0392b';
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('detail-overlay').classList.add('open');
+  document.getElementById('modal-body').innerHTML = '<div class="loading">⏳ جاري التحميل...</div>';
+  const {data} = await sb.from(table).select('amount,category').eq('user_id',currentUser.id);
+  const rows = data||[];
+  const total = rows.reduce((s,x)=>s+Number(x.amount||0),0);
+  const groups = {};
+  rows.forEach(x=>{ const c=x.category||'أخرى'; if(!groups[c]) groups[c]={sum:0,n:0}; groups[c].sum+=Number(x.amount||0); groups[c].n++; });
+  const arr = Object.entries(groups).sort((a,b)=>b[1].sum-a[1].sum);
+  const bars = arr.map(([c,g])=>{ const p=total?g.sum/total*100:0; return `<div style="margin-bottom:11px;">
+      <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:3px;gap:8px;">
+        <span style="font-weight:700;">${s(dlbl(c))} <span style="color:var(--muted);font-size:0.68rem;">(${g.n})</span></span>
+        <span style="font-weight:800;direction:ltr;white-space:nowrap;">${fmt(g.sum)} · ${p.toFixed(0)}%</span></div>
+      <div style="height:8px;background:var(--g5);border-radius:4px;overflow:hidden;"><div style="height:100%;width:${p.toFixed(1)}%;background:${color};border-radius:4px;"></div></div></div>`; }).join('');
+  document.getElementById('modal-body').innerHTML = `
+    <div style="text-align:center;margin-bottom:16px;padding:12px;background:${color}12;border-radius:12px;">
+      <div style="font-size:0.72rem;color:var(--muted);">الإجمالي · ${rows.length} عملية</div>
+      <div style="font-size:1.5rem;font-weight:900;color:${color};direction:ltr;margin-top:2px;">${fmt(total)}</div>
+    </div>
+    ${bars || '<div class="empty">لا يوجد عمليات</div>'}
+    <button class="btn btn-g" style="width:100%;margin-top:14px;" onclick="closeModal();showPage('${type}',document.getElementById('bnav-${type}'))">📋 عرض كل العمليات بالتفصيل</button>`;
 }
 
 // ===== HOME =====
