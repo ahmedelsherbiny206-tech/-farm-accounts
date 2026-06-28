@@ -6337,7 +6337,7 @@ function renderDsProdItemsForm() {
         <input type="text" inputmode="decimal" placeholder="الكمية" value="${item.qty||''}" class="inv-field"
           oninput="_dsProdItems[${i}].qty=parseNum(this.value);calcDsProdTotal()">
         <select class="inv-field" onchange="_dsProdItems[${i}].unit=this.value">
-          ${_dsProdUnits.map(u=>`<option ${item.unit===u?'selected':''}>${s(u)}</option>`).join('')}
+          ${[...new Set([...(item.unit?[item.unit]:[]), ..._dsProdUnits])].map(u=>`<option ${item.unit===u?'selected':''}>${s(u)}</option>`).join('')}
         </select>
         <input type="text" inputmode="decimal" placeholder="السعر ج" value="${item.price||''}" class="inv-field"
           oninput="_dsProdItems[${i}].price=parseNum(this.value);calcDsProdTotal()"
