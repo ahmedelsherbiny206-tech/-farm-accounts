@@ -1758,23 +1758,22 @@ body.dark-mode .ss-option{color:#e0e0e0;}
 
     <!-- Filter -->
     <div class="filter-section">
-      <div class="filter-row">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
         <div class="date-wrap"><input type="date" id="vault-from" class="filter-input"><span class="date-ph-label">من</span></div>
         <div class="date-wrap"><input type="date" id="vault-to" class="filter-input"><span class="date-ph-label">إلى</span></div>
-        <button class="btn-sm primary" onclick="renderVaultList()">عرض</button>
-        <button class="btn-sm outline" onclick="clearVaultFilter();syncDatePh()">الكل</button>
       </div>
-      <div class="filter-row" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
-        <span class="filter-label">النوع:</span>
-        <select id="vault-filter-type" class="filter-input" onchange="renderVaultList()">
-          <option value="">الكل</option>
-          <option value="in">📥 قبض</option>
-          <option value="out">📤 صرف</option>
-          <option value="income_auto">💰 إيرادات</option>
-          <option value="expense_auto">💸 مصاريف</option>
-          <option value="capital_auto">📦 رأس مال</option>
-          <option value="opening">🏦 رصيد افتتاحي</option>
-        </select>
+      <select id="vault-filter-type" class="filter-input" style="min-width:0;padding:6px 9px;font-size:0.78rem;margin-bottom:6px;" onchange="renderVaultList()">
+        <option value="">كل الأنواع</option>
+        <option value="in">📥 قبض</option>
+        <option value="out">📤 صرف</option>
+        <option value="income_auto">💰 إيرادات</option>
+        <option value="expense_auto">💸 مصاريف</option>
+        <option value="capital_auto">📦 رأس مال</option>
+        <option value="opening">🏦 رصيد افتتاحي</option>
+      </select>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <button class="btn-sm primary" onclick="renderVaultList()">🔍 عرض</button>
+        <button class="btn-sm outline" onclick="clearVaultFilter();syncDatePh()">🔄 الكل</button>
       </div>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:0 2px;">
