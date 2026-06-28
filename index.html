@@ -1759,8 +1759,8 @@ body.dark-mode .ss-option{color:#e0e0e0;}
     <!-- Filter -->
     <div class="filter-section">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
-        <div class="date-wrap"><input type="date" id="vault-from" class="filter-input"><span class="date-ph-label">من</span></div>
-        <div class="date-wrap"><input type="date" id="vault-to" class="filter-input"><span class="date-ph-label">إلى</span></div>
+        <div class="date-wrap"><input type="date" id="vault-from" class="filter-input" onchange="renderVaultList()"><span class="date-ph-label">من</span></div>
+        <div class="date-wrap"><input type="date" id="vault-to" class="filter-input" onchange="renderVaultList()"><span class="date-ph-label">إلى</span></div>
       </div>
       <select id="vault-filter-type" class="filter-input" style="min-width:0;padding:6px 9px;font-size:0.78rem;margin-bottom:6px;" onchange="renderVaultList()">
         <option value="">كل الأنواع</option>
@@ -1771,10 +1771,7 @@ body.dark-mode .ss-option{color:#e0e0e0;}
         <option value="capital_auto">📦 رأس مال</option>
         <option value="opening">🏦 رصيد افتتاحي</option>
       </select>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-        <button class="btn-sm primary" onclick="renderVaultList()">🔍 عرض</button>
-        <button class="btn-sm outline" onclick="clearVaultFilter();syncDatePh()">🔄 الكل</button>
-      </div>
+      <button class="btn-sm outline" style="width:100%;" onclick="clearVaultFilter();syncDatePh()">🔄 الكل</button>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:0 2px;">
       <div style="display:flex;align-items:center;gap:8px;">
