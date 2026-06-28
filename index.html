@@ -2553,14 +2553,14 @@ async function showDuesBreakdown(){
   const d = await computeDues();
   const row=(lbl,val,color)=>`<div class="rep-row"><span>${lbl}</span><span class="rv" style="color:${color}">${fmt(val)}</span></div>`;
   document.getElementById('modal-body').innerHTML = `
-    <div style="background:#e8f5e9;border-radius:12px;padding:12px;margin-bottom:10px;">
-      <div style="font-size:0.82rem;font-weight:900;color:#2d6a4f;margin-bottom:6px;">📥 فلوس ليك (مستحقة لك)</div>
+    <div style="background:#e8f5e9;border-radius:12px;padding:12px;margin-bottom:10px;cursor:pointer;" onclick="showDuesDetail('sales')">
+      <div style="font-size:0.82rem;font-weight:900;color:#2d6a4f;margin-bottom:6px;display:flex;justify-content:space-between;"><span>📥 فلوس ليك (مستحقة لك)</span><span style="font-size:0.7rem;color:#2d6a4f;">عند مين؟ ›</span></div>
       ${row('فواتير مبيعات آجلة', d.salesRec, '#2d6a4f')}
       ${d.manualRec>0?row('ديون يدوية (لك)', d.manualRec, '#2d6a4f'):''}
       <div class="rep-row" style="border-top:1.5px solid #c8e6c9;margin-top:4px;padding-top:6px;"><span style="font-weight:900;">الإجمالي ليك</span><span class="rv" style="color:#2d6a4f;font-size:1rem;">${fmt(d.receivable)}</span></div>
     </div>
-    <div style="background:#fdecea;border-radius:12px;padding:12px;">
-      <div style="font-size:0.82rem;font-weight:900;color:#c0392b;margin-bottom:6px;">📤 فلوس عليك (مستحقة عليك)</div>
+    <div style="background:#fdecea;border-radius:12px;padding:12px;cursor:pointer;" onclick="showDuesDetail('purchases')">
+      <div style="font-size:0.82rem;font-weight:900;color:#c0392b;margin-bottom:6px;display:flex;justify-content:space-between;"><span>📤 فلوس عليك (مستحقة عليك)</span><span style="font-size:0.7rem;color:#c0392b;">لمين؟ ›</span></div>
       ${row('فواتير مشتريات آجلة', d.purchPay, '#c0392b')}
       ${d.manualPay>0?row('ديون يدوية (عليك)', d.manualPay, '#c0392b'):''}
       <div class="rep-row" style="border-top:1.5px solid #f5c6cb;margin-top:4px;padding-top:6px;"><span style="font-weight:900;">الإجمالي عليك</span><span class="rv" style="color:#c0392b;font-size:1rem;">${fmt(d.payable)}</span></div>
@@ -2569,6 +2569,44 @@ async function showDuesBreakdown(){
       <div style="font-size:0.72rem;color:var(--muted);">صافي الذمم (ليك − عليك)</div>
       <div style="font-size:1.2rem;font-weight:900;color:${(d.receivable-d.payable)>=0?'#2d6a4f':'#c0392b'};direction:ltr;">${fmt(d.receivable-d.payable)}</div>
     </div>`;
+}
+
+// تفصيل الذمم لكل تاجر (مين عليه/له فلوس) مرتّب من الأكبر للأصغر
+async function showDuesDetail(type){
+  const isSales = type==='sales';
+  const uid = currentUser.id;
+  const table = isSales ? 'deferred_sales' : 'deferred_purchases';
+  const cats = isSales ? ['سداد_مبيعات','سداد_مبيعات_منتج','تسوية_مبيعات','تسوية_مبيعات_منتج']
+                       : ['سداد_مشتريات','مشتريات_آجل','تسوية_مشتريات'];
+  const color = isSales ? '#2d6a4f' : '#c0392b';
+  document.getElementById('modal-title').textContent = isSales ? '📥 فلوس ليك — عند مين' : '📤 فلوس عليك — لمين';
+  document.getElementById('detail-overlay').classList.add('open');
+  document.getElementById('modal-body').innerHTML = '<div class="loading">⏳ جاري الحساب...</div>';
+  const [inv, vColl] = await Promise.all([
+    sb.from(table).select('trader,total').eq('user_id',uid),
+    sb.from('vault').select('description,amount').eq('user_id',uid).in('category',cats),
+  ]);
+  const norm = t => (t && String(t).trim()) || 'بدون اسم';
+  const totals = {};
+  (inv.data||[]).forEach(x=>{ const t=norm(x.trader); totals[t]=(totals[t]||0)+Number(x.total||0); });
+  (vColl.data||[]).forEach(v=>{ const t=norm(String(v.description||'').split(':').pop()); totals[t]=(totals[t]||0)-Number(v.amount||0); });
+  const arr = Object.entries(totals).filter(([t,v])=>v>0.5).sort((a,b)=>b[1]-a[1]);
+  const grand = arr.reduce((s,[t,v])=>s+v,0);
+  const rows = arr.length ? arr.map(([t,v])=>{
+    const p = grand ? v/grand*100 : 0;
+    return `<div style="padding:11px 4px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <span style="font-weight:800;font-size:0.9rem;">👤 ${s(t)}</span>
+        <span style="font-weight:900;color:${color};direction:ltr;white-space:nowrap;">${fmt(v)}</span></div>
+      <div style="height:6px;background:var(--g5);border-radius:4px;overflow:hidden;margin-top:5px;"><div style="height:100%;width:${p.toFixed(1)}%;background:${color};border-radius:4px;"></div></div></div>`;
+  }).join('') : '<div class="empty">لا يوجد ذمم</div>';
+  document.getElementById('modal-body').innerHTML = `
+    <div style="text-align:center;margin-bottom:14px;padding:12px;background:${color}12;border-radius:12px;">
+      <div style="font-size:0.72rem;color:var(--muted);">${isSales?'إجمالي المستحق لك':'إجمالي المستحق عليك'} · ${arr.length} ${isSales?'عميل':'تاجر'}</div>
+      <div style="font-size:1.4rem;font-weight:900;color:${color};direction:ltr;margin-top:2px;">${fmt(grand)}</div>
+    </div>
+    ${rows}
+    <button class="btn" style="width:100%;margin-top:14px;background:var(--g5);color:var(--text);border:1.5px solid var(--border);padding:12px;border-radius:12px;font-weight:800;font-family:Cairo,sans-serif;cursor:pointer;" onclick="showDuesBreakdown()">↩️ رجوع</button>`;
 }
 
 // ===== تفصيل الوارد/الصادر من الرئيسية =====
