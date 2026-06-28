@@ -2674,6 +2674,7 @@ function clearIncFilter(){
   renderIncomeList();
 }
 function openIncPayModal(id, desc, total, paidSoFar){
+  if(!permAllowed('payIncome')) return;
   const remaining = total - paidSoFar;
   document.getElementById('modal-title').textContent = '💵 تحصيل وارد';
   document.getElementById('modal-body').innerHTML = `
@@ -2861,6 +2862,7 @@ function clearExpFilter(){
   renderExpenseList();
 }
 function openExpPayModal(id, desc, total, paidSoFar){
+  if(!permAllowed('payExpense')) return;
   const remaining = total - paidSoFar;
   document.getElementById('modal-title').textContent = '💵 سداد صادر';
   document.getElementById('modal-body').innerHTML = `
