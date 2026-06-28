@@ -2153,7 +2153,9 @@ async function logActivity(action, table_name, description, amount=null){
       action,
       table_name,
       description,
-      amount
+      amount,
+      actor: _isSecondaryUser ? (_secondaryName || 'مستخدم ثانوي') : 'المالك',
+      is_secondary: _isSecondaryUser
     });
   } catch(e){ console.log('log error:', e); }
 }
@@ -5192,7 +5194,10 @@ async function renderLogList(){
             <div style="width:34px;height:34px;border-radius:10px;background:${style.color}18;border:1px solid ${style.color}33;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">${style.icon}</div>
             <div style="flex:1;min-width:0;">
               <div style="font-size:0.8rem;font-weight:800;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s(x.description||'')}${amt}</div>
-              <div style="font-size:0.65rem;color:var(--muted);margin-top:1px;">${x.action} · ${time}</div>
+              <div style="font-size:0.65rem;color:var(--muted);margin-top:1px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+                <span>${x.action} · ${time}</span>
+                ${x.actor ? `<span style="font-weight:800;border-radius:5px;padding:1px 7px;${x.is_secondary?'background:#fff3e0;color:#e65100;':'background:var(--g5);color:var(--g2);'}">${x.is_secondary?'👤 '+s(x.actor):'🛡️ '+s(x.actor)}</span>` : ''}
+              </div>
             </div>
           </div>`;
       });
