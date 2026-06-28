@@ -6633,13 +6633,41 @@ function setDsSource(src){
   calcDsCropTotal();
 }
 
+// اختيار محصول من المخزن: حدّد الوحدة من المخزن + حذّر لو الكمية صفر أو سالب
+async function onDsStorageSelect(idx, value){
+  _dsStorageItems[idx].item = value;
+  const st = (window._dsStorageStocks||window._invStocks||[]).find(r=>r.item===value);
+  _dsStorageItems[idx].avail = st?.qty||0;
+  _dsStorageItems[idx].unit = st?.unit||'';
+  if(value){
+    try{
+      const {data:ct} = await sb.from('inventory_transactions').select('crop').eq('user_id',currentUser.id).eq('type','crop_in').eq('item',value).limit(1);
+      _dsStorageItems[idx].crop = ct?.[0]?.crop || value;
+    }catch(e){ _dsStorageItems[idx].crop = value; }
+  }
+  renderDsStorageItemsForm(window._dsStorageStocks||[]);
+  // تحذير لو الكمية صفر أو بالسالب
+  if(value && st){
+    const q = Number(st.qty);
+    if(q <= 0.001){
+      const msg = q < -0.001
+        ? `⚠️ كمية "${value}" في المخزن بالسالب (${q.toLocaleString('en-US')} ${st.unit||''})`
+        : `⚠️ كمية "${value}" في المخزن صفر`;
+      const ok = await showConfirm(msg+' — متأكد إنك عايز تبيعه؟','⚠️');
+      if(!ok){ _dsStorageItems[idx].item=''; _dsStorageItems[idx].unit=''; _dsStorageItems[idx].avail=0; renderDsStorageItemsForm(window._dsStorageStocks||[]); }
+    }
+  }
+}
+
 async function addDsStorageItem(){
   const stocks = window._invStocks || await calcAllStock();
   // فلتر محاصيل مخزنة فقط (crop_in)
   const {data:cropTxns} = await sb.from('inventory_transactions')
     .select('item,crop').eq('user_id',currentUser.id).eq('type','crop_in');
   const cropItems = [...new Set((cropTxns||[]).map(r=>r.item).filter(Boolean))];
-  const availStocks = stocks.filter(r=>cropItems.includes(r.item)&&r.qty>0.001);
+  // كل المحاصيل المخزّنة بما فيها الصفر والسالب (للعرض والتحذير)
+  const availStocks = stocks.filter(r=>cropItems.includes(r.item));
+  window._dsStorageStocks = availStocks;
   _dsStorageItems.push({item:'',crop:'',qty:'',unit:'',price:0,avail:0});
   renderDsStorageItemsForm(availStocks);
 }
@@ -6653,17 +6681,9 @@ function renderDsStorageItemsForm(availStocks){
   }
   el.innerHTML = _dsStorageItems.map((item,i)=>`
     <div class="inv-row inv-row-4" style="margin-bottom:6px;">
-      <select class="inv-field" onchange="(async()=>{
-        _dsStorageItems[${i}].item=this.value;
-        const st=(window._invStocks||[]).find(r=>r.item===this.value);
-        _dsStorageItems[${i}].avail=st?.qty||0;
-        _dsStorageItems[${i}].unit=st?.unit||'';
-        const {data:ct}=await sb.from('inventory_transactions').select('crop').eq('user_id',currentUser.id).eq('type','crop_in').eq('item',this.value).limit(1);
-        _dsStorageItems[${i}].crop=ct?.[0]?.crop||this.value;
-        this.parentElement.querySelector('.avail-lbl').textContent='متاح: '+(st?.qty||0).toLocaleString('en-US')+' '+(st?.unit||'');
-      })()">
+      <select class="inv-field" onchange="onDsStorageSelect(${i}, this.value)">
         <option value="">-- محصول --</option>
-        ${(availStocks||[]).map(st=>`<option value="${s(st.item)}" ${item.item===st.item?'selected':''}>${s(st.item)} (${Number(st.qty).toLocaleString('en-US')} ${s(st.unit)})</option>`).join('')}
+        ${(availStocks||[]).map(st=>{const q=Number(st.qty);let suf;if(q>0.001)suf=`(${q.toLocaleString('en-US')} ${s(st.unit)})`;else if(q<-0.001)suf=`(سالب ${Math.abs(q).toLocaleString('en-US')} ${s(st.unit)})`;else suf='(كمية صفر)';return `<option value="${s(st.item)}" ${item.item===st.item?'selected':''}>${s(st.item)} ${suf}</option>`;}).join('')}
       </select>
       <input type="text" inputmode="decimal" placeholder="الكمية" value="${item.qty||''}" class="inv-field"
         oninput="_dsStorageItems[${i}].qty=parseNum(this.value);calcDsCropTotal()">
