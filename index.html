@@ -2573,6 +2573,7 @@ function updateDsSelBtn(){
   if(btn){btn.style.display=dsSelected.size>0?'block':'none'; if(cnt)cnt.textContent=dsSelected.size;}
 }
 async function deleteSelectedDs(){
+  if(!permAllowed('editDelSales')) return;
   if(!dsSelected.size) return;
   const ids=[...dsSelected];
   if(!await showConfirm(`🗑️ هتحذف ${ids.length} فاتورة مبيعات؟`,'🗑️')) return;
@@ -2605,6 +2606,7 @@ function updateDpSelBtn(){
   if(btn){btn.style.display=dpSelected.size>0?'block':'none'; if(cnt)cnt.textContent=dpSelected.size;}
 }
 async function deleteSelectedDp(){
+  if(!permAllowed('editDelPurchases')) return;
   if(!dpSelected.size) return;
   const ids=[...dpSelected];
   if(!await showConfirm(`🗑️ هتحذف ${ids.length} فاتورة مشتريات؟`,'🗑️')) return;
@@ -2785,6 +2787,7 @@ function updateIncTotal(data){
   if(val)val.textContent=fmt(total);
 }
 async function deleteSelectedIncome(){
+  if(!permAllowed('editDelIncome')) return;
   if(!incomeSelected.size) return;
   const ids = [...incomeSelected];
   const {data:selData} = await sb.from('income').select('id,amount,date,pay_type').in('id',ids).eq('user_id',currentUser.id);
@@ -2969,6 +2972,7 @@ function updateExpTotal(data){
   if(val)val.textContent=fmt(total);
 }
 async function deleteSelectedExpense(){
+  if(!permAllowed('editDelExpense')) return;
   if(!expSelected.size) return;
   const ids = [...expSelected];
   const {data:selData} = await sb.from('expenses').select('id,amount,date,pay_type').in('id',ids).eq('user_id',currentUser.id);
@@ -3152,6 +3156,8 @@ async function deleteSelectedCapital(){
 
 // ===== DELETE =====
 async function delItem(table, id) {
+  if(table==='income' && !permAllowed('editDelIncome')) return;
+  if(table==='expenses' && !permAllowed('editDelExpense')) return;
   const {data:itemData} = await sb.from(table).select('*').eq('id',id).eq('user_id',currentUser.id);
   const item = itemData?.[0];
 
@@ -4271,6 +4277,8 @@ async function deleteCat(i){
 
 // ===== EDIT ITEM =====
 async function editItem(type, item) {
+  if(type==='income' && !permAllowed('editDelIncome')) return;
+  if(type==='expense' && !permAllowed('editDelExpense')) return;
   const titles = {income:'تعديل الوارد ✏️', expense:'تعديل الصادر ✏️', capital:'تعديل رأس المال ✏️'};
   const table = type==='income'?'income': type==='expense'?'expenses':'capital';
   let fields = '';
@@ -4835,6 +4843,16 @@ const PERMISSION_ITEMS = [
   {key:'payExpense',        label:'سداد عمليات الصادر'},
 ];
 let _permState = {};
+
+// فحص الصلاحية: لو مقفولة يمنع العملية ويظهر تنبيه
+function permAllowed(key){
+  const perms = _farmSettingsCache?.permissions || {};
+  if(perms[key] === false){
+    showToast('🔒 الصلاحية دي مقفولة من إعدادات صلاحيات المستخدم');
+    return false;
+  }
+  return true;
+}
 
 // بوابة الدخول بالباسورد
 function openPermissionsGate(){
@@ -5515,6 +5533,7 @@ async function payDeferredPurchase(id) {
 }
 
 async function deleteDeferredPurchase(id, isPaid) {
+  if(!permAllowed('editDelPurchases')) return;
   // جيب كل البيانات أولاً
   const [{data:purData}, {data:vEntries}, {data:invTxns}] = await Promise.all([
     sb.from('deferred_purchases').select('*').eq('user_id',currentUser.id).eq('id',id).limit(1),
@@ -5570,6 +5589,7 @@ async function deleteDeferredPurchase(id, isPaid) {
 }
 
 async function editDeferredPurchase(id) {
+  if(!permAllowed('editDelPurchases')) return;
   const {data} = await sb.from('deferred_purchases').select('*').eq('id',id).eq('user_id',currentUser.id);
   if(!data?.length) return;
   const x = data[0];
@@ -6988,6 +7008,7 @@ async function renderDeferredSales(){
 }
 
 async function openDsSaleCollect(id, total){
+  if(!permAllowed('paySalesInvoices')) return;
   const {data:vEntries} = await sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('ref_id',id).in('category',['سداد_مبيعات','سداد_مبيعات_منتج','تسوية_مبيعات','تسوية_مبيعات_منتج']);
   const paidSoFar = (vEntries||[]).reduce((s,x)=>s+Number(x.amount||0),0);
   const remaining = total - paidSoFar;
@@ -7031,6 +7052,7 @@ async function saveDsSaleCollect(id, total, paidSoFar){
 }
 
 async function openDpCollect(id, total){
+  if(!permAllowed('payPurchasesInvoices')) return;
   const {data:vEntries} = await sb.from('vault').select('amount').eq('user_id',currentUser.id).eq('ref_id',id).eq('category','مشتريات_آجل');
   const paidSoFar = (vEntries||[]).reduce((s,x)=>s+Number(x.amount||0),0);
   const remaining = total - paidSoFar;
@@ -7090,6 +7112,7 @@ async function payDeferredSale(id){
 
 // حذف بيعة
 async function deleteDeferredSale(id, isPaid){
+  if(!permAllowed('editDelSales')) return;
   // جيب كل البيانات أولاً
   const [{data:saleData}, {data:vEntries}, {data:invTxns}] = await Promise.all([
     sb.from('deferred_sales').select('*').eq('id',id).eq('user_id',currentUser.id).limit(1),
@@ -7146,6 +7169,7 @@ async function deleteDeferredSale(id, isPaid){
 
 // تعديل بيعة
 async function editDeferredSale(id){
+  if(!permAllowed('editDelSales')) return;
   const {data} = await sb.from('deferred_sales').select('*').eq('id',id).eq('user_id',currentUser.id);
   if(!data?.length) return;
   const x = data[0];
@@ -7461,6 +7485,7 @@ async function addTaswiya(){
 }
 
 async function addSalesPayment(){
+  if(!permAllowed('paySalesTraders')) return;
   const trader = document.getElementById('sp-trader').value;
   const amount = parseNum(document.getElementById('sp-amount').value);
   const date   = document.getElementById('sp-date').value;
@@ -9167,6 +9192,7 @@ async function onDppTraderChange(){
 }
 
 async function addDpPayment(){
+  if(!permAllowed('payPurchasesTraders')) return;
   const trader = document.getElementById('dpp-trader').value;
   const amount = parseNum(document.getElementById('dpp-amount').value);
   const date   = document.getElementById('dpp-date').value;
