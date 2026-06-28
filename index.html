@@ -3452,79 +3452,136 @@ function goToSaleSource(refId, mode) {
   }, 500);
 }
 
-// ===== REPORT =====
+// ===== REPORT (تقرير مالي احترافي) =====
 async function renderReport() {
   const from=document.getElementById('rep-from').value;
   const to=document.getElementById('rep-to').value;
   if(!from||!to) return showToast('❌ اختار الفترة');
-  const [rInc,rExp,rAjRec,rAjPay,rCap,invStock,rInvTypes]=await Promise.all([
-    sb.from('income').select('amount,description,date').eq('user_id',currentUser.id),
-    sb.from('expenses').select('amount,description,date,category').eq('user_id',currentUser.id),
-    sb.from('ajal').select('amount').eq('user_id',currentUser.id).eq('type','receivable').eq('paid',false),
-    sb.from('ajal').select('amount').eq('user_id',currentUser.id).eq('type','payable').eq('paid',false),
-    sb.from('capital').select('amount,date').eq('user_id',currentUser.id).order('date',{ascending:false}).limit(1),
+  document.getElementById('report-content').innerHTML='<div class="loading">⏳ جاري إعداد التقرير...</div>';
+  const uid=currentUser.id;
+  const [rInc,rExp,rAjRec,rAjPay,rCap,invStock,rInvTypes,rVault,rSales]=await Promise.all([
+    sb.from('income').select('amount,description,date,crop,category').eq('user_id',uid),
+    sb.from('expenses').select('amount,description,date,crop,category').eq('user_id',uid),
+    sb.from('ajal').select('amount').eq('user_id',uid).eq('type','receivable').eq('paid',false),
+    sb.from('ajal').select('amount').eq('user_id',uid).eq('type','payable').eq('paid',false),
+    sb.from('capital').select('amount,date').eq('user_id',uid).order('date',{ascending:false}).limit(1),
     calcAllStock(),
-    sb.from('inventory_transactions').select('item,type').eq('user_id',currentUser.id),
+    sb.from('inventory_transactions').select('item,type').eq('user_id',uid),
+    sb.from('vault').select('type,amount').eq('user_id',uid).neq('type','taswiya'),
+    sb.from('deferred_sales').select('total,paid,date').eq('user_id',uid),
   ]);
-  // أصناف المحاصيل (ليها crop_in) مقابل المنتجات (ليها in) للتفرقة في تقرير المخزن
   const cropItemsSet = new Set((rInvTypes.data||[]).filter(r=>r.type==='crop_in').map(r=>r.item));
-  // client-side date filter
   const fromD=new Date(from); const toD=new Date(to); toD.setHours(23,59,59);
-  const inRange=(d)=>{ const dd=new Date(d); return dd>=fromD && dd<=toD; };
-  const incData=(rInc.data||[]).filter(x=>inRange(x.date));
-  const expData=(rExp.data||[]).filter(x=>inRange(x.date));
-  const inc=incData.reduce((s,x)=>s+Number(x.amount),0);
-  const exp=expData.reduce((s,x)=>s+Number(x.amount),0);
+  const days=Math.max(1,Math.round((toD-fromD)/86400000));
+  // الفترة السابقة بنفس الطول للمقارنة
+  const pFromD=new Date(fromD); pFromD.setDate(pFromD.getDate()-days);
+  const pToD=new Date(fromD); pToD.setSeconds(pToD.getSeconds()-1);
+  const inR=(d,a,b)=>{ const dd=new Date(d); return dd>=a&&dd<=b; };
+  const sumIn=(arr,a,b)=>arr.filter(x=>inR(x.date,a,b)).reduce((s,x)=>s+Number(x.amount||0),0);
+
+  const incData=(rInc.data||[]).filter(x=>inR(x.date,fromD,toD));
+  const expData=(rExp.data||[]).filter(x=>inR(x.date,fromD,toD));
+  const inc=incData.reduce((s,x)=>s+Number(x.amount||0),0);
+  const exp=expData.reduce((s,x)=>s+Number(x.amount||0),0);
   const profit=inc-exp;
-  const ajalRec=(rAjRec.data||[]).reduce((s,x)=>s+Number(x.amount),0);
-  const ajalPay=(rAjPay.data||[]).reduce((s,x)=>s+Number(x.amount),0);
-  const cap=rCap.data?.length?rCap.data[0].amount:0;
-  // Category breakdown
-  const cats={};
-  expData.forEach(x=>{const c=x.category||'أخرى';cats[c]=(cats[c]||0)+Number(x.amount);});
-  const catRows=Object.entries(cats).map(([c,v])=>`<div class="rep-row red"><span>${s(c)}</span><span class="rv">${fmt(v)}</span></div>`).join('');
-  // ===== المخزن: قيمة الجرد الحالية (لقطة وقتية كأصول) =====
+  const margin=inc>0?(profit/inc*100):0;
+  // مقارنة بالفترة السابقة
+  const pInc=sumIn(rInc.data||[],pFromD,pToD), pExp=sumIn(rExp.data||[],pFromD,pToD), pProfit=pInc-pExp;
+  // الآجل والمركز المالي
+  const ajalRec=(rAjRec.data||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const ajalPay=(rAjPay.data||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+  const cap=rCap.data?.length?Number(rCap.data[0].amount):0;
+  const vaultBal=(rVault.data||[]).reduce((s,x)=>s+(['in','income_auto','capital_auto','opening'].includes(x.type)?Number(x.amount||0):(['out','expense_auto'].includes(x.type)?-Number(x.amount||0):0)),0);
+  // المخزن
   const stockItems=(invStock||[]).filter(r=>r.qty>0.001);
-  const cropsStock=stockItems.filter(r=>cropItemsSet.has(r.item));
-  const prodStock=stockItems.filter(r=>!cropItemsSet.has(r.item));
   const stockVal=(arr)=>arr.reduce((sm,r)=>sm+(Number(r.qty)||0)*(Number(r.avg_cost)||0),0);
+  const cropsStock=stockItems.filter(r=>cropItemsSet.has(r.item)), prodStock=stockItems.filter(r=>!cropItemsSet.has(r.item));
   const cropsVal=stockVal(cropsStock), prodVal=stockVal(prodStock), totalStockVal=cropsVal+prodVal;
-  const invItemRows=stockItems
-    .map(r=>({...r,val:(Number(r.qty)||0)*(Number(r.avg_cost)||0)}))
-    .sort((a,b)=>b.val-a.val)
-    .map(r=>`<div class="rep-row"><span>${cropItemsSet.has(r.item)?'🌾':'📦'} ${s(r.item)} <span style="color:var(--muted);font-size:0.72rem;">(${Number(r.qty).toLocaleString('en-US')} ${s(r.unit||'')})</span></span><span class="rv">${fmt(r.val)}</span></div>`).join('');
+  const netWorth=vaultBal+ajalRec+totalStockVal-ajalPay;
+  // توزيع المصاريف
+  const cats={}; expData.forEach(x=>{const c=x.category||'أخرى';cats[c]=(cats[c]||0)+Number(x.amount||0);});
+  const catArr=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  // مصادر الإيراد
+  const incCats={}; incData.forEach(x=>{const c=x.category||'أخرى';incCats[c]=(incCats[c]||0)+Number(x.amount||0);});
+  const incCatArr=Object.entries(incCats).sort((a,b)=>b[1]-a[1]);
+  // ربحية المحاصيل
+  const cropRev={},cropCost={};
+  incData.forEach(x=>{ if(x.crop){cropRev[x.crop]=(cropRev[x.crop]||0)+Number(x.amount||0);} });
+  expData.forEach(x=>{ if(x.crop){cropCost[x.crop]=(cropCost[x.crop]||0)+Number(x.amount||0);} });
+  const cropNames=[...new Set([...Object.keys(cropRev),...Object.keys(cropCost)])].filter(c=>c!=='المخزن 🏪');
+  const cropProfit=cropNames.map(c=>({c,rev:cropRev[c]||0,cost:cropCost[c]||0,net:(cropRev[c]||0)-(cropCost[c]||0)})).sort((a,b)=>b.net-a.net);
+  // أداء المبيعات
+  const salesP=(rSales.data||[]).filter(x=>inR(x.date,fromD,toD));
+  const salesCount=salesP.length, salesTotal=salesP.reduce((s,x)=>s+Number(x.total||0),0);
+  const salesPaid=salesP.filter(x=>x.paid).length, salesUnpaid=salesCount-salesPaid;
+  const avgInvoice=salesCount?salesTotal/salesCount:0;
+  const collectRate=salesCount?(salesPaid/salesCount*100):0;
+
+  // ===== أدوات العرض =====
+  const growth=(cur,prev)=>{ if(!prev) return cur>0?`<span style="color:#2d6a4f;font-weight:800;">جديد</span>`:''; const g=(cur-prev)/Math.abs(prev)*100; const up=g>=0; return `<span style="color:${up?'#2d6a4f':'#c0392b'};font-weight:800;">${up?'▲':'▼'} ${Math.abs(g).toFixed(0)}%</span>`; };
+  const kpi=(label,val,color,extra)=>`<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.04);">
+    <div style="font-size:0.66rem;color:var(--muted);font-weight:700;">${label}</div>
+    <div style="font-size:1.02rem;font-weight:900;color:${color};margin-top:4px;direction:ltr;">${val}</div>
+    ${extra?`<div style="font-size:0.64rem;margin-top:3px;">${extra}</div>`:''}</div>`;
+  const bar=(label,val,total,color,icon)=>{ const p=total?val/total*100:0; return `<div style="margin-bottom:9px;">
+    <div style="display:flex;justify-content:space-between;font-size:0.76rem;margin-bottom:3px;"><span style="font-weight:700;">${icon||''} ${s(label)}</span><span style="font-weight:800;direction:ltr;">${fmt(val)} · ${p.toFixed(0)}%</span></div>
+    <div style="height:7px;background:var(--g5);border-radius:4px;overflow:hidden;"><div style="height:100%;width:${p.toFixed(1)}%;background:${color};border-radius:4px;"></div></div></div>`; };
+  const sec=(title,body)=>`<div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 1px 6px rgba(0,0,0,0.04);">
+    <div style="font-size:0.9rem;font-weight:900;margin-bottom:12px;color:var(--text);">${title}</div>${body}</div>`;
+
+  const cropRowsHtml = cropProfit.length ? cropProfit.map(r=>{
+    const m=r.rev>0?(r.net/r.rev*100):0;
+    return `<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);">
+      <div style="flex:1;min-width:0;"><div style="font-weight:800;font-size:0.84rem;">🌾 ${s(r.c)}</div>
+        <div style="font-size:0.68rem;color:var(--muted);margin-top:1px;">إيراد ${fmt(r.rev)} · تكلفة ${fmt(r.cost)}</div></div>
+      <div style="text-align:left;white-space:nowrap;"><div style="font-weight:900;font-size:0.86rem;color:${r.net>=0?'#2d6a4f':'#c0392b'};direction:ltr;">${r.net>=0?'+':''}${fmt(r.net)}</div>
+        <div style="font-size:0.66rem;color:var(--muted);">هامش ${m.toFixed(0)}%</div></div></div>`;
+  }).join('') : '<div style="color:var(--muted);font-size:0.8rem;">لا يوجد بيانات محاصيل في الفترة</div>';
+
   document.getElementById('report-content').innerHTML=`
-    <p style="font-size:0.75rem;color:var(--muted);margin-bottom:14px;">من ${fmtDate(from)} إلى ${fmtDate(to)}</p>
-    <div class="rep-section">
-      <h4>💰 الإيرادات</h4>
-      <div class="rep-row grn"><span>إجمالي الوارد</span><span class="rv">${fmt(inc)}</span></div>
-      <div class="rep-row"><span>عدد العمليات</span><span class="rv">${incData.length||0}</span></div>
+    <div style="text-align:center;margin-bottom:14px;">
+      <div style="font-size:0.78rem;color:var(--muted);">📅 من ${fmtDate(from)} إلى ${fmtDate(to)} <span style="opacity:0.7;">(${days} يوم)</span></div>
     </div>
-    <div class="rep-section">
-      <h4>💸 المصاريف</h4>
-      <div class="rep-row red"><span>إجمالي الصادر</span><span class="rv">${fmt(exp)}</span></div>
-      ${catRows}
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+      ${kpi('الإيرادات', fmt(inc), '#2d6a4f', growth(inc,pInc))}
+      ${kpi('المصاريف', fmt(exp), '#c0392b', growth(exp,pExp))}
+      ${kpi(profit>=0?'صافي الربح':'صافي الخسارة', fmt(Math.abs(profit)), profit>=0?'#2d6a4f':'#c0392b', growth(profit,pProfit))}
+      ${kpi('هامش الربح', margin.toFixed(1)+'%', margin>=0?'#1565C0':'#c0392b', `<span style="color:var(--muted);">من كل 100ج تكسب ${margin.toFixed(0)}ج</span>`)}
     </div>
-    <div class="rep-section">
-      <h4>📊 الصافي</h4>
-      <div class="rep-row ${profit>=0?'grn':'red'}"><span>${profit>=0?'صافي الربح':'صافي الخسارة'}</span><span class="rv">${fmt(Math.abs(profit))}</span></div>
-    </div>
-    <div class="rep-section">
-      <h4>🕐 الآجل (إجمالي)</h4>
-      <div class="rep-row grn"><span>ديون لي</span><span class="rv">${fmt(ajalRec)}</span></div>
-      <div class="rep-row red"><span>ديون عليَّ</span><span class="rv">${fmt(ajalPay)}</span></div>
-    </div>
-    <div class="rep-section">
-      <h4>🏪 المخزن (القيمة الحالية)</h4>
-      <div class="rep-row grn"><span>إجمالي قيمة المخزن</span><span class="rv">${fmt(totalStockVal)}</span></div>
+
+    ${sec('🛒 أداء المبيعات', `
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;">
+        <div><div style="font-size:1.05rem;font-weight:900;">${salesCount}</div><div style="font-size:0.64rem;color:var(--muted);">عدد الفواتير</div></div>
+        <div><div style="font-size:1.05rem;font-weight:900;direction:ltr;">${fmt(salesTotal)}</div><div style="font-size:0.64rem;color:var(--muted);">إجمالي المبيعات</div></div>
+        <div><div style="font-size:1.05rem;font-weight:900;direction:ltr;">${fmt(avgInvoice)}</div><div style="font-size:0.64rem;color:var(--muted);">متوسط الفاتورة</div></div>
+      </div>
+      <div style="margin-top:12px;">
+        <div style="display:flex;justify-content:space-between;font-size:0.76rem;margin-bottom:3px;"><span style="font-weight:700;">نسبة التحصيل (فواتير مسددة)</span><span style="font-weight:800;">${salesPaid}/${salesCount} · ${collectRate.toFixed(0)}%</span></div>
+        <div style="height:8px;background:#fdecea;border-radius:4px;overflow:hidden;"><div style="height:100%;width:${collectRate.toFixed(1)}%;background:#2d6a4f;border-radius:4px;"></div></div>
+        ${salesUnpaid>0?`<div style="font-size:0.7rem;color:#c0392b;margin-top:5px;">⚠️ ${salesUnpaid} فاتورة لسه غير مسددة</div>`:''}
+      </div>`)}
+
+    ${sec('💸 توزيع المصاريف', catArr.length ? catArr.map(([c,v])=>bar(c,v,exp,'#c0392b','🔻')).join('') : '<div style="color:var(--muted);font-size:0.8rem;">لا يوجد مصاريف</div>')}
+
+    ${sec('💰 مصادر الإيرادات', incCatArr.length ? incCatArr.map(([c,v])=>bar(c,v,inc,'#2d6a4f','🔺')).join('') : '<div style="color:var(--muted);font-size:0.8rem;">لا يوجد إيرادات</div>')}
+
+    ${sec('🌾 ربحية المحاصيل', cropRowsHtml)}
+
+    ${sec('🏦 المركز المالي', `
+      <div class="rep-row"><span>💵 رصيد الخزنة (السيولة)</span><span class="rv" style="color:${vaultBal>=0?'#2d6a4f':'#c0392b'}">${fmt(vaultBal)}</span></div>
+      <div class="rep-row grn"><span>📥 ذمم لك (آجل عليهم)</span><span class="rv">${fmt(ajalRec)}</span></div>
+      <div class="rep-row red"><span>📤 ذمم عليك (آجل عليك)</span><span class="rv">${fmt(ajalPay)}</span></div>
+      <div class="rep-row"><span>🏪 قيمة المخزن</span><span class="rv">${fmt(totalStockVal)}</span></div>
+      <div class="rep-row" style="border-top:2px solid var(--border);margin-top:6px;padding-top:8px;"><span style="font-weight:900;">📊 صافي القيمة التقديري</span><span class="rv" style="color:${netWorth>=0?'#2d6a4f':'#c0392b'};font-size:1rem;">${fmt(netWorth)}</span></div>
+      <div style="font-size:0.66rem;color:var(--muted);margin-top:6px;">= السيولة + الذمم لك + المخزن − الذمم عليك</div>`)}
+
+    ${sec('🏪 تفاصيل المخزن', `
       ${cropsVal>0?`<div class="rep-row"><span>🌾 محاصيل مخزّنة (${cropsStock.length})</span><span class="rv">${fmt(cropsVal)}</span></div>`:''}
       ${prodVal>0?`<div class="rep-row"><span>📦 منتجات (${prodStock.length})</span><span class="rv">${fmt(prodVal)}</span></div>`:''}
-      ${invItemRows||'<div class="rep-row"><span style="color:var(--muted);">لا يوجد رصيد في المخزن</span><span></span></div>'}
-    </div>
-    <div class="rep-section">
-      <h4>📦 رأس المال</h4>
-      <div class="rep-row"><span>آخر قيمة مسجلة</span><span class="rv">${fmt(cap)}</span></div>
-    </div>`;
+      ${stockItems.length ? stockItems.map(r=>({...r,val:(Number(r.qty)||0)*(Number(r.avg_cost)||0)})).sort((a,b)=>b.val-a.val).map(r=>`<div class="rep-row"><span>${cropItemsSet.has(r.item)?'🌾':'📦'} ${s(r.item)} <span style="color:var(--muted);font-size:0.72rem;">(${Number(r.qty).toLocaleString('en-US')} ${s(r.unit||'')})</span></span><span class="rv">${fmt(r.val)}</span></div>`).join('') : '<div style="color:var(--muted);font-size:0.8rem;">لا يوجد رصيد</div>'}`)}
+
+    <div style="text-align:center;font-size:0.66rem;color:var(--muted);margin:6px 0 14px;">📦 رأس المال المسجّل: ${fmt(cap)}</div>`;
 }
 
 // ===== BACKUP =====
