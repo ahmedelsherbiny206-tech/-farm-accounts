@@ -1515,7 +1515,7 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       </div>
 
       <div style="display:flex;gap:10px;align-items:stretch;">
-        <button class="btn btn-g" style="flex:3;" onclick="addDpPayment()">💾 تسجيل السداد</button>
+        <button class="btn btn-g" style="flex:3;" id="dpp-save-btn" onclick="addDpPayment()">💾 تسجيل السداد</button>
         <button class="btn btn-blue" style="flex:1;font-size:0.82rem;" onclick="addDpTaswiya()">📋 تسوية</button>
       </div>
     </div>
@@ -1638,7 +1638,7 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       </div>
 
       <div style="display:flex;gap:10px;align-items:stretch;">
-        <button class="btn btn-g" style="flex:3;" onclick="addSalesPayment()">💾 تسجيل السداد</button>
+        <button class="btn btn-g" style="flex:3;" id="sp-save-btn" onclick="addSalesPayment()">💾 تسجيل السداد</button>
         <button style="flex:1;background:#1565C0;color:#fff;border:none;border-radius:14px;font-family:Cairo,sans-serif;font-size:0.82rem;font-weight:900;cursor:pointer;padding:10px 6px;line-height:1.3;" onclick="addTaswiya()">📋 تسوية</button>
       </div>
     </div>
@@ -2832,9 +2832,9 @@ async function renderIncomeList() {
       </div>
       <div class="i-actions">
         <div class="i-amt">${fmt(x.amount)}</div>
-        ${needsPay?`<button class="btn-sm" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;" onclick="event.stopPropagation();openIncPayModal('${x.id}','${s(x.description).replace(/'/g,"\\'")}',${x.amount},${paidSoFar})">💵 تحصيل</button>`:''}
-        <button class="btn-sm" style="background:var(--blue-p);color:var(--blue);" onclick="event.stopPropagation();editItem('income',${JSON.stringify(x).replace(/"/g,'&quot;')})">✏️</button>
-        <button class="del-btn" onclick="event.stopPropagation();delItem('income','${x.id}')">✕</button>
+        ${needsPay&&canDo('payIncome')?`<button class="btn-sm" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;" onclick="event.stopPropagation();openIncPayModal('${x.id}','${s(x.description).replace(/'/g,"\\'")}',${x.amount},${paidSoFar})">💵 تحصيل</button>`:''}
+        ${canDo('editDelIncome')?`<button class="btn-sm" style="background:var(--blue-p);color:var(--blue);" onclick="event.stopPropagation();editItem('income',${JSON.stringify(x).replace(/"/g,'&quot;')})">✏️</button>`:''}
+        ${canDo('editDelIncome')?`<button class="del-btn" onclick="event.stopPropagation();delItem('income','${x.id}')">✕</button>`:''}
       </div>
     </div>`;}).join('');
 }
@@ -3020,9 +3020,9 @@ async function renderExpenseList() {
       </div>
       <div class="i-actions">
         <div class="i-amt">${fmt(x.amount)}</div>
-        ${needsPay?`<button class="btn-sm" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;" onclick="event.stopPropagation();openExpPayModal('${x.id}','${s(x.description).replace(/'/g,"\\'")}',${x.amount},${paidSoFar})">💵 تحصيل</button>`:''}
-        <button class="btn-sm" style="background:var(--blue-p);color:var(--blue);" onclick="event.stopPropagation();editItem('expense',${JSON.stringify(x).replace(/"/g,'&quot;')})">✏️</button>
-        <button class="del-btn" onclick="event.stopPropagation();delItem('expenses','${x.id}')">✕</button>
+        ${needsPay&&canDo('payExpense')?`<button class="btn-sm" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;" onclick="event.stopPropagation();openExpPayModal('${x.id}','${s(x.description).replace(/'/g,"\\'")}',${x.amount},${paidSoFar})">💵 تحصيل</button>`:''}
+        ${canDo('editDelExpense')?`<button class="btn-sm" style="background:var(--blue-p);color:var(--blue);" onclick="event.stopPropagation();editItem('expense',${JSON.stringify(x).replace(/"/g,'&quot;')})">✏️</button>`:''}
+        ${canDo('editDelExpense')?`<button class="del-btn" onclick="event.stopPropagation();delItem('expenses','${x.id}')">✕</button>`:''}
       </div>
     </div>`;}).join('');
 }
@@ -5639,10 +5639,10 @@ async function renderDeferredPurchases() {
       </div>
       <div class="i-actions">
         <div class="i-amt">${fmt(x.total||0)}</div>
-        ${needsPay?`<button class="btn-sm" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;" onclick="event.stopPropagation();openDpCollect('${x.id}',${Math.abs(x.total||0)})">💵 تحصيل</button>`:''}
+        ${needsPay&&canDo('payPurchasesInvoices')?`<button class="btn-sm" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;" onclick="event.stopPropagation();openDpCollect('${x.id}',${Math.abs(x.total||0)})">💵 تحصيل</button>`:''}
         ${!x.is_return && !isReturned?`<button class="btn-sm" style="background:#fff3e0;color:#e65100;border:1.5px solid #e65100;" onclick="event.stopPropagation();openReturnModal('purchase','${x.id}','${s(x.trader||'').replace(/'/g,"\\'")}','',${Math.abs(x.total||0)})">🔄</button>`:''}
-        ${!isReturned?`<button class="btn-sm" style="background:var(--blue-p);color:var(--blue);" onclick="event.stopPropagation();editDeferredPurchase('${x.id}')">✏️</button>`:''}
-        <button class="del-btn" onclick="event.stopPropagation();deleteDeferredPurchase('${x.id}','${x.paid}')">✕</button>
+        ${!isReturned&&canDo('editDelPurchases')?`<button class="btn-sm" style="background:var(--blue-p);color:var(--blue);" onclick="event.stopPropagation();editDeferredPurchase('${x.id}')">✏️</button>`:''}
+        ${canDo('editDelPurchases')?`<button class="del-btn" onclick="event.stopPropagation();deleteDeferredPurchase('${x.id}','${x.paid}')">✕</button>`:''}
       </div>
     </div>`;
   }).join('');
@@ -7130,10 +7130,10 @@ async function renderDeferredSales(){
       </div>
       <div class="i-actions">
         <div class="i-amt">${fmt(x.total||0)}</div>
-        ${needsPay?`<button class="btn-sm" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;" onclick="event.stopPropagation();openDsSaleCollect('${x.id}',${Math.abs(x.total||0)})">💵 تحصيل</button>`:''}
+        ${needsPay&&canDo('paySalesInvoices')?`<button class="btn-sm" style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;" onclick="event.stopPropagation();openDsSaleCollect('${x.id}',${Math.abs(x.total||0)})">💵 تحصيل</button>`:''}
         ${!x.is_return && !isReturned?`<button class="btn-sm" style="background:#fff3e0;color:#e65100;border:1.5px solid #e65100;" onclick="event.stopPropagation();openReturnModal('sale','${x.id}','${s(x.trader||'').replace(/'/g,"\\'")}','${x.sale_type}',${Math.abs(x.total||0)})">🔄</button>`:''}
-        ${!isReturned?`<button class="btn-sm" style="background:var(--blue-p);color:var(--blue);" onclick="event.stopPropagation();editDeferredSale('${x.id}')">✏️</button>`:''}
-        <button class="del-btn" onclick="event.stopPropagation();deleteDeferredSale('${x.id}',${isPaid})">✕</button>
+        ${!isReturned&&canDo('editDelSales')?`<button class="btn-sm" style="background:var(--blue-p);color:var(--blue);" onclick="event.stopPropagation();editDeferredSale('${x.id}')">✏️</button>`:''}
+        ${canDo('editDelSales')?`<button class="del-btn" onclick="event.stopPropagation();deleteDeferredSale('${x.id}',${isPaid})">✕</button>`:''}
       </div>
     </div>`;
   }).join('');
@@ -7542,6 +7542,7 @@ function _spVaultDesc(trader){ return _spSaleType==='product' ? 'سداد مبي
 function _spCategories(){ return _spSaleType==='product' ? ['سداد_مبيعات_منتج','تسوية_مبيعات_منتج'] : ['سداد_مبيعات','تسوية_مبيعات']; }
 
 async function initSalesPaymentPage(){
+  { const b=document.getElementById('sp-save-btn'); if(b) b.style.display = canDo('paySalesTraders')?'':'none'; }
   _spSaleType = _dsSaleType;
   const traders = _spSaleType==='product' ? await getDsProdTraders() : await getTraders();
   const sel = document.getElementById('sp-trader');
@@ -9289,6 +9290,7 @@ async function exportInventoryExcel(){
 
 // ===== سداد مشتريات =====
 async function initDpPaymentPage(){
+  { const b=document.getElementById('dpp-save-btn'); if(b) b.style.display = canDo('payPurchasesTraders')?'':'none'; }
   const traders = await getDpTraders();
   const sel = document.getElementById('dpp-trader');
   if(sel) sel.innerHTML = '<option value="">-- اختار التاجر --</option>' + traders.map(t=>`<option>${s(t)}</option>`).join('');
