@@ -5263,7 +5263,7 @@ async function renderLogList(){
               <div style="font-size:0.8rem;font-weight:800;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s(x.description||'')}${amt}</div>
               <div style="font-size:0.65rem;color:var(--muted);margin-top:1px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
                 <span>${x.action} · ${time}</span>
-                ${x.actor ? `<span style="font-weight:800;border-radius:5px;padding:1px 7px;${x.is_secondary?'background:#fff3e0;color:#e65100;':'background:var(--g5);color:var(--g2);'}">${x.is_secondary?'👤 '+s(x.actor):'🛡️ '+s(x.actor)}</span>` : ''}
+                ${(()=>{ const sec=x.is_secondary; const who=x.actor||'المالك'; return `<span style="font-weight:800;border-radius:5px;padding:1px 7px;${sec?'background:#fff3e0;color:#e65100;':'background:var(--g5);color:var(--g2);'}">${sec?'👤 '+s(who):'🛡️ '+s(who)}</span>`; })()}
               </div>
             </div>
           </div>`;
