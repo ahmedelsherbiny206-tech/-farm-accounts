@@ -959,7 +959,7 @@ body.dark-mode .ss-option{color:#e0e0e0;}
         <div class="ico">💸</div>
       </div>
       <div class="sum-card gold" onclick="showDuesBreakdown()" style="cursor:pointer;">
-        <div class="lbl">الذمم (ليك)</div><div class="val" id="sh-ajal">0 ج</div>
+        <div class="lbl">صافي الذمم</div><div class="val" id="sh-ajal">0 ج</div>
         <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;" id="sh-ajal-count"></div>
         <div class="ico">🕐</div>
       </div>
@@ -2675,11 +2675,12 @@ async function renderHome() {
   if(incCount) incCount.textContent = (rInc.data||[]).length + ' عملية';
   const expCount = document.getElementById('sh-exp-count');
   if(expCount) expCount.textContent = (rExp.data||[]).length + ' عملية';
-  // الذمم: تشمل الفواتير الآجلة غير المسددة + الديون اليدوية
+  // الذمم: الصافي (ليك − عليك) مع توضيح ليّا/عليّا
   computeDues().then(d=>{
-    const ajEl=document.getElementById('sh-ajal'); if(ajEl) ajEl.textContent = fmt(d.receivable);
+    const net = d.receivable - d.payable;
+    const ajEl=document.getElementById('sh-ajal'); if(ajEl) ajEl.textContent = fmt(Math.abs(net));
     const ajC=document.getElementById('sh-ajal-count');
-    if(ajC) ajC.textContent = d.payable>0 ? ('عليك: '+fmt(d.payable)) : 'فلوس ليك';
+    if(ajC) ajC.textContent = Math.abs(net)<0.5 ? 'لا يوجد ذمم' : (net>0 ? '🟢 صافي ليّا' : '🔴 صافي عليّا');
   }).catch(()=>{});
   const capEl = document.getElementById('sh-capital-val');
   if(capEl) capEl.textContent = fmt(capVal);
