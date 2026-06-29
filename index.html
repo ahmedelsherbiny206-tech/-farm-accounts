@@ -921,10 +921,10 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       <span style="font-size:1.3rem;">🏠</span><span>الرئيسية</span>
     </button>
     <button class="bnav" onclick="showPage('income',this)" id="bnav-income">
-      <span style="font-size:1.3rem;">💰</span><span>الوارد</span>
+      <span style="font-size:1.3rem;">💰</span><span>الإيرادات</span>
     </button>
     <button class="bnav" onclick="showPage('expense',this)" id="bnav-expense">
-      <span style="font-size:1.3rem;">💸</span><span>الصادر</span>
+      <span style="font-size:1.3rem;">💸</span><span>المصروفات</span>
     </button>
     <button class="bnav" data-perm="viewVault" onclick="showPage('vault',this)" id="bnav-vault">
       <span style="font-size:1.3rem;">🏦</span><span>الخزنة</span>
@@ -949,12 +949,12 @@ body.dark-mode .ss-option{color:#e0e0e0;}
   <div class="page active" id="page-home">
     <div class="sum-grid">
       <div class="sum-card" onclick="showHomeBreakdown('income')" style="cursor:pointer;">
-        <div class="lbl">إجمالي الوارد</div><div class="val" id="sh-inc">0 ج</div>
+        <div class="lbl">إجمالي الإيرادات</div><div class="val" id="sh-inc">0 ج</div>
         <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;" id="sh-inc-count"></div>
         <div class="ico">💰</div>
       </div>
       <div class="sum-card red" onclick="showHomeBreakdown('expense')" style="cursor:pointer;">
-        <div class="lbl">إجمالي الصادر</div><div class="val" id="sh-exp">0 ج</div>
+        <div class="lbl">إجمالي المصروفات</div><div class="val" id="sh-exp">0 ج</div>
         <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;" id="sh-exp-count"></div>
         <div class="ico">💸</div>
       </div>
@@ -1767,7 +1767,7 @@ body.dark-mode .ss-option{color:#e0e0e0;}
         </select>
       </div>
       <div class="form-row"><label>البيان</label>
-        <input type="text" id="vault-desc" placeholder="مثال: قبض من عميل، صرف مصاريف...">
+        <input type="text" id="vault-desc" placeholder="مثال: قبض من عميل، صرف مصروفات...">
       </div>
       <div class="form-row"><label>المبلغ (جنيه)</label>
         <input type="text" inputmode="decimal" id="vault-amt" placeholder="0">
@@ -1792,7 +1792,7 @@ body.dark-mode .ss-option{color:#e0e0e0;}
         <option value="in">📥 قبض</option>
         <option value="out">📤 صرف</option>
         <option value="income_auto">💰 إيرادات</option>
-        <option value="expense_auto">💸 مصاريف</option>
+        <option value="expense_auto">💸 مصروفات</option>
         <option value="capital_auto">📦 رأس مال</option>
         <option value="opening">🏦 رصيد افتتاحي</option>
       </select>
@@ -1835,7 +1835,7 @@ body.dark-mode .ss-option{color:#e0e0e0;}
 
     <!-- رسم بياني -->
     <div class="chart-container">
-      <div class="chart-title">📊 الإيرادات والمصاريف وصافي الربح</div>
+      <div class="chart-title">📊 الإيرادات والمصروفات وصافي الربح</div>
       <div class="chart-tabs">
         <button class="chart-tab active" onclick="setChartPeriod('monthly',this)">شهري</button>
         <button class="chart-tab" onclick="setChartPeriod('weekly',this)">أسبوعي</button>
@@ -1844,11 +1844,11 @@ body.dark-mode .ss-option{color:#e0e0e0;}
       <canvas id="main-chart" height="200"></canvas>
     </div>
 
-    <!-- توزيع المصاريف -->
+    <!-- توزيع المصروفات -->
     <div class="chart-container">
-      <div class="chart-title">💸 توزيع المصاريف حسب النوع</div>
+      <div class="chart-title">💸 توزيع المصروفات حسب النوع</div>
       <canvas id="exp-doughnut" height="180"></canvas>
-      <div id="exp-doughnut-empty" style="display:none;color:var(--muted);font-size:0.8rem;text-align:center;">لا يوجد مصاريف</div>
+      <div id="exp-doughnut-empty" style="display:none;color:var(--muted);font-size:0.8rem;text-align:center;">لا يوجد مصروفات</div>
     </div>
 
     <!-- مقارنة المحاصيل -->
@@ -2609,10 +2609,10 @@ async function showDuesDetail(type){
     <button class="btn" style="width:100%;margin-top:14px;background:var(--g5);color:var(--text);border:1.5px solid var(--border);padding:12px;border-radius:12px;font-weight:800;font-family:Cairo,sans-serif;cursor:pointer;" onclick="showDuesBreakdown()">↩️ رجوع</button>`;
 }
 
-// ===== تفصيل الوارد/الصادر من الرئيسية =====
+// ===== تفصيل الإيرادات/المصروفات من الرئيسية =====
 async function showHomeBreakdown(type){
   const table = type==='income' ? 'income' : 'expenses';
-  const title = type==='income' ? '💰 مصادر الوارد' : '💸 أوجه الصادر';
+  const title = type==='income' ? '💰 مصادر الإيرادات' : '💸 أوجه المصروفات';
   const color = type==='income' ? '#2d6a4f' : '#c0392b';
   document.getElementById('modal-title').textContent = title;
   document.getElementById('detail-overlay').classList.add('open');
@@ -2765,9 +2765,9 @@ async function addIncome() {
     const {error:ve1}=await sb.from('vault').insert({type:'income_auto',description:'إيراد: '+desc,amount:vaultAmt,date:date,notes:notes||'',user_id:currentUser.id,ref_id:incRow?.id});
     if(ve1) console.error('vault sync error:',ve1.message);
   }
-  const toastMsg = _incPayType==='full'?'✅ تم تسجيل الوارد وإضافته للخزنة':_incPayType==='partial'?'✅ تم التسجيل — '+fmt(paidAmt)+' في الخزنة':'✅ تم تسجيل الوارد (آجل — لم يضاف للخزنة)';
+  const toastMsg = _incPayType==='full'?'✅ تم تسجيل الإيرادات وإضافته للخزنة':_incPayType==='partial'?'✅ تم التسجيل — '+fmt(paidAmt)+' في الخزنة':'✅ تم تسجيل الإيرادات (آجل — لم يضاف للخزنة)';
   showToast(toastMsg);
-  logActivity('إضافة','income','وارد: '+desc+' - '+type, amt);
+  logActivity('إضافة','income','إيراد: '+desc+' - '+type, amt);
   document.getElementById('inc-desc').value='';
   document.getElementById('inc-amt').value='';
   document.getElementById('inc-notes').value='';
@@ -2910,7 +2910,7 @@ function clearIncFilter(){
 function openIncPayModal(id, desc, total, paidSoFar){
   if(!permAllowed('payIncome')) return;
   const remaining = total - paidSoFar;
-  document.getElementById('modal-title').textContent = '💵 تحصيل وارد';
+  document.getElementById('modal-title').textContent = '💵 تحصيل إيراد';
   document.getElementById('modal-body').innerHTML = `
     <div class="total-display" style="margin-bottom:14px;flex-direction:column;align-items:flex-start;gap:4px;">
       <div style="font-size:0.78rem;font-weight:700;color:var(--muted);">${s(desc)}</div>
@@ -2969,7 +2969,7 @@ async function renderIncomeList() {
   if(fpay) q=q.eq('pay_type',fpay);
   const {data,error}=await q;
   const el=document.getElementById('income-list');
-  if(error||!data?.length){el.innerHTML='<div class="empty">لا يوجد وارد 📭</div>';return;}
+  if(error||!data?.length){el.innerHTML='<div class="empty">لا يوجد إيرادات 📭</div>';return;}
   updateIncTotal(data);
   el.innerHTML=data.map(x=>{
     const pt=x.pay_type||'full';
@@ -3073,9 +3073,9 @@ async function addExpense() {
     const {error:ve2}=await sb.from('vault').insert({type:'expense_auto',description:'مصروف: '+desc+' - '+cat,amount:vaultAmt,date:date,notes:notes||'',user_id:currentUser.id,ref_id:expRow?.id});
     if(ve2) console.error('vault sync error:',ve2.message);
   }
-  const toastMsg = _expPayType==='full'?'✅ تم تسجيل الصادر وخصمه من الخزنة':_expPayType==='partial'?'✅ تم التسجيل — '+fmt(paidAmt)+' من الخزنة':'✅ تم تسجيل الصادر (آجل — لم يخصم من الخزنة)';
+  const toastMsg = _expPayType==='full'?'✅ تم تسجيل المصروفات وخصمه من الخزنة':_expPayType==='partial'?'✅ تم التسجيل — '+fmt(paidAmt)+' من الخزنة':'✅ تم تسجيل المصروفات (آجل — لم يخصم من الخزنة)';
   showToast(toastMsg);
-  logActivity('إضافة','expenses','صادر: '+desc+' - '+cat, amt);
+  logActivity('إضافة','expenses','مصروف: '+desc+' - '+cat, amt);
   document.getElementById('exp-desc').value='';
   document.getElementById('exp-amt').value='';
   document.getElementById('exp-notes').value='';
@@ -3098,7 +3098,7 @@ function clearExpFilter(){
 function openExpPayModal(id, desc, total, paidSoFar){
   if(!permAllowed('payExpense')) return;
   const remaining = total - paidSoFar;
-  document.getElementById('modal-title').textContent = '💵 سداد صادر';
+  document.getElementById('modal-title').textContent = '💵 سداد مصروف';
   document.getElementById('modal-body').innerHTML = `
     <div class="total-display red" style="margin-bottom:14px;flex-direction:column;align-items:flex-start;gap:4px;">
       <div style="font-size:0.78rem;font-weight:700;color:var(--red);">${s(desc)}</div>
@@ -3157,7 +3157,7 @@ async function renderExpenseList() {
   if(fpay) q=q.eq('pay_type',fpay);
   const {data,error}=await q;
   const el=document.getElementById('expense-list');
-  if(error||!data?.length){el.innerHTML='<div class="empty">لا يوجد صادر 📭</div>';return;}
+  if(error||!data?.length){el.innerHTML='<div class="empty">لا يوجد مصروفات 📭</div>';return;}
   updateExpTotal(data);
   el.innerHTML=data.map(x=>{
     const pt=x.pay_type||'full';
@@ -3406,7 +3406,7 @@ async function delItem(table, id) {
     totalInVault = (vd||[]).reduce((s,x)=>s+Number(x.amount||0),0);
   }
 
-  const tableLabel = table==='income'?'الوارد': table==='expenses'?'الصادر': table==='capital'?'رأس المال': 'العنصر';
+  const tableLabel = table==='income'?'الإيرادات': table==='expenses'?'المصروفات': table==='capital'?'رأس المال': 'العنصر';
   const msg = totalInVault>0
     ? `⚠️ هذا العنصر عليه حركة خزنة (${Number(totalInVault).toLocaleString('en-US')} ج) ستُحذف كذلك — متأكد؟`
     : `🗑️ سيتم حذف ${tableLabel} — متأكد؟`;
@@ -3422,7 +3422,7 @@ async function delItem(table, id) {
 
   showToast('🗑️ تم الحذف'+(totalInVault>0?' وإزالة الحركة من الخزنة':''));
   const delDesc = item?.description || item?.name || item?.reason || '';
-  const delType = table==='income'?'وارد': table==='expenses'?'صادر': table==='capital'?'رأس مال': table==='ajal'?'آجل':'';
+  const delType = table==='income'?'إيرادات': table==='expenses'?'مصروفات': table==='capital'?'رأس مال': table==='ajal'?'آجل':'';
   logActivity('حذف', table, 'حذف '+delType+': '+delDesc, item?.amount);
   renderHome();
   if(table==='income') renderIncomeList();
@@ -3433,7 +3433,7 @@ async function delItem(table, id) {
 
 // ===== DETAIL MODAL =====
 function showDetail(type, item) {
-  const titles = {income:'تفاصيل الوارد 💰', expense:'تفاصيل الصادر 💸', ajal:'تفاصيل الآجل 🕐', capital:'تفاصيل رأس المال 📦', vault:'تفاصيل حركة الخزنة 🏦'};
+  const titles = {income:'تفاصيل الإيرادات 💰', expense:'تفاصيل المصروفات 💸', ajal:'تفاصيل الآجل 🕐', capital:'تفاصيل رأس المال 📦', vault:'تفاصيل حركة الخزنة 🏦'};
   document.getElementById('modal-title').textContent = titles[type]||'التفاصيل';
   let rows = [];
   let extraHtml = '';
@@ -3489,7 +3489,7 @@ function showDetail(type, item) {
     // زرار المصدر حسب النوع
     const srcMap = {
       income_auto: {label:'💰 الإيرادات', page:'income', prefix:'inc-item-'},
-      expense_auto: {label:'💸 المصاريف', page:'expense', prefix:'exp-item-'},
+      expense_auto: {label:'💸 المصروفات', page:'expense', prefix:'exp-item-'},
       capital_auto: {label:'📦 رأس المال', page:'capital', prefix:'cap-item-'},
     };
     const cat = item.category||'';
@@ -3640,7 +3640,7 @@ async function renderReport() {
   const cropsStock=stockItems.filter(r=>cropItemsSet.has(r.item)), prodStock=stockItems.filter(r=>!cropItemsSet.has(r.item));
   const cropsVal=stockVal(cropsStock), prodVal=stockVal(prodStock), totalStockVal=cropsVal+prodVal;
   const netWorth=vaultBal+ajalRec+totalStockVal-ajalPay;
-  // توزيع المصاريف
+  // توزيع المصروفات
   const cats={}; expData.forEach(x=>{const c=x.category||'أخرى';cats[c]=(cats[c]||0)+Number(x.amount||0);});
   const catArr=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
   // مصادر الإيراد
@@ -3687,7 +3687,7 @@ async function renderReport() {
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
       ${kpi('الإيرادات', fmt(inc), '#2d6a4f', growth(inc,pInc))}
-      ${kpi('المصاريف', fmt(exp), '#c0392b', growth(exp,pExp))}
+      ${kpi('المصروفات', fmt(exp), '#c0392b', growth(exp,pExp))}
       ${kpi(profit>=0?'صافي الربح':'صافي الخسارة', fmt(Math.abs(profit)), profit>=0?'#2d6a4f':'#c0392b', growth(profit,pProfit))}
       ${kpi('هامش الربح', margin.toFixed(1)+'%', margin>=0?'#1565C0':'#c0392b', `<span style="color:var(--muted);">من كل 100ج تكسب ${margin.toFixed(0)}ج</span>`)}
     </div>
@@ -3704,7 +3704,7 @@ async function renderReport() {
         ${salesUnpaid>0?`<div style="font-size:0.7rem;color:#c0392b;margin-top:5px;">⚠️ ${salesUnpaid} فاتورة لسه غير مسددة</div>`:''}
       </div>`)}
 
-    ${sec('💸 توزيع المصاريف', catArr.length ? catArr.map(([c,v])=>bar(dlbl(c),v,exp,'#c0392b','🔻')).join('') : '<div style="color:var(--muted);font-size:0.8rem;">لا يوجد مصاريف</div>')}
+    ${sec('💸 توزيع المصروفات', catArr.length ? catArr.map(([c,v])=>bar(dlbl(c),v,exp,'#c0392b','🔻')).join('') : '<div style="color:var(--muted);font-size:0.8rem;">لا يوجد مصروفات</div>')}
 
     ${sec('💰 مصادر الإيرادات', incCatArr.length ? incCatArr.map(([c,v])=>bar(dlbl(c),v,inc,'#2d6a4f','🔺')).join('') : '<div style="color:var(--muted);font-size:0.8rem;">لا يوجد إيرادات</div>')}
 
@@ -3791,7 +3791,7 @@ async function quickAdd() {
   const {error:qve}=await sb.from('vault').insert({type:vaultType,description:(type==='income'?'إيراد: ':'مصروف: ')+desc,amount:amt,date:today(),user_id:currentUser.id,ref_id:qRow?.id});
   if(qve) console.error('vault sync:',qve.message);
   showToast('✅ تم التسجيل');
-  logActivity('إضافة سريعة', type==='income'?'income':'expenses', (type==='income'?'إضافة سريعة وارد: ':'إضافة سريعة صادر: ')+desc, amt);
+  logActivity('إضافة سريعة', type==='income'?'income':'expenses', (type==='income'?'إضافة سريعة إيراد: ':'إضافة سريعة مصروف: ')+desc, amt);
   document.getElementById('q-desc').value='';
   document.getElementById('q-amt').value='';
   renderHome();
@@ -4106,7 +4106,7 @@ async function exportToExcel(type) {
       'التاريخ': x.date,
       'ملاحظات': x.notes||''
     }));
-    filename = 'المصاريف-'+today()+'.xlsx';
+    filename = 'المصروفات-'+today()+'.xlsx';
   }
 
   if(!data.length) return showToast('❌ لا يوجد بيانات للتصدير');
@@ -4117,9 +4117,9 @@ async function exportToExcel(type) {
   const ws = XLSX.utils.json_to_sheet(data, {header: headers});
   ws['!cols'] = [{wch:32},{wch:16},{wch:14},{wch:14},{wch:28}];
   xlStyle(ws, 0, [data.length]);
-  xlPrependTitle(ws, type==='income'?'الإيرادات':'المصاريف', 5);
+  xlPrependTitle(ws, type==='income'?'الإيرادات':'المصروفات', 5);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, type==='income'?'الإيرادات':'المصاريف');
+  XLSX.utils.book_append_sheet(wb, ws, type==='income'?'الإيرادات':'المصروفات');
   XLSX.writeFile(wb, filename);
   showToast('✅ تم التصدير!');
   } catch(e){ showToast('❌ '+arabicError(e.message||String(e))); console.error('exportToExcel:',e); }
@@ -4314,7 +4314,7 @@ async function exportReportToExcel() {
   xlPrependTitle(wsInc, 'الإيرادات', 7);
   XLSX.utils.book_append_sheet(wb, wsInc, 'الإيرادات');
 
-  // ===== Sheet 2: المصاريف =====
+  // ===== Sheet 2: المصروفات =====
   const expRows = [
     ['#', 'الوصف', 'التصنيف', 'المحصول', 'المبلغ (ج)', 'التاريخ', 'ملاحظات']
   ];
@@ -4329,8 +4329,8 @@ async function exportReportToExcel() {
   const wsExp = XLSX.utils.aoa_to_sheet(expRows);
   wsExp['!cols'] = [{wch:5},{wch:32},{wch:16},{wch:16},{wch:14},{wch:14},{wch:28}];
   xlStyle(wsExp, 0, [expRows.length-1, expRows.length-2]);
-  xlPrependTitle(wsExp, 'المصاريف', 7);
-  XLSX.utils.book_append_sheet(wb, wsExp, 'المصاريف');
+  xlPrependTitle(wsExp, 'المصروفات', 7);
+  XLSX.utils.book_append_sheet(wb, wsExp, 'المصروفات');
 
   // ===== Sheet 3: الآجل =====
   const ajalRows = [
@@ -4373,7 +4373,7 @@ async function exportReportToExcel() {
     [''],
     ['البيان', 'المبلغ (ج)', '', ''],
     ['إجمالي الإيرادات', totalInc, '', ''],
-    ['إجمالي المصاريف', totalExp, '', ''],
+    ['إجمالي المصروفات', totalExp, '', ''],
     [''],
     [profit>=0?'صافي الربح':'صافي الخسارة', Math.abs(profit), '', ''],
     [''],
@@ -4383,7 +4383,7 @@ async function exportReportToExcel() {
     ['آجل عليك (غير مسدد)', ajalAlaik, '', ''],
     [''],
     ['عدد سجلات الإيرادات', (rInc.data||[]).length, '', ''],
-    ['عدد سجلات المصاريف', (rExp.data||[]).length, '', ''],
+    ['عدد سجلات المصروفات', (rExp.data||[]).length, '', ''],
   ];
 
   const wsSummary = XLSX.utils.aoa_to_sheet(sumRows);
@@ -4393,7 +4393,7 @@ async function exportReportToExcel() {
   XLSX.utils.book_append_sheet(wb, wsSummary, 'ملخص');
 
   // ترتيب الشيتس - الملخص أول
-  wb.SheetNames = ['ملخص', 'الإيرادات', 'المصاريف', 'المخزن', 'الآجل'];
+  wb.SheetNames = ['ملخص', 'الإيرادات', 'المصروفات', 'المخزن', 'الآجل'];
 
   XLSX.writeFile(wb, farmName+'-'+from+'-'+to+'.xlsx');
   showToast('✅ تم التصدير بنجاح!');
@@ -4580,7 +4580,7 @@ async function deleteCat(i){
 async function editItem(type, item) {
   if(type==='income' && !permAllowed('editDelIncome')) return;
   if(type==='expense' && !permAllowed('editDelExpense')) return;
-  const titles = {income:'تعديل الوارد ✏️', expense:'تعديل الصادر ✏️', capital:'تعديل رأس المال ✏️'};
+  const titles = {income:'تعديل الإيرادات ✏️', expense:'تعديل المصروفات ✏️', capital:'تعديل رأس المال ✏️'};
   const table = type==='income'?'income': type==='expense'?'expenses':'capital';
   let fields = '';
   if(type==='income') {
@@ -4675,7 +4675,7 @@ async function saveEdit(table, id, type) {
 
   showToast('✅ تم الحفظ');
   // جيب الوصف الحقيقي للعنصر
-  const typeLabel = type==='income'?'وارد': type==='expense'?'صادر': type==='capital'?'رأس مال':'';
+  const typeLabel = type==='income'?'إيرادات': type==='expense'?'مصروفات': type==='capital'?'رأس مال':'';
   const editDesc = document.getElementById('edit-desc')?.value.trim() || document.getElementById('edit-notes')?.value.trim() || '';
   logActivity('تعديل', table, 'تعديل '+typeLabel+': '+editDesc, amt);
   closeModal();
@@ -4941,7 +4941,7 @@ async function sendWelcomeWhatsApp(phone, farmName){
 ✅ تم تسجيل مزرعتك: *${farmName}*
 
 البرنامج هيساعدك تتابع:
-• 💰 الوارد والصادر
+• 💰 الإيرادات والمصروفات
 • 📦 مبيعات الآجل
 • 🏦 الخزنة
 • 📊 التقارير والتحليلات
@@ -5028,7 +5028,7 @@ function openEditFarmArea(){
       <input type="text" inputmode="decimal" id="farm-area-input" value="${current||''}" placeholder="مثال: 50">
     </div>
     <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px;">
-      ده هيُستخدم لتوزيع المصاريف والإيرادات العامة على المواسم
+      ده هيُستخدم لتوزيع المصروفات والإيرادات العامة على المواسم
     </div>
     <button class="btn btn-g" style="margin-top:8px;" onclick="saveFarmArea()">💾 حفظ</button>`;
   document.getElementById('detail-overlay').classList.add('open');
@@ -5142,11 +5142,11 @@ const PERMISSION_ITEMS = [
   {key:'payPurchasesInvoices', label:'سداد فواتير المشتريات'},
   {key:'paySalesTraders',   label:'سداد تجار المبيعات'},
   {key:'payPurchasesTraders', label:'سداد تجار المشتريات'},
-  {key:'editDelIncome',     label:'حذف أو تعديل عمليات الوارد'},
-  {key:'payIncome',         label:'سداد عمليات الوارد'},
-  {key:'editDelExpense',    label:'حذف أو تعديل عمليات الصادر'},
-  {key:'payExpense',        label:'سداد عمليات الصادر'},
-  {key:'returns',           label:'مرتجع فواتير الصادر والوارد'},
+  {key:'editDelIncome',     label:'حذف أو تعديل عمليات الإيرادات'},
+  {key:'payIncome',         label:'سداد عمليات الإيرادات'},
+  {key:'editDelExpense',    label:'حذف أو تعديل عمليات المصروفات'},
+  {key:'payExpense',        label:'سداد عمليات المصروفات'},
+  {key:'returns',           label:'مرتجع فواتير المصروفات والإيرادات'},
   {key:'editSeasons',       label:'الإضافة والحذف والتعديل على المواسم'},
   {key:'addCapital',        label:'إضافة رأس مال ورصيد افتتاحي'},
   {key:'viewVault',         label:'الدخول إلى الخزنة'},
@@ -5270,7 +5270,7 @@ async function startDeleteFarmData(){
     return showToast('❌ لازم تحدد رمز الحذف السري الأول من الإعدادات 🔐');
   }
   const confirmed = await showConfirm(
-    '⚠️ تحذير خطير!\n\nهتحذف كل بيانات المزرعة نهائياً:\nالوارد، الصادر، الخزنة، الآجل، المواسم، السجل...\n\nالعملية دي مش قابلة للتراجع!\n\nعايز تكمل؟',
+    '⚠️ تحذير خطير!\n\nهتحذف كل بيانات المزرعة نهائياً:\nالإيرادات، المصروفات، الخزنة، الآجل، المواسم، السجل...\n\nالعملية دي مش قابلة للتراجع!\n\nعايز تكمل؟',
     '🗑️'
   );
   if(!confirmed) return;
@@ -5484,7 +5484,7 @@ async function renderAnalytics(){
   const sumEl=document.getElementById('analytics-summary');
   if(sumEl) sumEl.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
     ${akpi('إجمالي الإيرادات', fmt(totInc), '#2d6a4f')}
-    ${akpi('إجمالي المصاريف', fmt(totExp), '#c0392b')}
+    ${akpi('إجمالي المصروفات', fmt(totExp), '#c0392b')}
     ${akpi(totProfit>=0?'صافي الربح':'صافي الخسارة', fmt(Math.abs(totProfit)), totProfit>=0?'#2d6a4f':'#c0392b')}
     ${akpi('هامش الربح', totMargin.toFixed(1)+'%', '#1565C0')}
   </div>${bestCrop?`<div style="display:flex;gap:8px;margin-top:8px;">
@@ -5518,14 +5518,14 @@ async function renderAnalytics(){
       labels: allKeys.map(k=>{ if(chartPeriod==='monthly'){ const [y,m]=k.split('-'); return monthNames[parseInt(m)-1]; } return k; }),
       datasets:[
         {label:'إيرادات', data:allKeys.map(k=>incGroups[k]||0), backgroundColor:'rgba(90,122,58,0.85)', borderRadius:6, order:2},
-        {label:'مصاريف', data:allKeys.map(k=>expGroups[k]||0), backgroundColor:'rgba(192,57,43,0.85)', borderRadius:6, order:2},
+        {label:'مصروفات', data:allKeys.map(k=>expGroups[k]||0), backgroundColor:'rgba(192,57,43,0.85)', borderRadius:6, order:2},
         {label:'صافي الربح', type:'line', data:allKeys.map(k=>(incGroups[k]||0)-(expGroups[k]||0)), borderColor:'#1565C0', backgroundColor:'#1565C0', borderWidth:2, tension:0.3, pointRadius:3, order:1}
       ]
     },
     options:{responsive:true,plugins:{legend:{labels:{font:{family:'Cairo'},color:'#555'}}},scales:{x:{ticks:{font:{family:'Cairo'},color:'#888'}},y:{ticks:{font:{family:'Cairo'},color:'#888',callback:v=>v.toLocaleString('en-US')}}}}
   });
 
-  // ===== توزيع المصاريف (دائري) =====
+  // ===== توزيع المصروفات (دائري) =====
   const _expCats={}; exp.forEach(x=>{const c=x.category||'أخرى';_expCats[c]=(_expCats[c]||0)+Number(x.amount||0);});
   const _ecArr=Object.entries(_expCats).sort((a,b)=>b[1]-a[1]);
   const _dctx=document.getElementById('exp-doughnut');
@@ -5556,14 +5556,14 @@ async function renderAnalytics(){
         labels:allCrops,
         datasets:[
           {label:'إيرادات', data:allCrops.map(c=>cropInc[c]||0), backgroundColor:'rgba(90,122,58,0.85)', borderRadius:6},
-          {label:'مصاريف', data:allCrops.map(c=>cropExp[c]||0), backgroundColor:'rgba(192,57,43,0.85)', borderRadius:6}
+          {label:'مصروفات', data:allCrops.map(c=>cropExp[c]||0), backgroundColor:'rgba(192,57,43,0.85)', borderRadius:6}
         ]
       },
       options:{responsive:true,indexAxis:'y',plugins:{legend:{labels:{font:{family:'Cairo'},color:'#555'}}},scales:{x:{ticks:{font:{family:'Cairo'},color:'#888',callback:v=>v.toLocaleString('en-US')}},y:{ticks:{font:{family:'Cairo'},color:'#888'}}}}
     });
     document.getElementById('crops-detail-list').innerHTML = allCrops.map(c=>{
       const i=cropInc[c]||0, e=cropExp[c]||0, p=i-e;
-      return `<div class="crop-card"><div class="crop-name">🌾 ${s(c)}</div><div class="crop-stats"><div class="crop-stat"><div class="crop-stat-val" style="color:var(--g2)">${Number(i).toLocaleString('en-US')} ج</div><div class="crop-stat-lbl">إيرادات</div></div><div class="crop-stat"><div class="crop-stat-val" style="color:var(--red)">${Number(e).toLocaleString('en-US')} ج</div><div class="crop-stat-lbl">مصاريف</div></div><div class="crop-stat"><div class="crop-stat-val" style="color:${p>=0?'var(--g2)':'var(--red)'}">${Number(p).toLocaleString('en-US')} ج</div><div class="crop-stat-lbl">صافي</div></div></div></div>`;
+      return `<div class="crop-card"><div class="crop-name">🌾 ${s(c)}</div><div class="crop-stats"><div class="crop-stat"><div class="crop-stat-val" style="color:var(--g2)">${Number(i).toLocaleString('en-US')} ج</div><div class="crop-stat-lbl">إيرادات</div></div><div class="crop-stat"><div class="crop-stat-val" style="color:var(--red)">${Number(e).toLocaleString('en-US')} ج</div><div class="crop-stat-lbl">مصروفات</div></div><div class="crop-stat"><div class="crop-stat-val" style="color:${p>=0?'var(--g2)':'var(--red)'}">${Number(p).toLocaleString('en-US')} ج</div><div class="crop-stat-lbl">صافي</div></div></div></div>`;
     }).join('');
   } else {
     ctx2.style.display='none';
@@ -6166,7 +6166,7 @@ async function renderSeasons(){
       const farmArea=getFarmArea();
       const seasonArea=season.area||0;
 
-      // إيرادات ومصاريف المحصول المحدد
+      // إيرادات ومصروفات المحصول المحدد
       const {data:id}=await sb.from('income').select('amount').eq('user_id',currentUser.id).eq('crop',season.crop).gte('date',season.start_date).lte('date',endD);
       const {data:ed}=await sb.from('expenses').select('amount').eq('user_id',currentUser.id).eq('crop',season.crop).gte('date',season.start_date).lte('date',endD);
       inc=(id||[]).reduce((s,x)=>s+Number(x.amount),0);
@@ -6200,7 +6200,7 @@ async function renderSeasons(){
       </div>
       <div class="crop-stats">
         <div class="crop-stat"><div class="crop-stat-val" style="color:var(--g2)">${Number(inc).toLocaleString('en-US')} ج</div><div class="crop-stat-lbl">إيرادات</div></div>
-        <div class="crop-stat"><div class="crop-stat-val" style="color:var(--red)">${Number(exp).toLocaleString('en-US')} ج</div><div class="crop-stat-lbl">مصاريف</div></div>
+        <div class="crop-stat"><div class="crop-stat-val" style="color:var(--red)">${Number(exp).toLocaleString('en-US')} ج</div><div class="crop-stat-lbl">مصروفات</div></div>
         <div class="crop-stat"><div class="crop-stat-val" style="color:${profit>=0?'var(--g2)':'var(--red)'}">${Number(profit).toLocaleString('en-US')} ج</div><div class="crop-stat-lbl">صافي</div></div>
       </div>
       ${season.area?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
@@ -6345,7 +6345,7 @@ async function openSeasonDetail(seasonId){
   const profitPct = totalIncAll ? (profit/totalIncAll*100) : 0;
   const isActive = !season.end_date || season.end_date >= today();
 
-  // تجميع المصاريف حسب التصنيف
+  // تجميع المصروفات حسب التصنيف
   const expByCat = {};
   expData.forEach(x=>{ expByCat[x.category||'أخرى']=(expByCat[x.category||'أخرى']||0)+Number(x.amount); });
   if(genExpTotal>0) expByCat['عام (نصيب الموسم)'] = genExpTotal;
@@ -6390,7 +6390,7 @@ async function openSeasonDetail(seasonId){
       </div>
       <div class="season-kpi" style="border-color:var(--red)">
         <div class="season-kpi-val" style="color:var(--red)">${Number(totalExpAll).toLocaleString('en-US')} ج</div>
-        <div class="season-kpi-lbl">إجمالي المصاريف</div>
+        <div class="season-kpi-lbl">إجمالي المصروفات</div>
       </div>
       <div class="season-kpi" style="border-color:${profit>=0?'var(--g3)':'var(--red)'}">
         <div class="season-kpi-val" style="color:${profit>=0?'var(--g2)':'var(--red)'}">${Number(profit).toLocaleString('en-US')} ج</div>
@@ -6415,10 +6415,10 @@ async function openSeasonDetail(seasonId){
       </div>`}
     </div>
 
-    <!-- المصاريف حسب التصنيف -->
+    <!-- المصروفات حسب التصنيف -->
     <div class="season-section">
       <div class="season-section-title">
-        <span>💸 المصاريف حسب التصنيف</span>
+        <span>💸 المصروفات حسب التصنيف</span>
         <span style="font-size:0.75rem;color:var(--muted)">${Number(totalExpAll).toLocaleString('en-US')} ج</span>
       </div>
       ${Object.entries(expByCat).sort((a,b)=>b[1]-a[1]).map(([cat,amt])=>{
@@ -6470,9 +6470,9 @@ async function openSeasonDetail(seasonId){
         </div>`).join('') : '<div class="empty">لا يوجد</div>'}
     </div>
 
-    <!-- سجل المصاريف -->
+    <!-- سجل المصروفات -->
     <div class="season-section">
-      <div class="season-section-title">📋 سجل المصاريف (${expLog.length})</div>
+      <div class="season-section-title">📋 سجل المصروفات (${expLog.length})</div>
       ${expLog.length ? expLog.map(x=>`
         <div class="season-cat-item">
           <div style="flex:1;min-width:0;">
@@ -6543,7 +6543,7 @@ async function exportSeasonToExcel(seasonId){
     ['المساحة', seasonArea?(seasonArea+' فدان'):'-'],[''],
     ['البيان','المبلغ (ج)'],
     ['إجمالي الإيرادات', totalInc],
-    ['إجمالي المصاريف', totalExp],[''],
+    ['إجمالي المصروفات', totalExp],[''],
     [profit>=0?'✅ صافي الربح':'❌ صافي الخسارة', Math.abs(profit)],
     ['هامش الربح', totalInc?(profit/totalInc*100).toFixed(1)+'%':'-'],[''],
     ['تكلفة الفدان', seasonArea?cpf:'-'],
@@ -6552,7 +6552,7 @@ async function exportSeasonToExcel(seasonId){
   if(ratio>0){
     sumRows.push(['']);
     sumRows.push(['نصيب الموسم من الإيرادات العامة', genIncTotal]);
-    sumRows.push(['نصيب الموسم من المصاريف العامة', genExpTotal]);
+    sumRows.push(['نصيب الموسم من المصروفات العامة', genExpTotal]);
   }
   const wsSum = XLSX.utils.aoa_to_sheet(sumRows);
   wsSum['!cols']=[{wch:32},{wch:20}];
@@ -6570,7 +6570,7 @@ async function exportSeasonToExcel(seasonId){
   xlPrependTitle(wsInc, 'إيرادات الموسم - '+season.name, 6);
   XLSX.utils.book_append_sheet(wb, wsInc, 'الإيرادات');
 
-  // Sheet 3: المصاريف
+  // Sheet 3: المصروفات
   const expRows=[['#','الوصف','التصنيف','المبلغ (ج)','التاريخ','ملاحظات']];
   expData.forEach((x,i)=>expRows.push([i+1,x.description||'',x.category||'',Number(x.amount||0),fmtD(x.date),x.notes||'']));
   genExpData.forEach((x,i)=>expRows.push(['🌍','عام - '+(x.description||''),x.category||'عام',Number(x.amount||0)*ratio,fmtD(x.date),'نصيب الموسم']));
@@ -6578,10 +6578,10 @@ async function exportSeasonToExcel(seasonId){
   const wsExp=XLSX.utils.aoa_to_sheet(expRows);
   wsExp['!cols']=[{wch:5},{wch:32},{wch:16},{wch:14},{wch:14},{wch:25}];
   xlStyle(wsExp, 0, [expRows.length-1]);
-  xlPrependTitle(wsExp, 'مصاريف الموسم - '+season.name, 6);
-  XLSX.utils.book_append_sheet(wb, wsExp, 'المصاريف');
+  xlPrependTitle(wsExp, 'مصروفات الموسم - '+season.name, 6);
+  XLSX.utils.book_append_sheet(wb, wsExp, 'المصروفات');
 
-  // Sheet 4: المصاريف حسب التصنيف
+  // Sheet 4: المصروفات حسب التصنيف
   const expByCat={};
   expData.forEach(x=>{expByCat[x.category||'أخرى']=(expByCat[x.category||'أخرى']||0)+Number(x.amount);});
   if(genExpTotal>0) expByCat['عام (نصيب الموسم)']=genExpTotal;
@@ -6593,10 +6593,10 @@ async function exportSeasonToExcel(seasonId){
   const wsCat=XLSX.utils.aoa_to_sheet(catRows);
   wsCat['!cols']=[{wch:27},{wch:16},{wch:12}];
   xlStyle(wsCat, 0, [catRows.length-1]);
-  xlPrependTitle(wsCat, 'المصاريف حسب التصنيف - '+season.name, 3);
-  XLSX.utils.book_append_sheet(wb, wsCat, 'المصاريف حسب التصنيف');
+  xlPrependTitle(wsCat, 'المصروفات حسب التصنيف - '+season.name, 3);
+  XLSX.utils.book_append_sheet(wb, wsCat, 'المصروفات حسب التصنيف');
 
-  wb.SheetNames=['ملخص الموسم','الإيرادات','المصاريف','المصاريف حسب التصنيف'];
+  wb.SheetNames=['ملخص الموسم','الإيرادات','المصروفات','المصروفات حسب التصنيف'];
   XLSX.writeFile(wb, 'موسم-'+season.name+'-'+season.start_date+'.xlsx');
   showToast('✅ تم التصدير!');
   } catch(e){ showToast('❌ '+arabicError(e.message||String(e))); console.error('exportSeasonToExcel:',e); }
