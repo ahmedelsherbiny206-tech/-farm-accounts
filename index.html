@@ -2856,7 +2856,6 @@ function clearIncFilter(){
   renderIncomeList();
 }
 function openIncPayModal(id, desc, total, paidSoFar){
-  if(!permAllowed('payIncome')) return;
   const remaining = total - paidSoFar;
   document.getElementById('modal-title').textContent = '💵 تحصيل إيراد';
   document.getElementById('modal-body').innerHTML = `
@@ -3017,7 +3016,6 @@ function clearExpFilter(){
   renderExpenseList();
 }
 function openExpPayModal(id, desc, total, paidSoFar){
-  if(!permAllowed('payExpense')) return;
   const remaining = total - paidSoFar;
   document.getElementById('modal-title').textContent = '💵 سداد مصروف';
   document.getElementById('modal-body').innerHTML = `
@@ -4307,7 +4305,7 @@ async function exportReportToExcel() {
 // ===== CATEGORY MANAGER =====
 const defaultIncCats = ['بيع محصول','إيجار أرض','دعم حكومي','بيع ماشية','بيع منتجات','أخرى'];
 const defaultExpCats = ['أسمدة ومبيدات','عمالة','وقود ونقل','صيانة','بذور','مياه وري','أخرى'];
-const defaultCrops = ['قمح','ذرة','أرز','قطن','قصب السكر','فول','عدس','طماطم','بطاطس','بصل','برتقال','مانجو'];
+const defaultCrops = ['فراولة','بطاطس','خيار','ذرة','موز','عنب'];
 
 let _incCatsCache = null;
 let _expCatsCache = null;
@@ -5047,10 +5045,8 @@ const PERMISSION_ITEMS = [
   {key:'paySalesTraders',   label:'سداد تجار المبيعات'},
   {key:'payPurchasesTraders', label:'سداد تجار المشتريات'},
   {key:'editDelIncome',     label:'حذف أو تعديل عمليات الإيرادات'},
-  {key:'payIncome',         label:'سداد عمليات الإيرادات'},
   {key:'editDelExpense',    label:'حذف أو تعديل عمليات المصروفات'},
-  {key:'payExpense',        label:'سداد عمليات المصروفات'},
-  {key:'returns',           label:'مرتجع فواتير المصروفات والإيرادات'},
+  {key:'returns',           label:'مرتجع فواتير المبيعات والمشتريات'},
   {key:'editSeasons',       label:'الإضافة والحذف والتعديل على المواسم'},
   {key:'addCapital',        label:'إضافة رأس مال ورصيد افتتاحي'},
   {key:'viewVault',         label:'الدخول إلى الخزنة'},
